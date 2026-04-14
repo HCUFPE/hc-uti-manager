@@ -81,7 +81,7 @@ import StatusBadge from './StatusBadge.vue';
 import UiBadge from './ui/Badge.vue';
 
 type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta';
-type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'outro' | 'nao_definido';
+type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
 
 type Patient = {
   prontuario: string;
@@ -110,10 +110,11 @@ const tipoPalette: Record<BedType, { label: string; className: string }> = {
   cirurgico: { label: 'Cirúrgico', className: 'bg-blue-600/80' },
   hem: { label: 'HEM', className: 'bg-rose-600/80' },
   obstetrico: { label: 'Obstétrico', className: 'bg-purple-600/80' },
+  uti: { label: 'UTI', className: 'bg-indigo-600/80' },
   outro: { label: 'Outro', className: 'bg-slate-700/80' },
   nao_definido: { label: 'Não definido', className: 'bg-slate-400/90' },
 };
 
-const tipoConfig = computed(() => tipoPalette[props.tipo]);
+const tipoConfig = computed(() => tipoPalette[props.tipo] || tipoPalette.outro);
 const tipoClass = computed(() => tipoConfig.value.className);
 </script>

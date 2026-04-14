@@ -2,7 +2,7 @@
   <component :is="layout">
     <router-view />
   </component>
-  <LoadingIndicator />
+  <!-- <LoadingIndicator /> -->
 </template>
 
 <script setup lang="ts">

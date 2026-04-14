@@ -1,82 +1,117 @@
 import os
-from typing import Callable
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Interfaces
 from providers.interfaces.paciente_provider_interface import PacienteProviderInterface
-from providers.implementations.paciente_postgres_provider import PacientePostgresProvider
-from providers.implementations.paciente_csv_provider import PacienteCsvProvider
-from resources.database import get_aghu_db_session
+from providers.interfaces.leito_provider_interface import LeitoProviderInterface
 
-# 1. Funções "getter" simples e independentes (privadas por convenção)
-def _get_paciente_postgres_provider(
+# Implementations
+from providers.implementations.paciente_postgres_provider import PacientePostgresProvider
+from providers.implementations.banco_aghu.leito_aghu_provider import LeitoAghuProvider
+from providers.implementations.leito_estado_provider import LeitoEstadoProvider
+from providers.implementations.solicitacao_alta_provider import SolicitacaoAltaProvider
+from providers.implementations.solicitacao_leito_provider import SolicitacaoLeitoProvider
+from providers.implementations.alerta_provider import AlertaProvider
+from providers.implementations.indicadores_provider import IndicadoresProvider
+
+# Controllers
+from controllers.leitos_controller import LeitosController
+from controllers.altas_controller import AltasController
+from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
+from controllers.alerta_controller import AlertaController
+from controllers.indicadores_controller import IndicadoresController
+
+# Resources
+from resources.database import get_aghu_db_session, get_app_db_session
+
+# --- PACIENTES -----------------------------------------------------------
+
+def get_paciente_provider(
     session: AsyncSession = Depends(get_aghu_db_session)
 ) -> PacienteProviderInterface:
+    """Provedor de pacientes via PostgreSQL (AGHU)."""
     return PacientePostgresProvider(session=session)
 
-def _get_paciente_csv_provider() -> PacienteProviderInterface:
-    csv_path = os.getenv("PACIENTE_CSV_PATH", "data/pacientes.csv")
-    return PacienteCsvProvider(csv_path=csv_path)
+# --- LEITOS --------------------------------------------------------------
 
-# 2. A FÁBRICA: A única função que o roteador vai conhecer.
-def get_paciente_provider(strategy: str) -> Callable[..., PacienteProviderInterface]:
-    """
-    Esta é uma fábrica. Baseado na string 'strategy', ela não retorna o provedor,
-    mas sim a FUNÇÃO DE DEPENDÊNCIA correta que o FastAPI deve usar.
-    """
-    if strategy.upper() == "POSTGRES":
-        return _get_paciente_postgres_provider
-    elif strategy.upper() == "CSV":
-        return _get_paciente_csv_provider
-    else:
-        raise ValueError(f"Estratégia de provedor desconhecida: {strategy}")
-
-# --- Leitos: provider + controller wiring ---------------------------------
-from controllers.leitos_controller import LeitosController
-from providers.interfaces.leito_provider_interface import LeitoProviderInterface
-from providers.implementations.banco.leito_postegres_provide import LeitoBancoBProvider
-from providers.implementations.banco_aghu.leito_csv_provider import LeitoCsvProvider
-
-async def _get_leito_banco_provider(
+def _get_leito_aghu_provider(
     session: AsyncSession = Depends(get_aghu_db_session)
 ) -> LeitoProviderInterface:
-    return LeitoBancoBProvider(session=session)
+    return LeitoAghuProvider(session=session)
 
-def _get_leito_csv_provider() -> LeitoProviderInterface:
-    leitos_csv = os.getenv("LEITOS_CSV_PATH", "data/leitos.csv")
-    pacientes_csv = os.getenv("PACIENTE_CSV_PATH", "data/pacientes.csv")
-    # Informational: ensure files exist — helps debug issues during startup or requests
-    if not os.path.isfile(leitos_csv):
-        print(f"WARNING: leitos CSV not found at {leitos_csv}")
-    if not os.path.isfile(pacientes_csv):
-        print(f"WARNING: pacientes CSV not found at {pacientes_csv}")
-    try:
-        return LeitoCsvProvider(leitos_csv=leitos_csv, pacientes_csv=pacientes_csv)
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print("ERROR constructing LeitoCsvProvider:\n", tb)
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail={"error": str(e), "trace": tb})
+def get_leito_estado_provider(
+    session: AsyncSession = Depends(get_app_db_session)
+) -> LeitoEstadoProvider:
+    """Provedor para o estado local (SQLite)."""
+    return LeitoEstadoProvider(session=session)
 
-def get_leito_provider() -> Callable[..., LeitoProviderInterface]:
-    """Return dependency function for leito provider based on env vars."""
-    selected = "banco" if os.getenv("POSTGRES_DSN") else "csv"
-    print(f"INFO: Selected leito provider strategy: {selected}")
-    if os.getenv("POSTGRES_DSN"):
-        return _get_leito_banco_provider
-    return _get_leito_csv_provider
+def get_solicitacao_alta_provider(
+    session: AsyncSession = Depends(get_app_db_session)
+) -> SolicitacaoAltaProvider:
+    return SolicitacaoAltaProvider(session=session)
 
 def get_leito_controller(
-    provider: LeitoProviderInterface = Depends(get_leito_provider())
+    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
+    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
+    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider)
 ) -> LeitosController:
-    """Dependency that returns a LeitosController wired with a leito provider.
-    Wrap construction in error handling to provide clear server logs on failure."""
-    try:
-        return LeitosController(provider)
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print("ERROR constructing LeitosController:\n", tb)
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail={"error": str(e), "trace": tb})
+    """
+    Constrói o controller injetando as três fontes de dados:
+    - census_provider: dados em tempo real do AGHU (PostgreSQL)
+    - estado_provider: estado local persistido (SQLite) - Reservas
+    - alta_provider: solicitações de alta ricas (SQLite)
+    """
+    return LeitosController(census_provider, estado_provider, alta_provider)
+
+# --- ALTAS --------------------------------------------------------------
+
+def get_altas_controller(
+    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
+    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
+    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider)
+) -> AltasController:
+    return AltasController(alta_provider, census_provider, estado_provider)
+
+# --- SOLICITACOES LEITO --------------------------------------------------
+
+def get_solicitacao_leito_provider(
+    session: AsyncSession = Depends(get_app_db_session)
+) -> SolicitacaoLeitoProvider:
+    return SolicitacaoLeitoProvider(session=session)
+
+def get_solicitacao_leito_controller(
+    leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
+    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider)
+) -> SolicitacaoLeitoController:
+    return SolicitacaoLeitoController(leito_provider, estado_provider)
+
+# --- ALERTAS --------------------------------------------------
+
+def get_alerta_provider(
+    session: AsyncSession = Depends(get_app_db_session)
+) -> AlertaProvider:
+    return AlertaProvider(session=session)
+
+def get_alerta_controller(
+    alerta_provider: AlertaProvider = Depends(get_alerta_provider),
+    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
+    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
+    solicitacao_leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider)
+) -> AlertaController:
+    return AlertaController(alerta_provider, census_provider, alta_provider, solicitacao_leito_provider)
+
+# --- INDICADORES --------------------------------------------------
+
+def get_indicadores_provider(
+    session: AsyncSession = Depends(get_app_db_session),
+    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider)
+) -> IndicadoresProvider:
+    return IndicadoresProvider(session=session, census_provider=census_provider)
+
+def get_indicadores_controller(
+    indicadores_provider: IndicadoresProvider = Depends(get_indicadores_provider)
+) -> IndicadoresController:
+    return IndicadoresController(indicadores_provider)
+
+

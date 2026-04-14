@@ -85,19 +85,9 @@ export const useAuthStore = defineStore('auth', () => {
       });
       setToken(data.access_token);
       await fetchUser();
-    } catch (error) {
-      console.warn("Using mock login (fallback). Replace with real API response when available.", error);
-      const mockToken = `mock-token-${Date.now()}`;
-      setToken(mockToken);
-      setUser({
-        username,
-        groups: [],
-        givenName: [username.split('@')[0] || 'Usuario'],
-        userPrincipalName: [username],
-        title: ['Profissional de Saude'],
-        department: ['UTI'],
-        employeeNumber: ['000000'],
-      });
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      throw error;
     }
   }
 

@@ -2,11 +2,16 @@ import os
 import jwt
 import re
 import secrets
+import sys
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
+
+# Garantir que as variáveis de ambiente sejam carregadas ANTES de qualquer outra coisa
+load_dotenv()
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from ldap3 import Server, Connection, ALL, SUBTREE, ALL_ATTRIBUTES
@@ -15,16 +20,14 @@ from ldap3.core.exceptions import LDAPBindError, LDAPSocketOpenError, LDAPExcept
 from resources.database import get_app_db_session
 from models.refresh_token import RefreshToken
 
-load_dotenv()
-
 # --- Configurações --- 
 JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_EXP_HOURS = int(os.getenv("JWT_EXP_HOURS", 24))
 REFRESH_TOKEN_EXP_DAYS = int(os.getenv("REFRESH_TOKEN_EXP_DAYS", 30))
-AUTH_ENABLED = os.getenv("AUTH_ENABLED", "true").lower() == "true"  # ← Adicione
+AUTH_ENABLED = os.getenv("AUTH_ENABLED", "true").lower() == "true"
 
 # Torna o scheme opcional se AUTH_ENABLED=false
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login", auto_error=AUTH_ENABLED)  # ← Modifique
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login", auto_error=AUTH_ENABLED)
 
 # --- Interface e Implementações de Provedor de Autenticação ---
 
@@ -37,10 +40,10 @@ class AuthProviderInterface(ABC):
 class MockAuthProvider(AuthProviderInterface):
     """Provedor de autenticação mock para desenvolvimento offline."""
     def authenticate_user(self, username, password) -> dict:
-        print("--- Using Mock Authentication ---")
-        if username == "admin" and password == "admin":
-            print(f"Authentication successful for mock user: {username}")
-            # O nome do grupo que o frontend usa para identificar administradores
+        print(f"SECURITY ALERT: Attempting MOCK authentication for user: {username}")
+        # MOCK EXTREMAMENTE RESTRITIVO
+        if username == "admin" and password == "admin_hc_uti_2024":
+            print(f"SECURITY: Mock Authentication SUCCESSFUL for user: {username}")
             admin_group = "GLO-SEC-HCPE-SETISD"
             return {
                 "username": "admin",
@@ -49,10 +52,10 @@ class MockAuthProvider(AuthProviderInterface):
                 "email": "admin@mock.com"
             }
         else:
-            print(f"Authentication failed for mock user: {username}")
+            print(f"SECURITY: Mock Authentication FAILED for user: {username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Invalid mock credentials"
+                detail="Invalid credentials (MOCK)"
             )
 
 class ActiveDirectoryAuthProvider(AuthProviderInterface):
@@ -63,29 +66,46 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
         self.ad_bind_user = os.getenv("AD_BIND_USER")
         self.ad_bind_password = os.getenv("AD_BIND_PASSWORD")
         if not self.ad_url or not self.ad_basedn:
-            raise RuntimeError("Active Directory is not configured. Check .env file.")
+            print("CRITICAL: AD_URL or AD_BASEDN not found in environment!")
+            raise RuntimeError("Active Directory is not configured.")
 
     def _bind(self, user, password) -> Connection:
+        print(f"DEBUG: LDAP Bind attempt: {user}")
+        if not password:
+            print(f"DEBUG: LDAP Bind FAILED: Empty password for {user}")
+            raise LDAPBindError("Empty password not allowed")
+            
         server = Server(self.ad_url, get_info=ALL)
-        return Connection(
+        conn = Connection(
             server,
             user=user,
             password=password,
-            auto_bind=True,
             receive_timeout=10,
         )
+        if not conn.bind():
+            print(f"DEBUG: LDAP Bind FAILED for {user}. Result: {conn.result}")
+            raise LDAPBindError(f"Invalid credentials")
+        
+        print(f"DEBUG: LDAP Bind SUCCESS for {user}")
+        return conn
 
     def authenticate_user(self, username, password) -> dict:
-        print(f"--- Starting AD Authentication for user: {username} ---")
+        print(f"--- Starting AD Authentication Process for: {username} ---")
         user_conn = None
         search_conn = None
         try:
             user_bind_dn = f"EBSERHNET\\{username}"
+            # 1. Validar a senha do usuário IMEDIATAMENTE
             user_conn = self._bind(user_bind_dn, password)
 
+            # 2. Se validou, agora busca os dados (usando conta de serviço ou a do próprio usuário)
             search_conn = user_conn
             if self.ad_bind_user and self.ad_bind_password:
-                search_conn = self._bind(self.ad_bind_user, self.ad_bind_password)
+                try:
+                    search_conn = self._bind(self.ad_bind_user, self.ad_bind_password)
+                except Exception as e:
+                    print(f"WARNING: Service account bind failed, falling back to user bind: {e}")
+                    search_conn = user_conn
 
             search_filter = f"(&(objectClass=user)(sAMAccountName={username}))"
             search_conn.search(
@@ -97,7 +117,8 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
             )
 
             if not search_conn.entries:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+                print(f"SECURITY: User {username} not found in AD search after successful bind.")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in directory")
 
             entry = search_conn.entries[0]
             attrs = entry.entry_attributes_as_dict
@@ -111,39 +132,62 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
             ]
 
             for key, value in attrs.items():
+                # Skip groups (already handled)
                 if key == "memberOf":
                     continue
+                
+                # STRICT TYPE CHECKING: Only allow JSON-serializable primitives
                 if isinstance(value, list):
-                    user_info[key] = [str(v) for v in value]
+                    # Only keep strings from lists, and ignore binary elements
+                    clean_list = [str(v) for v in value if isinstance(v, (str, int, float, bool))]
+                    if clean_list:
+                        user_info[key] = clean_list
+                elif isinstance(value, (str, int, float, bool)):
+                    user_info[key] = value
                 else:
-                    user_info[key] = str(value)
+                    # Log ignored field for debugging but don't break the flow
+                    # print(f"DEBUG: Ignoring non-serializable field {key} of type {type(value)}")
+                    pass
 
-            print(f"--- AD Authentication successful for user: {username}. ---")
+            print(f"SECURITY: AD Authentication SUCCESSFUL for user: {username}")
             return user_info
 
         except LDAPBindError:
+            print(f"SECURITY: AD Authentication FAILED (Invalid Credentials) for: {username}")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-        except LDAPSocketOpenError:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="AD server is down or unreachable")
-        except LDAPException as e:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"AD error: {e}")
+        except (LDAPSocketOpenError, LDAPException) as e:
+            print(f"ERROR: AD System Error for user {username}: {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication server error")
+        except Exception as e:
+            import traceback
+            print(f"CRITICAL: Unexpected error in authentication flow for user {username}:")
+            traceback.print_exc()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal error: {str(e)}")
         finally:
-            if search_conn and search_conn is not user_conn and search_conn.bound:
+            if search_conn and search_conn is not user_conn:
                 search_conn.unbind()
-            if user_conn and user_conn.bound:
+            if user_conn:
                 user_conn.unbind()
 
 # --- AuthHandler Principal ---
 
 class AuthHandler:
     def __init__(self):
-        # Lógica de troca: decide qual provedor usar na inicialização
-        if os.getenv("AD_URL"):
-            print("INFO: Using Active Directory authentication.")
-            self.provider: AuthProviderInterface = ActiveDirectoryAuthProvider()
-        else:
-            print("WARNING: AD environment variables not found. Using Mock authentication.")
-            self.provider: AuthProviderInterface = MockAuthProvider()
+        self._provider = None
+
+    @property
+    def provider(self) -> AuthProviderInterface:
+        if self._provider is None:
+            # Re-load env just in case something changed (e.g., in development)
+            load_dotenv()
+            ad_url = os.getenv("AD_URL")
+            if ad_url and ad_url.strip():
+                print(f"INFO: Initializing Active Directory Auth Provider (URL: {ad_url}).")
+                self._provider = ActiveDirectoryAuthProvider()
+            else:
+                print("WARNING: AD_URL not found or empty. Initializing Mock Auth Provider.")
+                self._provider = MockAuthProvider()
+        return self._provider
 
     def authenticate_user(self, username, password):
         return self.provider.authenticate_user(username, password)
@@ -181,20 +225,15 @@ class AuthHandler:
 
     def decode_token(self, token: str = Depends(oauth2_scheme)):
         if not AUTH_ENABLED:
-            print("⚠️  WARNING: Authentication is DISABLED - using mock user")
             return {
                 "username": "dev_user",
                 "groups": ["GLO-SEC-HCPE-SETISD", "Users"],
                 "email": "dev@localhost"
             }
         
-        # Se AUTH_ENABLED=true mas token não foi fornecido
         if not token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-        # Código original
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+            
         try:
             if not JWT_SECRET:
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="JWT_SECRET not configured")
@@ -205,5 +244,5 @@ class AuthHandler:
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-# Instância única que será usada em toda a aplicação
+# Instância única
 auth_handler = AuthHandler()

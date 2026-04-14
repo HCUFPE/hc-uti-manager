@@ -1,14 +1,11 @@
 from fastapi import APIRouter, Depends, status
 from controllers.leitos_controller import LeitosController
 from models.reserva_leito import ReservaLeitoInput
-from dependencies import get_leito_controller
-from typing import List, Dict, Any
+from dependencies import get_leito_controller, get_solicitacao_leito_provider
+from typing import List, Dict, Any, Optional
+from providers.implementations.solicitacao_leito_provider import SolicitacaoLeitoProvider
 
-router = APIRouter(prefix="/leitos", tags=["Leitos"])
-
-@router.get("")
-async def listar_leitos(controller: LeitosController = Depends(get_leito_controller)):
-    return await controller.listar()
+router = APIRouter(prefix="/api/leitos", tags=["Leitos"])
 
 @router.post("/{lto_lto_id}/reservar")
 async def reservar_leito(
@@ -17,6 +14,14 @@ async def reservar_leito(
     controller: LeitosController = Depends(get_leito_controller)
 ):
     return await controller.reservar(lto_lto_id, payload)
+
+@router.delete("/{leito_id}/reserva", status_code=status.HTTP_200_OK)
+async def cancelar_reserva(
+    leito_id: str,
+    controller: LeitosController = Depends(get_leito_controller),
+    solicitacao_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider)
+):
+    return await controller.cancelar_reserva(leito_id, solicitacao_provider)
 
 @router.post(
     "/{leito_id}/alta",
@@ -38,12 +43,12 @@ async def cancelar_alta(
 ):
     await controller.cancelar_alta(leito_id) 
 
-@router.get("/", response_model=List[Dict[str, Any]])
+@router.get("", response_model=List[Dict[str, Any]])
 async def listar_leitos(
     controller: LeitosController = Depends(get_leito_controller),
 ):
     """
-    Retorna todos os leitos cadastrados no banco B
+    Retorna todos os leitos da unidade selecionada, com dados unificados do banco local e AGHU.
     """
     return await controller.listar_leitos()
 

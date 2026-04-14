@@ -25,7 +25,11 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from src.resources.database import Base
+from resources.database import Base
+from models.leito_estado import LeitoEstado
+from models.solicitacao_alta import SolicitacaoAlta
+from models.solicitacao_leito import SolicitacaoLeito
+from models.refresh_token import RefreshToken
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

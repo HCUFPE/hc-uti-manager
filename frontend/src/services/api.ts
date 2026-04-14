@@ -9,14 +9,11 @@ const api = axios.create({
   }
 });
 
-// Request interceptor to add the access token and set loading state
+// Request interceptor to add the access token
 api.interceptors.request.use(config => {
   const authStore = useAuthStore();
-  const uiStore = useUiStore();
   const token = authStore.accessToken;
   
-  uiStore.setLoading(true);
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

@@ -69,6 +69,8 @@ RUN apt-get update && apt-get install -y \
 
 # Backend source
 COPY src ./src
+COPY alembic ./alembic
+COPY alembic.ini .
 COPY requirements.txt .
 
 # Instalando libs Python no runtime

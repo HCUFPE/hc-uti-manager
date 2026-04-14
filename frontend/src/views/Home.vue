@@ -71,15 +71,16 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref, onMounted } from 'vue';
 import { FunnelIcon } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
 import { ChevronRightIcon } from '@heroicons/vue/20/solid';
 import BedCard from '../components/BedCard.vue';
 import UiButton from '../components/ui/Button.vue';
 import { useToast } from 'vue-toastification';
+import api from '../services/api';
 
 type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta';
-type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'outro' | 'nao_definido';
+type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
 type StatusFilter = BedStatus | 'todos';
 
 type Patient = {
@@ -98,114 +99,61 @@ type Leito = {
   sinalizacaoTransferencia?: boolean;
 };
 
-const leitos = ref<Leito[]>([
-  {
-    leitoNumero: '01',
-    status: 'ocupado',
-    tipo: 'cirurgico',
-    pacienteAtual: {
-      prontuario: '123456',
-      idade: 67,
-      especialidade: 'Cardiologia',
-    },
-    proximoPaciente: {
-      prontuario: '654321',
-      idade: 54,
-      especialidade: 'Neurologia',
-    },
-    tipoReserva: 'Cirurgico',
-  },
-  {
-    leitoNumero: '02',
-    status: 'disponivel',
-    tipo: 'cirurgico',
-  },
-  {
-    leitoNumero: '03',
-    status: 'alta',
-    tipo: 'hem',
-    pacienteAtual: {
-      prontuario: '456789',
-      idade: 45,
-    especialidade: 'Oncologia',
-    },
-    sinalizacaoTransferencia: true,
-  },
-  {
-    leitoNumero: '04',
-    status: 'higienizacao',
-    tipo: 'cirurgico',
-  },
-  {
-    leitoNumero: '05',
-    status: 'ocupado',
-    tipo: 'hem',
-    pacienteAtual: {
-      prontuario: '789012',
-      idade: 52,
-      especialidade: 'Hematologia',
-    },
-  },
-  {
-    leitoNumero: '06',
-    status: 'desativado',
-    tipo: 'nao_definido',
-  },
-  {
-    leitoNumero: '07',
-    status: 'ocupado',
-    tipo: 'obstetrico',
-    pacienteAtual: {
-      prontuario: '234567',
-      idade: 29,
-      especialidade: 'Obstetricia',
-    },
-  },
-  {
-    leitoNumero: '08',
-    status: 'disponivel',
-    tipo: 'outro',
-    proximoPaciente: {
-      prontuario: '345678',
-      idade: 61,
-      especialidade: 'Pneumologia',
-    },
-    tipoReserva: 'Emergencia',
-  },
-  {
-    leitoNumero: '09',
-    status: 'disponivel',
-    tipo: 'outro',
-    proximoPaciente: {
-      prontuario: '345678',
-      idade: 61,
-      especialidade: 'Pneumologia',
-    },
-    tipoReserva: 'Emergencia',
-  },
-  {
-    leitoNumero: '10',
-    status: 'disponivel',
-    tipo: 'outro',
-    proximoPaciente: {
-      prontuario: '345678',
-      idade: 61,
-      especialidade: 'Pneumologia',
-    },
-    tipoReserva: 'Emergencia',
-  },
-]);
-
-const overviewCards = [
-  { title: 'Taxa de Ocupacao Global', value: '66%', color: 'text-emerald-600', caption: '10 de 15 leitos ocupados' },
-  { title: 'Leitos Disponiveis', value: '5', color: 'text-emerald-600' },
-  { title: 'Leitos em Uso', value: '6', color: 'text-emerald-600' },
-  { title: 'Leitos em Higienizacao', value: '2', color: 'text-emerald-600' },
-  { title: 'Leitos Desativados', value: '0', color: 'text-emerald-600' },
-  { title: 'Reservas Pendentes', value: '7', color: 'text-emerald-600' },
-];
-
+const leitos = ref<Leito[]>([]);
 const toast = useToast();
+
+const loadLeitos = async () => {
+  try {
+    const response = await api.get('/api/leitos');
+    leitos.value = response.data.map((l: any) => ({
+      leitoNumero: l.lto_lto_id,
+      status: l.alta_solicitada ? 'alta' :
+              (l.status || '').toLowerCase() === 'ocupado' ? 'ocupado' :
+              (l.status || '').toLowerCase() === 'desocupado' ? 'disponivel' :
+              (l.status || '').toLowerCase() === 'limpeza' ? 'higienizacao' :
+              (l.status || '').toLowerCase() === 'interditado' ? 'desativado' : 'disponivel',
+      tipo: (l.tipo || 'outro').toLowerCase(),
+      sinalizacaoTransferencia: l.alta_solicitada,
+      pacienteAtual: l.prontuario_atual ? {
+        prontuario: String(l.prontuario_atual),
+        idade: l.idade_atual || 0,
+        especialidade: l.especialidade_atual || 'ND',
+      } : undefined,
+      proximoPaciente: l.prontuario_proximo ? {
+        prontuario: String(l.prontuario_proximo),
+        idade: l.idade_proximo || 0,
+        especialidade: l.especialidade_proximo || 'ND',
+      } : undefined,
+    }));
+  } catch (error) {
+    console.error('Erro ao buscar leitos:', error);
+    toast.error('Falha ao carregar leitos. Verifique a conexao.');
+  }
+};
+
+onMounted(() => {
+  loadLeitos();
+});
+
+const overviewCards = computed(() => {
+  const total = leitos.value.length;
+  const ocupados = leitos.value.filter(l => ['ocupado', 'alta'].includes(l.status)).length;
+  const disponiveis = leitos.value.filter(l => l.status === 'disponivel').length;
+  const higienizacao = leitos.value.filter(l => l.status === 'higienizacao').length;
+  const desativados = leitos.value.filter(l => l.status === 'desativado').length;
+  const reservas = leitos.value.filter(l => l.proximoPaciente).length;
+
+  const percOcupacao = total > 0 ? Math.round((ocupados / total) * 100) : 0;
+
+  return [
+    { title: 'Taxa de Ocupacao Global', value: `${percOcupacao}%`, color: 'text-blue-600', caption: `${ocupados} de ${total} leitos ocupados` },
+    { title: 'Leitos Disponiveis', value: disponiveis.toString(), color: 'text-emerald-600' },
+    { title: 'Leitos em Uso', value: ocupados.toString(), color: 'text-amber-500' },
+    { title: 'Leitos em Higienizacao', value: higienizacao.toString(), color: 'text-indigo-500' },
+    { title: 'Leitos Desativados', value: desativados.toString(), color: 'text-slate-500' },
+    { title: 'Reservas Pendentes', value: reservas.toString(), color: 'text-purple-600' },
+  ];
+});
 
 const statusFilterOptions: { label: string; value: StatusFilter }[] = [
   { label: 'Todos', value: 'todos' },
@@ -249,16 +197,43 @@ const dotColor = (valor: StatusFilter) => {
   }
 };
 
-const handleSolicitarAlta = (leito: Leito) => {
-  toast.info(`Alta solicitada para o leito ${leito.leitoNumero}.`);
+const handleSolicitarAlta = async (leito: Leito) => {
+  try {
+    await api.post(`/api/altas/${leito.leitoNumero}`);
+    toast.success(`Alta solicitada para o leito ${leito.leitoNumero}.`);
+    await loadLeitos();
+  } catch (e: any) {
+    console.error(e);
+    toast.error('Erro ao solicitar alta.');
+  }
 };
 
-const handleCancelarAlta = (leito: Leito) => {
-  toast.warning(`Alta cancelada para o leito ${leito.leitoNumero}.`);
+const handleCancelarAlta = async (leito: Leito) => {
+  try {
+    // Busca a solicitação pendente para este leito
+    const resp = await api.get('/api/altas');
+    const solicitacao = resp.data.find((a: any) => a.leitoAtual === leito.leitoNumero && a.status !== 'cancelada');
+    
+    if (solicitacao) {
+      await api.delete(`/api/altas/${solicitacao.id}`);
+      toast.warning(`Alta cancelada para o leito ${leito.leitoNumero}.`);
+      await loadLeitos();
+    }
+  } catch (e: any) {
+    console.error(e);
+    toast.error('Erro ao cancelar alta.');
+  }
 };
 
-const handleCancelarReserva = (leito: Leito) => {
-  toast.error(`Reserva cancelada para o leito ${leito.leitoNumero}.`);
+const handleCancelarReserva = async (leito: Leito) => {
+  try {
+    await api.delete(`/api/leitos/${leito.leitoNumero}/reserva`);
+    toast.warning(`Reserva cancelada para o leito ${leito.leitoNumero}.`);
+    await loadLeitos();
+  } catch (e: any) {
+    console.error(e);
+    toast.error('Erro ao cancelar reserva.');
+  }
 };
 </script>
 

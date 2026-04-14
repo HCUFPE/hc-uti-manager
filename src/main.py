@@ -13,6 +13,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from resources.database import DatabaseManager, Base
+# Importar modelos para garantir que sejam registrados no metadata
+from models.refresh_token import RefreshToken
+from models.leito_estado import LeitoEstado
+from models.solicitacao_alta import SolicitacaoAlta
+from models.solicitacao_leito import SolicitacaoLeito
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,40 +68,41 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Serve o frontend Vue 3 empacotado
-static_dir = "frontend/dist/assets"
-if os.path.isdir(static_dir):
-    app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
-
-@app.get("/")
-async def serve_frontend():
-    """
-    Serve o arquivo index.html do frontend Vue.
-    Try common build locations and return a helpful 404 if not found.
-    """
-    candidates = [
-        os.path.join("frontend", "dist", "index.html"),
-        os.path.join("frontend", "index.html"),
-        os.path.join("src", "static", "dist", "index.html"),
-    ]
-    for path in candidates:
-        if os.path.isfile(path):
-            return FileResponse(path)
-    # none found — return a clear error to avoid RuntimeError when FileResponse tries to open a missing file
-    raise HTTPException(status_code=404, detail=f"Frontend index.html not found. Checked paths: {candidates}")
-
 # Placeholder para incluir os roteadores da API
-from routers import paciente, auth, admin, leito
+from routers import paciente, auth, admin, leito, altas, solicitacoes_leito, alertas, indicadores
 app.include_router(paciente.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(leito.router)
+app.include_router(altas.router)
+app.include_router(solicitacoes_leito.router)
+app.include_router(alertas.router)
+app.include_router(indicadores.router)
 
 # Exemplo:
 # from .routers import aih, bpa, material
 # app.include_router(aih.router)
 # app.include_router(bpa.router)
 # app.include_router(material.router)
+
+# Serve o frontend Vue 3 empacotado (DEVE ficar DEPOIS dos routers,
+# pois app.mount("/") captura todas as requisições não atendidas acima)
+static_dir = os.path.join(os.path.dirname(__file__), "static", "dist")
+if os.path.isdir(static_dir):
+    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Se o caminho for uma API, deixa que o FastAPI retorne 404 normal se não existir
+        if full_path.startswith("api"):
+             raise HTTPException(status_code=404, detail="API route not found")
+        
+        index_file = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Index file not found")
+else:
+    print(f"WARNING: Static directory {static_dir} not found.")
 
 if __name__ == "__main__":
     import uvicorn

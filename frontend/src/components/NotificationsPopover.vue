@@ -83,6 +83,7 @@ import {
   LogOut,
   UserPlus,
 } from 'lucide-vue-next';
+import api from '../services/api';
 
 type NotificationType = 'alert' | 'admission' | 'discharge';
 
@@ -95,32 +96,35 @@ type NotificationItem = {
   unread: boolean;
 };
 
-const notifications = ref<NotificationItem[]>([
-  {
-    id: 1,
-    type: 'alert',
-    title: 'Paciente em estado critico',
-    description: 'Leito 5 - Joao Santos (Prontuario 12345)',
-    time: '5 min atras',
-    unread: true,
-  },
-  {
-    id: 2,
-    type: 'admission',
-    title: 'Nova solicitacao de vaga',
-    description: 'Paciente: Maria Silva - Especialidade: HEM',
-    time: '15 min atras',
-    unread: true,
-  },
-  {
-    id: 3,
-    type: 'discharge',
-    title: 'Solicitacao de alta aprovada',
-    description: 'Leito 8 - Pedro Costa (Prontuario 67890)',
-    time: '1 hora atras',
-    unread: true,
-  },
-]);
+const notifications = ref<NotificationItem[]>([]);
+
+const fetchNotifications = async () => {
+  try {
+    const response = await api.get('/api/alertas');
+    const alertas = response.data;
+    
+    // Pegamos apenas os não lidos para o popover, limitando a 5 recentes
+    const unreadAlerts = alertas.filter((a: any) => !a.lido).slice(0, 5);
+    
+    notifications.value = unreadAlerts.map((a: any) => {
+      // Mapear categoria/tipo para os ícones do popover
+      let nType: NotificationType = 'alert';
+      if (a.categoria === 'Gargalo' && a.titulo.includes('Vaga')) nType = 'admission';
+      if (a.categoria === 'Gargalo' && a.titulo.includes('Alta')) nType = 'discharge';
+      
+      return {
+        id: a.id,
+        type: nType,
+        title: a.titulo,
+        description: a.mensagem.substring(0, 50) + (a.mensagem.length > 50 ? '...' : ''),
+        time: a.dataHora,
+        unread: !a.lido
+      };
+    });
+  } catch (error) {
+    console.error('Erro ao buscar notificacoes:', error);
+  }
+};
 
 const typeConfig: Record<
   NotificationType,
@@ -156,6 +160,9 @@ const unreadCount = computed(() => notifications.value.filter(n => n.unread).len
 
 const toggle = () => {
   open.value = !open.value;
+  if (open.value) {
+    fetchNotifications(); // Refresh ao abrir
+  }
 };
 
 const close = () => {
@@ -179,12 +186,18 @@ const handleClickOutside = (event: MouseEvent) => {
   close();
 };
 
+let intervalId: any;
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
+  fetchNotifications();
+  // Poll a cada 60s
+  intervalId = setInterval(fetchNotifications, 60000);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
+  if (intervalId) clearInterval(intervalId);
 });
 </script>
 

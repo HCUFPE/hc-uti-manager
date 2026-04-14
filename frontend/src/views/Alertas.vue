@@ -152,63 +152,43 @@ import {
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';
 import Modal from '../components/Modal.vue';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
+import api from '../services/api';
 
 type AlertType = 'critico' | 'aviso' | 'info';
+type AlertCategory = 'Infeccioso' | 'Permanencia' | 'Gargalo' | 'Limpeza' | 'Outros';
 type AlertFilter = AlertType | 'todos';
 
 type Alert = {
   id: string;
   tipo: AlertType;
+  categoria: AlertCategory;
   titulo: string;
   mensagem: string;
   dataHora: string;
   lido?: boolean;
 };
 
-const alertas = ref<Alert[]>([
-  {
-    id: '1',
-    tipo: 'critico',
-    titulo: 'UTI Fechada para Admissoes',
-    mensagem: 'Taxa de ocupacao atingiu 100%. Novas admissoes suspensas.',
-    dataHora: '2025-11-18 15:30',
-  },
-  {
-    id: '2',
-    tipo: 'aviso',
-    titulo: 'Alta Aguardando Destino',
-    mensagem: 'Paciente 456789 no Leito 03 aguarda definicao do NIR ha 4 horas.',
-    dataHora: '2025-11-18 14:15',
-  },
-  {
-    id: '3',
-    tipo: 'info',
-    titulo: 'Nova Solicitacao de Vaga',
-    mensagem: 'BC solicitou vaga cirurgica para paciente 123456.',
-    dataHora: '2025-11-18 13:45',
-  },
-  {
-    id: '4',
-    tipo: 'critico',
-    titulo: 'Sinalizacao de Transferencia',
-    mensagem: 'Leito 08 marcado para transferencia urgente.',
-    dataHora: '2025-11-18 12:00',
-  },
-  {
-    id: '5',
-    tipo: 'aviso',
-    titulo: 'Tempo de Higienizacao Excedido',
-    mensagem: 'Leito 12 em higienizacao ha mais de 2 horas.',
-    dataHora: '2025-11-18 11:30',
-  },
-]);
-
+const alertas = ref<Alert[]>([]);
 const toast = useToast();
 const showModal = ref(false);
 const selectedAlert = ref<Alert | null>(null);
 const filtroTipo = ref<AlertFilter>('todos');
+
+async function fetchAlertas() {
+  try {
+    const response = await api.get('/api/alertas');
+    alertas.value = response.data;
+  } catch (error) {
+    console.error('Erro ao buscar alertas:', error);
+    toast.error('Erro ao carregar alertas.');
+  }
+}
+
+onMounted(() => {
+  fetchAlertas();
+});
 
 const alertConfig: Record<
   AlertType,
@@ -282,15 +262,21 @@ const primaryActionLabel = computed(() =>
   selectedAlert.value?.lido ? 'Marcar como não lida' : 'Sim, marcar como lida'
 );
 
-const toggleRead = () => {
+const toggleRead = async () => {
   if (!selectedAlert.value) return;
   const idx = alertas.value.findIndex(a => a.id === selectedAlert.value?.id);
   if (idx >= 0) {
     const nextStatus = !alertas.value[idx].lido;
-    const updated = { ...alertas.value[idx], lido: nextStatus };
-    alertas.value[idx] = updated;
-    selectedAlert.value = updated;
-    toast.success(nextStatus ? 'Alerta marcado como lido/resolvido.' : 'Alerta marcado como não lido.');
+    try {
+      await api.put(`/api/alertas/${selectedAlert.value.id}/lido`, { lido: nextStatus });
+      const updated = { ...alertas.value[idx], lido: nextStatus };
+      alertas.value[idx] = updated;
+      selectedAlert.value = updated;
+      toast.success(nextStatus ? 'Alerta marcado como lido/resolvido.' : 'Alerta marcado como não lido.');
+    } catch (error) {
+      console.error('Erro ao atualizar alerta:', error);
+      toast.error('Erro ao atualizar status do alerta.');
+    }
   }
   closeModal();
 };
