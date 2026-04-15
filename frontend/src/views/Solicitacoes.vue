@@ -200,7 +200,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { CalendarIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';

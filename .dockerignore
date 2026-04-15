@@ -9,8 +9,8 @@ __pycache__/
 *.log
 
 # Alembic
-alembic.ini
-alembic/
+# alembic.ini (removido para permitir COPY no Dockerfile)
+# alembic/ (removido para permitir COPY no Dockerfile)
 migrations/
 
 # Não enviar notebooks

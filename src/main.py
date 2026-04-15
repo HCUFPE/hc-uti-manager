@@ -18,6 +18,7 @@ from models.refresh_token import RefreshToken
 from models.leito_estado import LeitoEstado
 from models.solicitacao_alta import SolicitacaoAlta
 from models.solicitacao_leito import SolicitacaoLeito
+from models.historico_acao import HistoricoAcao
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -69,7 +70,7 @@ app = FastAPI(
 )
 
 # Placeholder para incluir os roteadores da API
-from routers import paciente, auth, admin, leito, altas, solicitacoes_leito, alertas, indicadores
+from routers import paciente, auth, admin, leito, altas, solicitacoes_leito, alertas, indicadores, historico
 app.include_router(paciente.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
@@ -78,6 +79,7 @@ app.include_router(altas.router)
 app.include_router(solicitacoes_leito.router)
 app.include_router(alertas.router)
 app.include_router(indicadores.router)
+app.include_router(historico.router)
 
 # Exemplo:
 # from .routers import aih, bpa, material

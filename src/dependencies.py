@@ -13,6 +13,7 @@ from providers.implementations.leito_estado_provider import LeitoEstadoProvider
 from providers.implementations.solicitacao_alta_provider import SolicitacaoAltaProvider
 from providers.implementations.solicitacao_leito_provider import SolicitacaoLeitoProvider
 from providers.implementations.alerta_provider import AlertaProvider
+from providers.implementations.historico_provider import HistoricoProvider
 from providers.implementations.indicadores_provider import IndicadoresProvider
 
 # Controllers
@@ -115,3 +116,10 @@ def get_indicadores_controller(
     return IndicadoresController(indicadores_provider)
 
 
+# --- HISTORICO --------------------------------------------------
+
+def get_historico_provider(
+    session: AsyncSession = Depends(get_app_db_session),
+) -> HistoricoProvider:
+    """Provedor para registro e consulta do histórico de ações."""
+    return HistoricoProvider(session=session)
