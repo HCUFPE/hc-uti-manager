@@ -106,3 +106,5 @@ yarn-error.log*
 
 # Gemini-specific files
 GEMINI.md
+nginx/ssl/*.key
+nginx/ssl/*.crt

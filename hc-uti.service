@@ -1,0 +1,29 @@
+[Unit]
+Description=HC UTI Manager Service (Podman Compose)
+After=network.target
+# Garante que o serviço espere o runtime do podman estar pronto
+Wants=network-online.target
+
+[Service]
+Type=simple
+# AJUSTE O CAMINHO ABAIXO PARA O DIRETÓRIO DO PROJETO NA VM
+WorkingDirectory=/opt/hc-uti-manager
+
+# Limpa qualquer estado anterior antes de iniciar
+ExecStartPre=-/usr/bin/podman-compose down
+# Builda e sobe a stack (Backend + Nginx)
+ExecStart=/usr/bin/podman-compose up --build
+
+# Para a stack corretamente ao encerrar o serviço
+ExecStop=/usr/bin/podman-compose down
+
+Restart=always
+# Aguarda 5 segundos antes de tentar reiniciar em caso de falha
+RestartSec=5
+
+# Redireciona logs para o journald do sistema
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -4,52 +4,27 @@ services:
   backend:
     build:
       context: .
+      # Garante que o build use a etapa final do Dockerfile (produção)
     container_name: hc-uti-backend
     env_file: .env
-    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-    ports:
-      - "8080:8000"
+    # Sem --reload para maior estabilidade e performance em produção
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    expose:
+      - "8000"
     volumes:
-      # Mounts granulares do Python para hot-reload, SEM sobrescrever src/static/dist.
-      # O dist compilado pelo Dockerfile é sempre preservado dentro da imagem.
-      # Para atualizar o frontend na porta 8080, execute: podman-compose up --build
-      - ./src/main.py:/app/src/main.py
-      - ./src/dependencies.py:/app/src/dependencies.py
-      - ./src/auth:/app/src/auth
-      - ./src/controllers:/app/src/controllers
-      - ./src/providers:/app/src/providers
-      - ./src/routers:/app/src/routers
-      - ./src/models:/app/src/models
-      - ./src/resources:/app/src/resources
-      - ./src/helpers:/app/src/helpers
+      # Mantemos apenas o volume de dados (banco SQLite e logs)
       - ./data:/app/data
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: hc-uti-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - postgres
-
-  frontend:
-    build:
-      context: .
-      target: frontend-dev
-    container_name: hc-uti-frontend
-    working_dir: /app/frontend
-    volumes:
-      - ./frontend:/app/frontend
-    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0"]
-    ports:
-      - "5173:5173"
-
-  postgres:
-    image: postgres:15
-    container_name: hc-uti-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: hcmanager
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-volumes:
-  pgdata:
+      - backend
+    restart: always
