@@ -17,7 +17,7 @@ services:
     restart: always
 
   nginx:
-    image: nginx:alpine
+    image: docker.io/library/nginx:alpine
     container_name: hc-uti-nginx
     ports:
       - "80:80"
