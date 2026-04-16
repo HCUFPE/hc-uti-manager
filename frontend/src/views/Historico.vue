@@ -124,7 +124,7 @@
 
 <script setup lang="ts">
 import { MagnifyingGlassIcon, UserIcon, ClockIcon } from '@heroicons/vue/24/outline';
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';
 import api from '../services/api';

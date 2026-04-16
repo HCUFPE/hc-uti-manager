@@ -91,7 +91,10 @@ app.include_router(historico.router)
 # pois app.mount("/") captura todas as requisições não atendidas acima)
 static_dir = os.path.join(os.path.dirname(__file__), "static", "dist")
 if os.path.isdir(static_dir):
-    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+    # Serve arquivos da pasta /assets se existirem
+    assets_dir = os.path.join(static_dir, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
@@ -99,9 +102,17 @@ if os.path.isdir(static_dir):
         if full_path.startswith("api"):
              raise HTTPException(status_code=404, detail="API route not found")
         
+        # 1. Tenta servir o arquivo solicitado diretamente da pasta estática
+        # Isso resolve o problema de imagens e ícones na raiz (ex: /favicon.ico, /login_ilustracao.png)
+        requested_file = os.path.join(static_dir, full_path)
+        if full_path and os.path.isfile(requested_file):
+            return FileResponse(requested_file)
+
+        # 2. Se não for um arquivo físico, serve o index.html para o roteamento do SPA
         index_file = os.path.join(static_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
+        
         raise HTTPException(status_code=404, detail="Index file not found")
 else:
     print(f"WARNING: Static directory {static_dir} not found.")

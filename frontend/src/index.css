@@ -46,25 +46,25 @@
     padding-left: 15px;
   }
 
-  @screen sm {
+  @media (width >= theme(--breakpoint-sm)) {
     .container {
       max-width: 540px;
     }
   }
 
-  @screen md {
+  @media (width >= theme(--breakpoint-md)) {
     .container {
       max-width: 720px;
     }
   }
 
-  @screen lg {
+  @media (width >= theme(--breakpoint-lg)) {
     .container {
       max-width: 960px;
     }
   }
 
-  @screen xl {
+  @media (width >= theme(--breakpoint-xl)) {
     .container {
       max-width: 1140px;
     }
