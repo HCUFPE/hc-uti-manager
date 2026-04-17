@@ -1,7 +1,7 @@
 SELECT
-    codigo,
+    prontuario,
     nome
 FROM
     agh.aip_pacientes
 WHERE
-    codigo = #codigo
+    prontuario = #prontuario

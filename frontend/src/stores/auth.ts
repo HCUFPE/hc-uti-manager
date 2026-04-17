@@ -27,10 +27,20 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(initialUser);
 
   const isAuthenticated = computed(() => !!accessToken.value);
-  const isAdmin = computed(() => {
-    const ADMIN_GROUP = "GLO-SEC-HCPE-SETISD"; 
-    return user.value?.groups?.includes(ADMIN_GROUP) || false;
+  
+  const userRole = computed(() => {
+    if (!user.value) return 'assistential';
+    const groups = user.value.groups || [];
+    
+    // Mapeamento espelhado do backend para UI responsiva
+    if (groups.includes("GLO-SEC-HCPE-SETISD") || groups.includes("TI-ADMIN")) return 'admin';
+    if (groups.includes("COORD-UTI-MEDICA") || groups.includes("COORD-UTI-ENFERMAGEM")) return 'coordination';
+    
+    return 'assistential';
   });
+
+  const isAdmin = computed(() => userRole.value === 'admin');
+  const isCoordination = computed(() => userRole.value === 'admin' || userRole.value === 'coordination');
 
   function setToken(token: string) {
     accessToken.value = token;
@@ -125,6 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     user, 
     isAuthenticated, 
     isAdmin, 
+    isCoordination,
     login, 
     logout,
     setToken,

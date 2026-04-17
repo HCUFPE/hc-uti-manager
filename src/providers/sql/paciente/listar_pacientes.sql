@@ -1,3 +1,3 @@
-SELECT codigo, nome, dt_nascimento
+SELECT prontuario, nome, dt_nascimento
 FROM agh.aip_pacientes
 ORDER BY nome

@@ -38,7 +38,7 @@ cte_paciente AS (
     SELECT 
         i.seq as int_seq,
         i.lto_lto_id as numero_leito,
-        p.codigo as pac_codigo,
+        p.prontuario as prontuario_atual,
         p.nome as nome_paciente,
         p.dt_nascimento as data_nascimento,
         e.nome_especialidade as clinica,
@@ -65,7 +65,7 @@ SELECT
     st.status_simplificado as status,
     st.status_desc as status_detalhado,
     'UTI' as tipo,
-    pa.pac_codigo as prontuario_atual,
+    pa.prontuario_atual,
     pa.nome_paciente,
     pa.data_nascimento,
     pa.clinica as especialidade_atual,

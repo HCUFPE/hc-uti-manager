@@ -10,6 +10,6 @@ class PacienteProviderInterface(ABC):
         pass
 
     @abstractmethod
-    async def obter_paciente_por_codigo(self, codigo: int) -> Dict[str, Any]:
-        """Deve retornar um único paciente pelo seu código."""
+    async def obter_paciente_por_prontuario(self, prontuario: int) -> Dict[str, Any]:
+        """Deve retornar um único paciente pelo seu prontuário."""
         pass

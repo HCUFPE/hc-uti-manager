@@ -8,8 +8,8 @@ async def listar_pacientes(
     
     return await provider.listar_pacientes()
 
-async def obter_paciente_por_codigo(
-    codigo: int,
+async def obter_paciente_por_prontuario(
+    prontuario: int,
     provider: PacienteProviderInterface
 ) -> Dict[str, Any]:
-    return await provider.obter_paciente_por_codigo(codigo)
+    return await provider.obter_paciente_por_prontuario(prontuario)

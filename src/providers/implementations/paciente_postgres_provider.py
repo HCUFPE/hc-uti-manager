@@ -26,9 +26,9 @@ class PacientePostgresProvider(PacienteProviderInterface):
         rows = result.mappings().all()
         return [dict(r) for r in rows]
 
-    async def obter_paciente_por_codigo(self, codigo: int) -> Dict[str, Any]:
+    async def obter_paciente_por_prontuario(self, prontuario: int) -> Dict[str, Any]:
         query_text = get_sql_query('obter_paciente.sql')
-        result = await self.session.execute(text(query_text), {"codigo": codigo})
+        result = await self.session.execute(text(query_text), {"prontuario": prontuario})
         row = result.mappings().first()
         if not row:
             raise HTTPException(

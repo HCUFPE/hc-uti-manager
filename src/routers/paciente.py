@@ -20,10 +20,10 @@ async def listar_pacientes(
     """Lista todos os pacientes via PostgreSQL (AGHU)."""
     return await paciente_controller.listar_pacientes(provider)
 
-@router.get("/{codigo}", response_model=dict)
+@router.get("/{prontuario}", response_model=dict)
 async def obter_paciente(
-    codigo: int,
+    prontuario: int,
     provider: PacienteProviderInterface = Depends(get_paciente_provider)
 ):
-    """Obtém um paciente pelo código via PostgreSQL (AGHU)."""
-    return await paciente_controller.obter_paciente_por_codigo(codigo, provider)
+    """Obtém um paciente pelo prontuário via PostgreSQL (AGHU)."""
+    return await paciente_controller.obter_paciente_por_prontuario(prontuario, provider)

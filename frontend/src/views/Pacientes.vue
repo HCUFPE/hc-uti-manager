@@ -4,10 +4,10 @@
     <Card class="mb-6">
       <div class="mb-6 flex items-center space-x-4">
         <div class="form-group flex-1">
-          <label for="pacienteCodigoInput" class="form-label">Buscar Paciente por Código</label>
+          <label for="pacienteProntuarioInput" class="form-label">Buscar Paciente por Prontuário</label>
           <div class="flex items-center space-x-2">
-            <input id="pacienteCodigoInput" v-model="pacienteCodigoInput" type="number" placeholder="Digite o código do paciente" class="form-control">
-            <Button @click="fetchPacientePorCodigo" :disabled="loadingPaciente" variant="success" class="whitespace-nowrap">
+            <input id="pacienteProntuarioInput" v-model="pacienteProntuarioInput" type="number" placeholder="Digite o prontuário do paciente" class="form-control">
+            <Button @click="fetchPacientePorProntuario" :disabled="loadingPaciente" variant="success" class="whitespace-nowrap">
               <span v-if="loadingPaciente">Buscando...</span>
               <span v-else>Buscar</span>
             </Button>
@@ -21,7 +21,7 @@
         <h2 class="text-lg font-semibold">Detalhes do Paciente</h2>
       </template>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <div><span class="font-medium">Código:</span> {{ pacienteDetalhe.codigo }}</div>
+        <div><span class="font-medium">Prontuário:</span> {{ pacienteDetalhe.prontuario }}</div>
         <div><span class="font-medium">Nome:</span> {{ pacienteDetalhe.nome }}</div>
         <div><span class="font-medium">Data de Nascimento:</span> {{ pacienteDetalhe.dt_nascimento }}</div>
         <div><span class="font-medium">Nome da Mãe:</span> {{ pacienteDetalhe.nome_mae }}</div>
@@ -68,12 +68,12 @@ import Button from '../components/Button.vue';
 
 const toast = useToast();
 
-const pacienteCodigoInput = ref(null);
+const pacienteProntuarioInput = ref(null);
 const loadingPaciente = ref(false);
 const pacienteDetalhe = ref<any | null>(null);
 
 const headers = ref([
-  { text: 'Prontuário', value: 'codigo' },
+  { text: 'Prontuário', value: 'prontuario' },
   { text: 'Nome', value: 'nome' },
   { text: 'Data de Nascimento', value: 'dt_nascimento' },
   { text: 'Nome da Mãe', value: 'nome_mae' },
@@ -90,15 +90,15 @@ onMounted(async () => {
   }
 });
 
-const fetchPacientePorCodigo = async () => {
-  if (!pacienteCodigoInput.value) {
-    toast.error('Por favor, digite um código.');
+const fetchPacientePorProntuario = async () => {
+  if (!pacienteProntuarioInput.value) {
+    toast.error('Por favor, digite um prontuário.');
     return;
   }
   loadingPaciente.value = true;
   pacienteDetalhe.value = null; // Clear previous details
   try {
-    const { data } = await api.get(`/api/pacientes/${pacienteCodigoInput.value}`);
+    const { data } = await api.get(`/api/pacientes/${pacienteProntuarioInput.value}`);
     pacienteDetalhe.value = data;
     toast.success(`Paciente encontrado: ${data.nome}`);
   } catch (error) {

@@ -50,7 +50,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 import {
   Bed,
   FileText,
@@ -70,40 +72,51 @@ defineEmits<{
 }>();
 
 const route = useRoute();
+const authStore = useAuthStore();
 const isActive = (path: string) => route.path === path;
 
-const activeItems = [
-  {
-    label: 'Leitos',
-    to: '/',
-    icon: Bed,
-  },
-  {
-    label: 'Solicitações de leito',
-    to: '/solicitacoes',
-    icon: FileText,
-  },
-  {
-    label: 'Solicitações de alta',
-    to: '/altas',
-    icon: LogOut,
-  },
-  {
-    label: 'Alertas',
-    to: '/alertas',
-    icon: AlertCircle,
-  },
-  {
-    label: 'Indicadores',
-    to: '/indicadores',
-    icon: BarChart3,
-  },
-  {
-    label: 'Historico',
-    to: '/historico',
-    icon: History,
-  },
-];
+const activeItems = computed(() => {
+  const items = [
+    {
+      label: 'Leitos',
+      to: '/',
+      icon: Bed,
+    },
+    {
+      label: 'Solicitações de leito',
+      to: '/solicitacoes',
+      icon: FileText,
+    },
+    {
+      label: 'Solicitações de alta',
+      to: '/altas',
+      icon: LogOut,
+    },
+    {
+      label: 'Alertas',
+      to: '/alertas',
+      icon: AlertCircle,
+    },
+  ];
+
+  // Apenas coordenação e admin vêem indicadores e histórico
+  if (authStore.isCoordination) {
+    items.push(
+      {
+        label: 'Indicadores',
+        to: '/indicadores',
+        icon: BarChart3,
+      },
+      {
+        label: 'Histórico',
+        to: '/historico',
+        icon: History,
+      }
+    );
+  }
+
+  return items;
+});
 
 const disabledItems: Array<{ label: string; icon: any }> = [];
 </script>
