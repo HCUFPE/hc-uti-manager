@@ -157,11 +157,32 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700">Especialidade</label>
-          <input
+          <select
             v-model="formNova.especialidade"
-            type="text"
             class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
+          >
+            <option value="" disabled>Selecione uma especialidade</option>
+            <option value="BUCO (BUCOMAXILOFACIAL)">BUCO (BUCOMAXILOFACIAL)</option>
+            <option value="CARDÍACA">CARDÍACA</option>
+            <option value="CCP (CABEÇA E PESCOÇO)">CCP (CABEÇA E PESCOÇO)</option>
+            <option value="CIPE (PEDIÁTRICA)">CIPE (PEDIÁTRICA)</option>
+            <option value="ENDOSCOPIA">ENDOSCOPIA</option>
+            <option value="GERAL">GERAL</option>
+            <option value="GINECOLOGIA">GINECOLOGIA</option>
+            <option value="HISTEROSCOPIA">HISTEROSCOPIA</option>
+            <option value="NEUROLOGIA">NEUROLOGIA</option>
+            <option value="OFTALMOLOGIA">OFTALMOLOGIA</option>
+            <option value="ONCOLOGIA">ONCOLOGIA</option>
+            <option value="ONCOMASTO (MASTOLOGIA)">ONCOMASTO (MASTOLOGIA)</option>
+            <option value="ORL (OTORRINOLARINGOLOGIA)">ORL (OTORRINOLARINGOLOGIA)</option>
+            <option value="ORTOPEDIA">ORTOPEDIA</option>
+            <option value="PLÁSTICA">PLÁSTICA</option>
+            <option value="PROCTOLOGIA">PROCTOLOGIA</option>
+            <option value="TORÁCICA">TORÁCICA</option>
+            <option value="TRANS">TRANS</option>
+            <option value="UROLOGIA">UROLOGIA</option>
+            <option value="VASCULAR">VASCULAR</option>
+          </select>
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700">Tipo</label>
@@ -169,11 +190,11 @@
             v-model="formNova.tipo"
             class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
           >
+            <option value="" disabled>Selecione um Tipo</option>
             <option value="Clinico">Clinico</option>
             <option value="Cirurgico">Cirurgico</option>
             <option value="HEM">HEM</option>
             <option value="Obstetrico">Obstetrico</option>
-            <option value="UTI">UTI</option>
           </select>
         </div>
         <div>
@@ -182,6 +203,7 @@
             v-model="formNova.turno"
             class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
           >
+            <option value="" disabled>Selecione um Turno</option>
             <option value="Manha">Manha</option>
             <option value="Tarde">Tarde</option>
             <option value="Noite">Noite</option>
@@ -239,8 +261,8 @@ const formNova = ref({
   prontuario: '',
   idade: null as number | null,
   especialidade: '',
-  tipo: 'Clinico',
-  turno: 'Manha'
+  tipo: '',
+  turno: ''
 });
 
 const solicitacoesFiltradas = computed(() => {
@@ -304,7 +326,7 @@ async function cancelarSolicitacao(id: string) {
 }
 
 async function salvarNova() {
-  if (!formNova.value.prontuario || !formNova.value.idade || !formNova.value.especialidade) {
+  if (!formNova.value.prontuario || !formNova.value.idade || !formNova.value.especialidade || !formNova.value.tipo || !formNova.value.turno) {
     toast.error('Preencha os campos obrigatorios.');
     return;
   }
@@ -313,7 +335,7 @@ async function salvarNova() {
     await api.post('/api/solicitacoes-leito', formNova.value);
     toast.success('Solicitacao criada com sucesso!');
     showModalNova.value = false;
-    formNova.value = { prontuario: '', idade: null, especialidade: '', tipo: 'Clinico', turno: 'Manha' };
+    formNova.value = { prontuario: '', idade: null, especialidade: '', tipo: '', turno: '' };
     await carregar();
   } catch (e: any) {
     toast.error('Erro ao criar solicitacao.');
