@@ -67,3 +67,19 @@ class LeitoEstadoProvider:
             await self.session.commit()
             return sol_id
         return None
+
+    async def limpar_reserva_por_solicitacao(self, sol_id: int) -> bool:
+        """Limpa a reserva de qualquer leito que esteja vinculado a esta solicitação."""
+        result = await self.session.execute(
+            select(LeitoEstado).where(LeitoEstado.solicitacao_id == sol_id)
+        )
+        estado = result.scalar_one_or_none()
+        
+        if estado:
+            estado.prontuario_proximo = None
+            estado.idade_proximo = None
+            estado.especialidade_proximo = None
+            estado.solicitacao_id = None
+            await self.session.commit()
+            return True
+        return False

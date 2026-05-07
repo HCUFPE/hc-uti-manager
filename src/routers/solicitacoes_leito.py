@@ -112,3 +112,20 @@ async def reservar_leito(
         detalhes=f"Solicitação #{sol_id} → Leito {leito_id}",
     )
     return result
+
+@router.post("/{sol_id}/cancelar-reserva")
+async def cancelar_reserva(
+    sol_id: int,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    historico: HistoricoProvider = Depends(get_historico_provider),
+    current_user: dict = Depends(auth_handler.decode_token),
+):
+    """Cancela a reserva de um leito, voltando a solicitação para Pendente."""
+    result = await controller.cancelar_reserva(sol_id)
+    await historico.registrar(
+        operador=current_user.get("username", "Sistema"),
+        tipo="cancelamento_reserva",
+        acao="Cancelou reserva de leito",
+        detalhes=f"Solicitação #{sol_id} voltou para Pendente",
+    )
+    return result

@@ -129,3 +129,26 @@ class SolicitacaoLeitoController:
         })
 
         return {"message": f"Reserva do leito {leito_id} realizada com sucesso."}
+
+    async def cancelar_reserva(self, sol_id: int) -> dict:
+        """
+        Remove o vínculo entre a solicitação e o leito, 
+        voltando o status para 'Pendente'.
+        """
+        solicitacao = await self.leito_provider.get_por_id(sol_id)
+        if not solicitacao:
+            raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+
+        if not self.estado_provider:
+            raise HTTPException(status_code=500, detail="Estado provider não configurado.")
+
+        # 1. Limpar a reserva no leito (SQLite)
+        await self.estado_provider.limpar_reserva_por_solicitacao(sol_id)
+
+        # 2. Voltar a solicitação para Pendente (Postgres/SQLite principal)
+        await self.leito_provider.atualizar(sol_id, {
+            "status": "Pendente",
+            "destino": None
+        })
+
+        return {"message": "Reserva cancelada. Solicitação voltou para Pendente."}
