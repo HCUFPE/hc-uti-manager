@@ -57,6 +57,25 @@ async def atualizar_status(
     )
     return result
 
+@router.patch("/{sol_id}")
+async def editar_solicitacao(
+    sol_id: int,
+    payload: dict,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    historico: HistoricoProvider = Depends(get_historico_provider),
+    current_user: dict = Depends(auth_handler.decode_token),
+):
+    """Edita os campos de uma solicitação pendente."""
+    result = await controller.editar_solicitacao(sol_id, payload)
+    prontuario = payload.get("prontuario", "N/D")
+    await historico.registrar(
+        operador=current_user.get("username", "Sistema"),
+        tipo="edicao",
+        acao="Editou solicitação de vaga",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario})",
+    )
+    return result
+
 @router.delete("/{sol_id}", status_code=204)
 async def cancelar_solicitacao(
     sol_id: int,

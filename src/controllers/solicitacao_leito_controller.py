@@ -26,6 +26,7 @@ class SolicitacaoLeitoController:
                 "tipo": s.tipo,
                 "status": s.status,
                 "turno": s.turno,
+                "data_cirurgia": s.data_cirurgia,
                 "destino": s.destino,
                 "dataHora": s.criado_em.strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
             }
@@ -40,6 +41,7 @@ class SolicitacaoLeitoController:
             "especialidade": payload.get("especialidade"),
             "tipo": payload.get("tipo"),
             "turno": payload.get("turno"),
+            "data_cirurgia": payload.get("data_cirurgia"),
             "status": "Pendente",
         }
 
@@ -65,6 +67,31 @@ class SolicitacaoLeitoController:
 
         await self.leito_provider.atualizar(sol_id, dados)
         return {"message": "Solicitação atualizada."}
+
+    async def editar_solicitacao(self, sol_id: int, payload: dict) -> dict:
+        """
+        Permite editar os dados de uma solicitação, 
+        desde que ela ainda não tenha sido reservada.
+        """
+        alvo = await self.leito_provider.get_por_id(sol_id)
+        if not alvo:
+            raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+            
+        if alvo.status != "Pendente":
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Não é possível editar uma solicitação com status '{alvo.status}'. Cancele a reserva primeiro."
+            )
+
+        # Campos que podem ser editados
+        campos_validos = ["prontuario", "idade", "especialidade", "tipo", "turno", "data_cirurgia"]
+        dados_atualizar = {k: v for k, v in payload.items() if k in campos_validos}
+        
+        if not dados_atualizar:
+            raise HTTPException(status_code=400, detail="Nenhum campo válido para atualização fornecido.")
+
+        await self.leito_provider.atualizar(sol_id, dados_atualizar)
+        return {"message": "Solicitação editada com sucesso."}
 
     async def cancelar_solicitacao(self, sol_id: int) -> dict:
         """Cancela uma solicitação de leito."""

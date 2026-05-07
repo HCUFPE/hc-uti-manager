@@ -59,15 +59,20 @@
               <p class="mt-1 font-medium text-slate-900">{{ sol.tipo }}</p>
             </div>
             <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Data Prevista da Cirurgia</p>
+              <p class="mt-1 font-medium text-slate-900">{{ sol.data_cirurgia ? formatarDataBR(sol.data_cirurgia) : 'Não informada' }}</p>
+            </div>
+            <div>
               <p class="text-xs uppercase tracking-wide text-slate-500">Turno</p>
               <p class="mt-1 font-medium text-slate-900">{{ sol.turno }}</p>
             </div>
-            <div>
-              <p class="text-xs uppercase tracking-wide text-slate-500">Destino</p>
-              <p class="mt-1 font-medium text-slate-900">
-                {{ sol.destino ?? 'Pendente' }}
-              </p>
-            </div>
+          </div>
+
+          <div class="mt-4 border-t border-slate-50 pt-4">
+            <p class="text-xs uppercase tracking-wide text-slate-500">Status da Solicitação</p>
+            <p class="mt-1 font-medium" :class="sol.destino ? 'text-emerald-700' : 'text-rose-600'">
+              {{ sol.destino ?? 'Aguardando Reserva de Leito' }}
+            </p>
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
@@ -77,6 +82,15 @@
               @click="abrirModalReserva(sol)"
             >
               Reservar Leito
+            </UiButton>
+            <UiButton
+              v-if="sol.status === 'Pendente'"
+              size="sm"
+              variant="outline"
+              @click="abrirModalEdicao(sol)"
+            >
+              <PencilSquareIcon class="h-4 w-4 mr-1" />
+              Editar
             </UiButton>
             <UiButton
               v-if="sol.status === 'Pendente'"
@@ -135,9 +149,9 @@
       </template>
     </Modal>
 
-    <!-- Modal Nova Solicitacao -->
-    <Modal :show="showModalNova" @close="showModalNova = false">
-      <template #header>Nova Solicitacao de Vaga</template>
+    <!-- Modal Nova/Editar Solicitacao -->
+    <Modal :show="showModalNova" @close="fecharModalNova">
+      <template #header>{{ isEditing ? 'Editar Solicitação' : 'Nova Solicitação' }}</template>
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-slate-700">Prontuario</label>
@@ -198,22 +212,31 @@
           </select>
         </div>
         <div>
+          <label class="block text-sm font-medium text-slate-700">Data Prevista da Cirurgia</label>
+          <input
+            v-model="formNova.data_cirurgia"
+            type="date"
+            :min="hoje"
+            class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          />
+        </div>
+        <div>
           <label class="block text-sm font-medium text-slate-700">Turno</label>
           <select
             v-model="formNova.turno"
             class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
           >
             <option value="" disabled>Selecione um Turno</option>
-            <option value="Manha">Manha</option>
+            <option value="Manhã">Manhã</option>
             <option value="Tarde">Tarde</option>
             <option value="Noite">Noite</option>
           </select>
         </div>
       </div>
       <template #footer>
-        <UiButton variant="outline" @click="showModalNova = false">Cancelar</UiButton>
+        <UiButton variant="outline" @click="fecharModalNova">Cancelar</UiButton>
         <UiButton :disabled="submetendoNova" @click="salvarNova">
-          {{ submetendoNova ? 'Salvando...' : 'Salvar' }}
+          {{ submetendoNova ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Salvar') }}
         </UiButton>
       </template>
     </Modal>
@@ -222,7 +245,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { PlusIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';
@@ -239,6 +262,7 @@ type Solicitacao = {
   tipo: string;
   status: SolicitacaoStatus;
   turno: string;
+  data_cirurgia?: string;
   destino?: string;
   dataHora: string;
 };
@@ -257,13 +281,23 @@ const toast = useToast();
 const filtroData = ref('');
 const showModalNova = ref(false);
 const submetendoNova = ref(false);
+const isEditing = ref(false);
 const formNova = ref({
   prontuario: '',
   idade: null as number | null,
   especialidade: '',
   tipo: '',
+  data_cirurgia: '',
   turno: ''
 });
+
+const hoje = new Date().toISOString().split('T')[0];
+
+function formatarDataBR(dataISO: string) {
+  if (!dataISO) return '';
+  const [ano, mes, dia] = dataISO.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
 
 const solicitacoesFiltradas = computed(() => {
   if (!filtroData.value) return solicitacoes.value;
@@ -318,11 +352,32 @@ async function confirmarReserva() {
 async function cancelarSolicitacao(id: string) {
   try {
     await api.delete(`/api/solicitacoes-leito/${id}`);
-    toast.warning('Solicitacao cancelada.');
+    toast.warning('Solicitação cancelada.');
     await carregar();
   } catch (e: any) {
-    toast.error('Erro ao cancelar solicitacao.');
+    toast.error('Erro ao cancelar solicitação.');
   }
+}
+
+async function abrirModalEdicao(sol: Solicitacao) {
+  isEditing.value = true;
+  solSelecionada.value = sol;
+  formNova.value = {
+    prontuario: sol.prontuario,
+    idade: sol.idade,
+    especialidade: sol.especialidade,
+    tipo: sol.tipo,
+    data_cirurgia: sol.data_cirurgia || '',
+    turno: sol.turno
+  };
+  showModalNova.value = true;
+}
+
+function fecharModalNova() {
+  showModalNova.value = false;
+  isEditing.value = false;
+  solSelecionada.value = null;
+  formNova.value = { prontuario: '', idade: null, especialidade: '', tipo: '', data_cirurgia: '', turno: '' };
 }
 
 async function salvarNova() {
@@ -332,13 +387,17 @@ async function salvarNova() {
   }
   submetendoNova.value = true;
   try {
-    await api.post('/api/solicitacoes-leito', formNova.value);
-    toast.success('Solicitacao criada com sucesso!');
-    showModalNova.value = false;
-    formNova.value = { prontuario: '', idade: null, especialidade: '', tipo: '', turno: '' };
+    if (isEditing.value && solSelecionada.value) {
+      await api.patch(`/api/solicitacoes-leito/${solSelecionada.value.id}`, formNova.value);
+      toast.success('Solicitacao atualizada com sucesso!');
+    } else {
+      await api.post('/api/solicitacoes-leito', formNova.value);
+      toast.success('Solicitacao criada com sucesso!');
+    }
+    fecharModalNova();
     await carregar();
   } catch (e: any) {
-    toast.error('Erro ao criar solicitacao.');
+    toast.error(isEditing.value ? 'Erro ao atualizar solicitação.' : 'Erro ao criar solicitação.');
     console.error(e);
   } finally {
     submetendoNova.value = false;

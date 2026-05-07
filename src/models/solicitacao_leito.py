@@ -15,6 +15,7 @@ class SolicitacaoLeito(Base):
     tipo = Column(String(50), nullable=False) # Ex: Cirurgico, HEM, Obstetrico, UTI
     status = Column(String(50), default="Pendente") # Pendente, Reservado, Cancelada
     turno = Column(String(50), nullable=False) # Manha, Tarde, Noite
+    data_cirurgia = Column(String(20), nullable=True) # Data prevista
     destino = Column(String(100), nullable=True) # Ex: Leito 05
     
     criado_em = Column(DateTime, server_default=func.now())
@@ -29,6 +30,7 @@ class SolicitacaoLeito(Base):
             "tipo": self.tipo,
             "status": self.status,
             "turno": self.turno,
+            "data_cirurgia": self.data_cirurgia,
             "destino": self.destino,
             "criado_em": self.criado_em.isoformat() if self.criado_em else None,
             "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
