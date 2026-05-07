@@ -2,21 +2,22 @@
   <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="space-y-1">
-        <h2 class="text-3xl font-bold text-slate-900">Solicitacoes de Vaga</h2>
+        <h2 class="text-3xl font-bold text-slate-900">Solicitações de Vaga</h2>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-center gap-4">
         <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-slate-600">Filtrar Solicitações:</label>
           <input 
             v-model="filtroData" 
             type="date" 
             class="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            title="Filtrar por data"
+            title="Filtrar por data da cirurgia"
           />
           <UiButton v-if="filtroData" variant="outline" size="sm" @click="filtroData = ''" class="shadow-sm">Limpar</UiButton>
         </div>
         <UiButton size="sm" class="shadow-sm" @click="showModalNova = true">
           <PlusIcon class="h-5 w-5 text-white" />
-          Nova Solicitacao
+          Nova Solicitação
         </UiButton>
       </div>
     </div>
@@ -27,7 +28,9 @@
     </div>
 
     <div v-else-if="solicitacoesFiltradas.length === 0" class="rounded-xl border border-slate-200 bg-white py-16 text-center shadow-sm">
-      <p class="text-slate-500">Nenhuma solicitacao de vaga encontrada.</p>
+      <p class="text-slate-500">
+        {{ filtroData ? 'Nenhuma solicitação com cirurgia prevista para esta data.' : 'Nenhuma solicitação de vaga encontrada.' }}
+      </p>
     </div>
 
     <div v-else class="grid gap-4">
@@ -45,10 +48,10 @@
               <span class="text-slate-400">•</span>
               {{ sol.especialidade }}
             </p>
-            <p class="mt-1 text-xs text-slate-400">{{ sol.dataHora }}</p>
+            <p class="mt-1 text-xs text-slate-400">{{ formatarDataHoraBR(sol.dataHora) }}</p>
           </div>
           <UiBadge :class="statusClass[sol.status]">
-            {{ sol.status }}
+            {{ sol.status === 'Pendente' ? 'Aguardando Reserva de Leito' : (sol.status === 'Reservado' ? 'Leito Reservado' : sol.status) }}
           </UiBadge>
         </header>
 
@@ -68,12 +71,7 @@
             </div>
           </div>
 
-          <div class="mt-4 border-t border-slate-50 pt-4">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Status da Solicitação</p>
-            <p class="mt-1 font-medium" :class="sol.destino ? 'text-emerald-700' : 'text-rose-600'">
-              {{ sol.destino ?? 'Aguardando Reserva de Leito' }}
-            </p>
-          </div>
+          <!-- Status detalhado removido conforme solicitado -->
 
           <div class="mt-4 flex flex-wrap gap-2">
             <UiButton
@@ -299,9 +297,41 @@ function formatarDataBR(dataISO: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function formatarDataHoraBR(dataHoraISO: string) {
+  if (!dataHoraISO) return '';
+  // Espera formato "YYYY-MM-DD HH:MM"
+  const [data, hora] = dataHoraISO.split(' ');
+  if (!data) return dataHoraISO;
+  const [ano, mes, dia] = data.split('-');
+  return `${dia}/${mes}/${ano} ${hora || ''}`;
+}
+
 const solicitacoesFiltradas = computed(() => {
-  if (!filtroData.value) return solicitacoes.value;
-  return solicitacoes.value.filter(sol => sol.dataHora.startsWith(filtroData.value));
+  let lista = [...solicitacoes.value];
+
+  // 1. Aplicar Filtro (se houver)
+  if (filtroData.value) {
+    lista = lista.filter(sol => sol.data_cirurgia === filtroData.value);
+  }
+
+  // 2. Aplicar Ordenação
+  const ordemTurno: Record<string, number> = { 'Manhã': 1, 'Tarde': 2, 'Noite': 3 };
+
+  return lista.sort((a, b) => {
+    // Comparar Data da Cirurgia (coloca quem não tem data no final)
+    const dataA = a.data_cirurgia || '9999-12-31';
+    const dataB = b.data_cirurgia || '9999-12-31';
+
+    if (dataA !== dataB) {
+      return dataA.localeCompare(dataB);
+    }
+
+    // Se a data for igual, compara o Turno
+    const pesoA = ordemTurno[a.turno] || 99;
+    const pesoB = ordemTurno[b.turno] || 99;
+    
+    return pesoA - pesoB;
+  });
 });
 
 async function carregar() {
