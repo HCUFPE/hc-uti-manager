@@ -12,6 +12,38 @@ class SolicitacaoLeitoController:
         self.leito_provider = leito_provider
         self.estado_provider = estado_provider
 
+    async def _remanejar_prioridades(self, data_cirurgia: str, turno: str, prioridade_alvo: str, skip_id: int | None = None):
+        """
+        Lógica recursiva para empurrar prioridades: 
+        Se eu definir algo como P1, quem era P1 vira P2, quem era P2 vira P3...
+        """
+        if not prioridade_alvo or prioridade_alvo not in ["P1", "P2", "P3", "P4", "P5"]:
+            return
+
+        # Busca se já existe alguém com essa mesma data, turno e prioridade
+        todas = await self.leito_provider.get_todas()
+        conflito = next((s for s in todas if s.data_cirurgia == data_cirurgia 
+                         and s.turno == turno 
+                         and s.prioridade == prioridade_alvo 
+                         and s.id != skip_id), None)
+
+        if conflito:
+            # Define a próxima prioridade
+            proxima = {
+                "P1": "P2",
+                "P2": "P3",
+                "P3": "P4",
+                "P4": "P5",
+                "P5": None # P5 é o limite, ou vira nulo
+            }.get(prioridade_alvo)
+
+            # Primeiro remaneja quem está no caminho da próxima (recursão)
+            if proxima:
+                await self._remanejar_prioridades(data_cirurgia, turno, proxima, skip_id=conflito.id)
+            
+            # Depois atualiza o atual para a próxima
+            await self.leito_provider.atualizar(conflito.id, {"prioridade": proxima})
+
 
     async def listar_solicitacoes(self) -> List[Dict[str, Any]]:
         """Retorna todas as solicitações de leito ativas."""
@@ -27,6 +59,7 @@ class SolicitacaoLeitoController:
                 "status": s.status,
                 "turno": s.turno,
                 "data_cirurgia": s.data_cirurgia,
+                "prioridade": s.prioridade,
                 "destino": s.destino,
                 "dataHora": s.criado_em.strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
             }
@@ -42,11 +75,16 @@ class SolicitacaoLeitoController:
             "tipo": payload.get("tipo"),
             "turno": payload.get("turno"),
             "data_cirurgia": payload.get("data_cirurgia"),
+            "prioridade": payload.get("prioridade"),
             "status": "Pendente",
         }
 
         if not all([nova_solicitacao["prontuario"], nova_solicitacao["idade"], nova_solicitacao["especialidade"]]):
              raise HTTPException(status_code=400, detail="Campos obrigatorios ausentes.")
+
+        # Remanejamento de prioridade antes de criar
+        if nova_solicitacao["prioridade"] and nova_solicitacao["data_cirurgia"] and nova_solicitacao["turno"]:
+            await self._remanejar_prioridades(nova_solicitacao["data_cirurgia"], nova_solicitacao["turno"], nova_solicitacao["prioridade"])
 
         await self.leito_provider.criar(nova_solicitacao)
         return {"message": "Solicitação de leito registrada com sucesso."}
@@ -84,11 +122,19 @@ class SolicitacaoLeitoController:
             )
 
         # Campos que podem ser editados
-        campos_validos = ["prontuario", "idade", "especialidade", "tipo", "turno", "data_cirurgia"]
+        campos_validos = ["prontuario", "idade", "especialidade", "tipo", "turno", "data_cirurgia", "prioridade"]
         dados_atualizar = {k: v for k, v in payload.items() if k in campos_validos}
         
         if not dados_atualizar:
             raise HTTPException(status_code=400, detail="Nenhum campo válido para atualização fornecido.")
+
+        # Se mudou prioridade, data ou turno, precisa remanejar
+        prio = dados_atualizar.get("prioridade", alvo.prioridade)
+        dt = dados_atualizar.get("data_cirurgia", alvo.data_cirurgia)
+        trn = dados_atualizar.get("turno", alvo.turno)
+        
+        if prio and dt and trn and (prio != alvo.prioridade or dt != alvo.data_cirurgia or trn != alvo.turno):
+            await self._remanejar_prioridades(dt, trn, prio, skip_id=sol_id)
 
         await self.leito_provider.atualizar(sol_id, dados_atualizar)
         return {"message": "Solicitação editada com sucesso."}

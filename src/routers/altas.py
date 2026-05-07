@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from auth.roles import Role
 from typing import List, Dict, Any
 from controllers.altas_controller import AltasController
 from dependencies import get_altas_controller, get_historico_provider
@@ -26,6 +27,9 @@ async def solicitar_alta(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Registra uma nova solicitação de alta para o leito especificado."""
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI]:
+        raise HTTPException(status_code=403, detail="Apenas a UTI pode solicitar altas.")
+
     result = await controller.solicitar_alta(lto_id, payload)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -45,6 +49,9 @@ async def atualizar_destino(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Atualiza o destino e/ou necessidades especiais de uma solicitação de alta."""
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+        raise HTTPException(status_code=403, detail="Você não tem permissão para definir o destino da alta.")
+
     result = await controller.atualizar_destino(alta_id, payload)
     destino = payload.get("leitoDestino", "")
     await historico.registrar(
@@ -64,6 +71,9 @@ async def cancelar_alta(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Cancela uma solicitação de alta."""
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI]:
+        raise HTTPException(status_code=403, detail="Apenas a UTI pode cancelar solicitações de alta.")
+
     await controller.cancelar_alta(alta_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),

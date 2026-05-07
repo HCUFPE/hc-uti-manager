@@ -22,39 +22,38 @@ router = APIRouter(prefix="/api", tags=["Authentication"])
 
 
 
+from models.usuario_perfil import UsuarioPerfil
+from sqlalchemy import select
+
 @router.post("/login")
-
 async def login(
-
     response: Response,
-
     form_data: OAuth2PasswordRequestForm = Depends(),
-
     remember_me: bool = Form(False),
-
     db: AsyncSession = Depends(get_app_db_session)
-
 ):
-
     """
-
     Logs in a user, returns a JWT access token, and optionally sets an HttpOnly refresh token cookie.
-
     """
-
     try:
-
         user = await run_in_threadpool(auth_handler.authenticate_user, form_data.username, form_data.password)
+        
+        # Consultar o perfil do usuário no banco de dados local
+        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == user["username"])
+        result = await db.execute(stmt)
+        perfil_obj = result.scalar_one_or_none()
+        
+        # Se não tiver perfil, assume "Comum" (Perfil 5)
+        # Usuários que são Administradores por padrão (Super Admins)
+        if user["username"] in ["admin", "daniel.turmina"]:
+            user["perfil"] = "Administrador"
+        else:
+            user["perfil"] = perfil_obj.perfil if perfil_obj else "Comum"
 
     except HTTPException as e:
-
         raise e
-
     except Exception as e:
-
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
-
-
 
     access_token_expires = timedelta(minutes=15) if remember_me else timedelta(hours=JWT_EXP_HOURS)
     access_token = auth_handler.create_access_token(
@@ -112,7 +111,17 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
 
     # Re-fetch full user data to ensure the new token has all AD attributes
     try:
-        user_full_info = await run_in_threadpool(auth_handler.authenticate_user, token_obj.user_id, None) # Pass None for password as we are re-authenticating
+        user_full_info = await run_in_threadpool(auth_handler.authenticate_user, token_obj.user_id, None)
+        
+        # Garantir que o perfil seja atualizado no refresh também
+        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == user_full_info["username"])
+        result = await db.execute(stmt)
+        perfil_obj = result.scalar_one_or_none()
+        if user_full_info["username"] in ["admin", "daniel.turmina"]:
+            user_full_info["perfil"] = "Administrador"
+        else:
+            user_full_info["perfil"] = perfil_obj.perfil if perfil_obj else "Comum"
+
     except HTTPException as e:
         # Handle cases where the user might not exist in AD anymore
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Failed to re-authenticate user: {e.detail}")

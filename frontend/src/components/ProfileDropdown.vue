@@ -28,13 +28,10 @@
       </div>
 
       <div class="border-t border-slate-200 p-3 space-y-2 text-sm">
-        <button
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 font-semibold text-slate-700 transition hover:bg-slate-50"
-          @click="handleProfile"
-        >
-          <UserCircle class="h-5 w-5 text-slate-500" />
-          Acessar perfil
-        </button>
+        <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 text-slate-500 font-medium">
+          <ShieldCheckIcon class="h-4 w-4" />
+          <span>Perfil: {{ displayRole }}</span>
+        </div>
         <button
           class="flex w-full items-center gap-3 rounded-lg px-3 py-2 font-semibold text-red-600 transition hover:bg-red-50"
           @click="handleLogout"
@@ -50,7 +47,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { User, UserCircle, LogOut } from 'lucide-vue-next';
+import { User, UserCircle, LogOut, ShieldCheck as ShieldCheckIcon } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
 import { useToast } from 'vue-toastification';
 
@@ -60,18 +57,14 @@ const authStore = useAuthStore();
 const isOpen = ref(false);
 const toast = useToast();
 
-const displayName = computed(() => authStore.user?.givenName?.[0] || authStore.user?.username || 'Usuario');
-const displayEmail = computed(() => authStore.user?.userPrincipalName?.[0] || 'N/A');
-const displayRole = computed(() => authStore.user?.title?.[0] || 'Cargo nao informado');
+const displayName = computed(() => authStore.user?.givenName?.[0] || authStore.user?.username || 'Usuário');
+const displayEmail = computed(() => authStore.user?.userPrincipalName?.[0] || `${authStore.user?.username}@hc.ebserh.gov.br`);
+const displayRole = computed(() => authStore.user?.perfil || 'Perfil não informado');
 
 const handleLogout = async () => {
   await authStore.logout(router);
   toast.success('Logout realizado com sucesso!');
   isOpen.value = false;
-};
-
-const handleProfile = () => {
-  toast.info('Tela de perfil em desenvolvimento.');
 };
 
 // Close dropdown on navigation

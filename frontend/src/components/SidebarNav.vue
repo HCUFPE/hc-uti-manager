@@ -61,6 +61,7 @@ import {
   BarChart3,
   History,
   Lock,
+  Settings,
 } from 'lucide-vue-next';
 
 defineProps<{
@@ -113,6 +114,15 @@ const activeItems = computed(() => {
         icon: History,
       }
     );
+  }
+
+  // Apenas Admin vê Configurações
+  if (authStore.isAdmin) {
+    items.push({
+      label: 'Configurações',
+      to: '/configuracoes',
+      icon: Settings,
+    });
   }
 
   return items;

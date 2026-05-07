@@ -19,6 +19,7 @@ from models.leito_estado import LeitoEstado
 from models.solicitacao_alta import SolicitacaoAlta
 from models.solicitacao_leito import SolicitacaoLeito
 from models.historico_acao import HistoricoAcao
+from models.usuario_perfil import UsuarioPerfil
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,8 +64,8 @@ async def lifespan(app: FastAPI):
         print("App SQLite connection pool closed.")
 
 app = FastAPI(
-    title="Esqueleto de Aplicação Web Full-Stack",
-    description="Aplicação Backend monolítica (API REST) em Python/FastAPI, com foco em acesso e agregação de dados heterogêneos.",
+    title="HC-UTI Manager",
+    description="Aplicação Backend monolítica (API REST) em Python/FastAPI.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -81,34 +82,22 @@ app.include_router(alertas.router)
 app.include_router(indicadores.router)
 app.include_router(historico.router)
 
-# Exemplo:
-# from .routers import aih, bpa, material
-# app.include_router(aih.router)
-# app.include_router(bpa.router)
-# app.include_router(material.router)
-
-# Serve o frontend Vue 3 empacotado (DEVE ficar DEPOIS dos routers,
-# pois app.mount("/") captura todas as requisições não atendidas acima)
+# Serve o frontend Vue 3 empacotado
 static_dir = os.path.join(os.path.dirname(__file__), "static", "dist")
 if os.path.isdir(static_dir):
-    # Serve arquivos da pasta /assets se existirem
     assets_dir = os.path.join(static_dir, "assets")
     if os.path.isdir(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        # Se o caminho for uma API, deixa que o FastAPI retorne 404 normal se não existir
         if full_path.startswith("api"):
              raise HTTPException(status_code=404, detail="API route not found")
         
-        # 1. Tenta servir o arquivo solicitado diretamente da pasta estática
-        # Isso resolve o problema de imagens e ícones na raiz (ex: /favicon.ico, /login_ilustracao.png)
         requested_file = os.path.join(static_dir, full_path)
         if full_path and os.path.isfile(requested_file):
             return FileResponse(requested_file)
 
-        # 2. Se não for um arquivo físico, serve o index.html para o roteamento do SPA
         index_file = os.path.join(static_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
@@ -120,4 +109,3 @@ else:
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-# Force reload

@@ -5,11 +5,13 @@ import api from '../services/api';
 // Tipagem correta para suportar tanto MockAuth quanto Active Directory
 interface User {
   username: string;
+  perfil: string; // Administrador, UTI, NIR, Solicitante de Leito, Comum
   groups: string[];
 
   // Campos opcionais vindos do AD
   givenName?: string[];
   userPrincipalName?: string[];
+  displayName?: string[];
   title?: string[];
   department?: string[];
   employeeNumber?: string[];
@@ -17,30 +19,26 @@ interface User {
 
 export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref(localStorage.getItem('accessToken') || null);
-  let initialUser: User | null = null;
+  const user = ref<User | null>(null);
+
   try {
     const storedUser = localStorage.getItem('user');
-    initialUser = storedUser ? JSON.parse(storedUser) : null;
+    if (storedUser) user.value = JSON.parse(storedUser);
   } catch (error) {
     console.warn("Could not parse stored user", error);
   }
-  const user = ref<User | null>(initialUser);
 
   const isAuthenticated = computed(() => !!accessToken.value);
   
-  const userRole = computed(() => {
-    if (!user.value) return 'assistential';
-    const groups = user.value.groups || [];
-    
-    // Mapeamento espelhado do backend para UI responsiva
-    if (groups.includes("GLO-SEC-HCPE-SETISD") || groups.includes("TI-ADMIN")) return 'admin';
-    if (groups.includes("COORD-UTI-MEDICA") || groups.includes("COORD-UTI-ENFERMAGEM")) return 'coordination';
-    
-    return 'assistential';
-  });
+  const perfil = computed(() => user.value?.perfil || 'Comum');
 
-  const isAdmin = computed(() => userRole.value === 'admin');
-  const isCoordination = computed(() => userRole.value === 'admin' || userRole.value === 'coordination');
+  const isAdmin = computed(() => perfil.value === 'Administrador');
+  const isUTI = computed(() => perfil.value === 'UTI' || perfil.value === 'Administrador');
+  const isNIR = computed(() => perfil.value === 'NIR' || perfil.value === 'Administrador');
+  const isSolicitante = computed(() => perfil.value === 'Solicitante de Leito' || perfil.value === 'Administrador');
+  
+  // Para manter compatibilidade com componentes que usam isCoordination
+  const isCoordination = computed(() => ['Administrador', 'UTI', 'NIR'].includes(perfil.value));
 
   function setToken(token: string) {
     accessToken.value = token;
@@ -135,6 +133,9 @@ export const useAuthStore = defineStore('auth', () => {
     user, 
     isAuthenticated, 
     isAdmin, 
+    isUTI,
+    isNIR,
+    isSolicitante,
     isCoordination,
     login, 
     logout,

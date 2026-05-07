@@ -41,15 +41,23 @@ class MockAuthProvider(AuthProviderInterface):
     """Provedor de autenticação mock para desenvolvimento offline."""
     def authenticate_user(self, username, password) -> dict:
         print(f"SECURITY ALERT: Attempting MOCK authentication for user: {username}")
-        # MOCK EXTREMAMENTE RESTRITIVO
-        if username == "admin" and password == "admin_hc_uti_2024":
+        
+        # Credenciais de teste
+        mock_users = {
+            "admin": "admin_hc_uti_2024",
+            "uti": "uti1",
+            "nir": "nir1",
+            "cob": "cob1",
+            "comum": "comum"
+        }
+
+        if username in mock_users and password == mock_users[username]:
             print(f"SECURITY: Mock Authentication SUCCESSFUL for user: {username}")
-            admin_group = "GLO-SEC-HCPE-SETISD"
             return {
-                "username": "admin",
-                "displayName": ["Mock Admin"],
-                "groups": [admin_group, "Users"],
-                "email": "admin@mock.com"
+                "username": username,
+                "displayName": [f"Mock {username.upper()}"],
+                "groups": ["Users"],
+                "email": f"{username}@mock.com"
             }
         else:
             print(f"SECURITY: Mock Authentication FAILED for user: {username}")

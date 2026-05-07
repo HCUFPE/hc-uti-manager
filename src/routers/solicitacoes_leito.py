@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from auth.roles import Role
 from typing import List, Dict, Any
 from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
 from dependencies import get_solicitacao_leito_controller, get_historico_provider
@@ -22,6 +23,9 @@ async def criar_solicitacao(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Registra uma nova solicitação de leito."""
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR, Role.SOLICITANTE]:
+        raise HTTPException(status_code=403, detail="Você não tem permissão para criar solicitações.")
+
     result = await controller.criar_solicitacao(payload)
     prontuario = payload.get("prontuario", "")
     especialidade = payload.get("especialidade", "")
@@ -43,6 +47,9 @@ async def atualizar_status(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Atualiza o status ou o destino de uma solicitação."""
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+        raise HTTPException(status_code=403, detail="Apenas UTI e NIR podem gerenciar o status das solicitações.")
+
     result = await controller.atualizar_status(sol_id, payload)
     novo_status = payload.get("status", "")
     destino = payload.get("destino", "")
@@ -65,7 +72,10 @@ async def editar_solicitacao(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    """Edita os campos de uma solicitação pendente."""
+    """Edita os dados clínicos de uma solicitação."""
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+        raise HTTPException(status_code=403, detail="Você não tem permissão para editar solicitações.")
+
     result = await controller.editar_solicitacao(sol_id, payload)
     prontuario = payload.get("prontuario", "N/D")
     await historico.registrar(

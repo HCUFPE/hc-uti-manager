@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
+from auth.roles import Role
 from controllers.leitos_controller import LeitosController
 from models.reserva_leito import ReservaLeitoInput
 from dependencies import get_leito_controller, get_solicitacao_leito_provider, get_historico_provider
@@ -17,6 +18,9 @@ async def reservar_leito(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+        raise HTTPException(status_code=403, detail="Acesso restrito a UTI e NIR.")
+    
     result = await controller.reservar(lto_lto_id, payload)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -34,6 +38,9 @@ async def cancelar_reserva(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+        raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar reservas.")
+
     result = await controller.cancelar_reserva(leito_id, solicitacao_provider)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -53,6 +60,9 @@ async def solicitar_alta(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI]:
+        raise HTTPException(status_code=403, detail="Apenas a UTI pode solicitar alta.")
+
     await controller.solicitar_alta(leito_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -71,6 +81,9 @@ async def cancelar_alta(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
+    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+        raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar alta.")
+
     await controller.cancelar_alta(leito_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),

@@ -1,0 +1,185 @@
+<template>
+  <div class="max-w-4xl mx-auto space-y-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Gestão de Perfis de Acesso</h2>
+          <p class="text-sm text-slate-500">Defina as permissões internas para cada login do AD</p>
+        </div>
+        <button 
+          @click="showAddModal = true"
+          class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+        >
+          <PlusIcon class="h-4 w-4" />
+          Novo Perfil
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-200">
+              <th class="px-6 py-3 font-semibold">Login (AD)</th>
+              <th class="px-6 py-3 font-semibold">Perfil Atribuído</th>
+              <th class="px-6 py-3 font-semibold text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-if="loading" class="animate-pulse">
+              <td colspan="3" class="px-6 py-8 text-center text-slate-400">Carregando perfis...</td>
+            </tr>
+            <tr v-else v-for="item in perfis" :key="item.username" class="hover:bg-slate-50 transition">
+              <td class="px-6 py-4 font-medium text-slate-700">{{ item.username }}</td>
+              <td class="px-6 py-4">
+                <span 
+                  class="px-2.5 py-1 rounded-full text-xs font-bold border"
+                  :class="getRoleStyle(item.perfil)"
+                >
+                  {{ item.perfil }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <button 
+                  @click="removerPerfil(item.username)"
+                  class="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition"
+                  title="Remover perfil customizado"
+                >
+                  <TrashIcon class="h-4 w-4" />
+                </button>
+              </td>
+            </tr>
+            <tr v-if="!loading && perfis.length === 0">
+              <td colspan="3" class="px-6 py-12 text-center">
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                  <ShieldExclamationIcon class="h-12 w-12 opacity-20" />
+                  <p>Nenhum perfil customizado cadastrado.</p>
+                  <p class="text-xs">Todos os demais usuários entram como "Comum".</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Adicionar/Editar -->
+    <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-slate-800">Atribuir Perfil</h3>
+          <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600">
+            <XMarkIcon class="h-5 w-5" />
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Login da Rede (AD)</label>
+            <input 
+              v-model="form.username"
+              type="text" 
+              placeholder="ex: daniel.turmina"
+              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Perfil de Acesso</label>
+            <select 
+              v-model="form.perfil"
+              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition bg-white"
+            >
+              <option value="Administrador">Administrador</option>
+              <option value="UTI">UTI</option>
+              <option value="NIR">NIR</option>
+              <option value="Solicitante de Leito">Solicitante de Leito</option>
+              <option value="Comum">Usuário Comum</option>
+            </select>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+          <button 
+            @click="showAddModal = false"
+            class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+          >
+            Cancelar
+          </button>
+          <button 
+            @click="salvar"
+            :disabled="submitting || !form.username"
+            class="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition"
+          >
+            {{ submitting ? 'Salvando...' : 'Salvar Perfil' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { PlusIcon, TrashIcon, XMarkIcon, ShieldExclamationIcon } from '@heroicons/vue/24/outline';
+import api from '../services/api';
+import { useToast } from 'vue-toastification';
+
+const toast = useToast();
+const loading = ref(false);
+const submitting = ref(false);
+const showAddModal = ref(false);
+const perfis = ref<any[]>([]);
+
+const form = ref({
+  username: '',
+  perfil: 'Comum'
+});
+
+async function carregarPerfis() {
+  loading.value = true;
+  try {
+    const { data } = await api.get('/api/admin/perfis');
+    perfis.value = data;
+  } catch (error) {
+    toast.error('Erro ao carregar perfis.');
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function salvar() {
+  submitting.value = true;
+  try {
+    await api.post('/api/admin/perfis', form.value);
+    toast.success('Perfil atualizado com sucesso!');
+    showAddModal.value = false;
+    form.value = { username: '', perfil: 'Comum' };
+    await carregarPerfis();
+  } catch (error) {
+    toast.error('Erro ao salvar perfil.');
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function removerPerfil(username: string) {
+  if (!confirm(`Deseja remover o perfil customizado de ${username}? ele voltará a ser "Comum".`)) return;
+  
+  try {
+    await api.delete(`/api/admin/perfis/${username}`);
+    toast.success('Perfil removido.');
+    await carregarPerfis();
+  } catch (error) {
+    toast.error('Erro ao remover perfil.');
+  }
+}
+
+function getRoleStyle(role: string) {
+  switch (role) {
+    case 'Administrador': return 'bg-purple-50 text-purple-700 border-purple-200';
+    case 'UTI': return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'NIR': return 'bg-amber-50 text-amber-700 border-amber-200';
+    case 'Solicitante de Leito': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    default: return 'bg-slate-50 text-slate-600 border-slate-200';
+  }
+}
+
+onMounted(carregarPerfis);
+</script>

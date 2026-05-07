@@ -16,7 +16,7 @@
           />
           <UiButton v-if="filtroData" variant="outline" size="sm" @click="filtroData = ''" class="shadow-sm">Limpar</UiButton>
         </div>
-        <UiButton size="sm" class="shadow-sm" @click="showModalNova = true">
+        <UiButton v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR || authStore.isSolicitante" size="sm" class="shadow-sm" @click="showModalNova = true">
           <PlusIcon class="h-5 w-5 text-white mr-1" />
           Nova Solicitação
         </UiButton>
@@ -73,7 +73,7 @@
               </div>
 
               <!-- Middle Row: Details -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 py-3 border-t border-slate-50 text-left">
+              <div class="grid grid-cols-4 gap-6 py-3 border-t border-slate-50 text-left">
                 <div class="space-y-0.5">
                   <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Tipo</p>
                   <p class="text-sm font-semibold text-slate-700">{{ sol.tipo }}</p>
@@ -86,10 +86,16 @@
                   <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Turno</p>
                   <p class="text-sm font-semibold text-slate-700">{{ sol.turno }}</p>
                 </div>
+                <div class="space-y-0.5">
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Prioridade</p>
+                  <p class="text-sm font-semibold" :class="sol.prioridade === 'P1' ? 'text-red-600' : 'text-slate-700'">
+                    {{ sol.prioridade || '---' }}
+                  </p>
+                </div>
               </div>
 
               <!-- Action Row -->
-              <div class="mt-4 flex items-center gap-2">
+              <div v-if="authStore.isUTI || authStore.isNIR" class="mt-4 flex items-center gap-2">
                 <UiButton size="sm" @click="abrirModalReserva(sol)" class="bg-blue-600 text-white hover:bg-blue-700 shadow-sm px-4">
                   Reservar Leito
                 </UiButton>
@@ -156,7 +162,7 @@
               </div>
             </div>
             <!-- Ações para Reservados -->
-            <div class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
+            <div v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR" class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
               <UiButton
                 size="sm"
                 variant="outline"
@@ -234,6 +240,7 @@
           <div>
             <label class="block text-sm font-medium text-slate-700">Tipo</label>
             <select v-model="formNova.tipo" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <option value="" disabled selected>Selecione o Tipo</option>
               <option value="Clinico">Clinico</option>
               <option value="Cirurgico">Cirurgico</option>
               <option value="HEM">HEM</option>
@@ -243,10 +250,29 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700">Especialidade</label>
-          <input v-model="formNova.especialidade" type="text" list="especialidades" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-          <datalist id="especialidades">
-            <option value="CARDÍACA" /><option value="CCP (CABEÇA E PESCOÇO)" /><option value="CIPE (PEDIÁTRICA)" /><option value="NEUROLOGIA" /><option value="ORTOPEDIA" /><option value="UROLOGIA" /><option value="VASCULAR" />
-          </datalist>
+          <select v-model="formNova.especialidade" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <option value="" disabled selected>Selecione a Especialidade</option>
+            <option value="BUCO (BUCOMAXILOFACIAL)">BUCO (BUCOMAXILOFACIAL)</option>
+            <option value="CARDÍACA">CARDÍACA</option>
+            <option value="CCP (CABEÇA E PESCOÇO)">CCP (CABEÇA E PESCOÇO)</option>
+            <option value="CIPE (PEDIÁTRICA)">CIPE (PEDIÁTRICA)</option>
+            <option value="ENDOSCOPIA">ENDOSCOPIA</option>
+            <option value="GERAL">GERAL</option>
+            <option value="GINECOLOGIA">GINECOLOGIA</option>
+            <option value="HISTEROSCOPIA">HISTEROSCOPIA</option>
+            <option value="NEUROLOGIA">NEUROLOGIA</option>
+            <option value="OFTALMOLOGIA">OFTALMOLOGIA</option>
+            <option value="ONCOLOGIA">ONCOLOGIA</option>
+            <option value="ONCOMASTO (MASTOLOGIA)">ONCOMASTO (MASTOLOGIA)</option>
+            <option value="ORL (OTORRINOLARINGOLOGIA)">ORL (OTORRINOLARINGOLOGIA)</option>
+            <option value="ORTOPEDIA">ORTOPEDIA</option>
+            <option value="PLÁSTICA">PLÁSTICA</option>
+            <option value="PROCTOLOGIA">PROCTOLOGIA</option>
+            <option value="TORÁCICA">TORÁCICA</option>
+            <option value="TRANS">TRANS</option>
+            <option value="UROLOGIA">UROLOGIA</option>
+            <option value="VASCULAR">VASCULAR</option>
+          </select>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -256,9 +282,21 @@
           <div>
             <label class="block text-sm font-medium text-slate-700">Turno</label>
             <select v-model="formNova.turno" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <option value="" disabled selected>Selecione o Turno</option>
               <option value="Manhã">Manhã</option>
               <option value="Tarde">Tarde</option>
               <option value="Noite">Noite</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Prioridade</label>
+            <select v-model="formNova.prioridade" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <option value="">Nenhuma (Padrão)</option>
+              <option value="P1">P1 (Maior)</option>
+              <option value="P2">P2</option>
+              <option value="P3">P3</option>
+              <option value="P4">P4</option>
+              <option value="P5">P5 (Menor)</option>
             </select>
           </div>
         </div>
@@ -280,6 +318,9 @@ import { useToast } from 'vue-toastification';
 import UiButton from '../components/ui/Button.vue';
 import Modal from '../components/Modal.vue';
 import api from '../services/api';
+import { useAuthStore } from '../stores/auth';
+
+const authStore = useAuthStore();
 
 type SolicitacaoStatus = 'Pendente' | 'Reservado' | 'Cancelada';
 
@@ -292,6 +333,7 @@ type Solicitacao = {
   status: SolicitacaoStatus;
   turno: string;
   data_cirurgia?: string;
+  prioridade?: string;
   destino?: string;
   dataHora: string;
 };
@@ -314,9 +356,10 @@ const formNova = ref({
   prontuario: '',
   idade: null as number | null,
   especialidade: '',
-  tipo: 'Cirurgico',
+  tipo: '',
   data_cirurgia: '',
-  turno: 'Manhã'
+  turno: '',
+  prioridade: ''
 });
 
 function formatarDataHoraBR(dataHoraISO: string) {
@@ -338,11 +381,28 @@ const solicitacoesFiltradas = computed(() => {
     lista = lista.filter(sol => sol.data_cirurgia === filtroData.value);
   }
   const ordemTurno: Record<string, number> = { 'Manhã': 1, 'Tarde': 2, 'Noite': 3 };
+  const ordemPrioridade: Record<string, number> = { 'P1': 1, 'P2': 2, 'P3': 3, 'P4': 4, 'P5': 5 };
+
   return lista.sort((a, b) => {
+    // 1. Data da Cirurgia
     const dataA = a.data_cirurgia || '9999-12-31';
     const dataB = b.data_cirurgia || '9999-12-31';
     if (dataA !== dataB) return dataA.localeCompare(dataB);
-    return (ordemTurno[a.turno] || 99) - (ordemTurno[b.turno] || 99);
+
+    // 2. Turno
+    const turnoA = ordemTurno[a.turno] || 99;
+    const turnoB = ordemTurno[b.turno] || 99;
+    if (turnoA !== turnoB) return turnoA - turnoB;
+
+    // 3. Prioridade
+    const prioA = ordemPrioridade[a.prioridade || ''] || 99;
+    const prioB = ordemPrioridade[b.prioridade || ''] || 99;
+    if (prioA !== prioB) return prioA - prioB;
+
+    // 4. Hora da Solicitação
+    const horaA = a.dataHora || '';
+    const horaB = b.dataHora || '';
+    return horaA.localeCompare(horaB);
   });
 });
 
@@ -422,7 +482,8 @@ async function abrirModalEdicao(sol: Solicitacao) {
     especialidade: sol.especialidade,
     tipo: sol.tipo,
     data_cirurgia: sol.data_cirurgia || '',
-    turno: sol.turno
+    turno: sol.turno,
+    prioridade: sol.prioridade || ''
   };
   showModalNova.value = true;
 }
@@ -431,12 +492,19 @@ function fecharModalNova() {
   showModalNova.value = false;
   isEditing.value = false;
   solSelecionada.value = null;
-  formNova.value = { prontuario: '', idade: null, especialidade: '', tipo: 'Cirurgico', data_cirurgia: '', turno: 'Manhã' };
+  formNova.value = { prontuario: '', idade: null, especialidade: '', tipo: '', data_cirurgia: '', turno: '', prioridade: '' };
 }
 
 async function salvarNova() {
-  if (!formNova.value.prontuario || !formNova.value.idade || !formNova.value.especialidade || !formNova.value.turno) {
-    toast.error('Preencha os campos obrigatórios.');
+  if (
+    !formNova.value.prontuario || 
+    !formNova.value.idade || 
+    !formNova.value.especialidade || 
+    !formNova.value.tipo || 
+    !formNova.value.data_cirurgia || 
+    !formNova.value.turno
+  ) {
+    toast.error('Atenção, preencha todos os campos!');
     return;
   }
   submetendoNova.value = true;
