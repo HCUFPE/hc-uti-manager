@@ -1,14 +1,20 @@
 <template>
   <article
-    class="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-    :class="sinalizacaoTransferencia ? 'ring-2 ring-red-300' : ''"
+    class="relative rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+    :class="[
+      temConflito ? 'border-red-500 ring-2 ring-red-500/20' : 
+      (sinalizacaoTransferencia ? 'border-rose-200 ring-2 ring-rose-100' : 'border-slate-200')
+    ]"
   >
+    <!-- Icone de Alerta (Conflito ou Transferencia) -->
     <div
-      v-if="sinalizacaoTransferencia"
-      class="absolute -top-2 -right-2 rounded-full bg-red-100 p-2 text-red-600 shadow"
-      title="Alerta de transferencia"
+      v-if="temConflito || sinalizacaoTransferencia"
+      class="absolute -top-2 -right-2 rounded-full p-2 shadow"
+      :class="temConflito ? 'bg-red-600 text-white' : 'bg-rose-100 text-rose-600'"
+      :title="temConflito ? 'Conflito de reserva' : 'Alta solicitada'"
     >
-      <ExclamationTriangleIcon class="h-4 w-4" />
+      <ExclamationTriangleIcon v-if="temConflito" class="h-4 w-4" />
+      <ClockIcon v-else class="h-4 w-4" />
     </div>
 
     <div class="flex items-start justify-between gap-3">
@@ -36,6 +42,16 @@
         <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Proximo Paciente</p>
         <p class="text-base font-bold text-slate-900">Prontuario: {{ proximoPaciente.prontuario }}</p>
         <p class="text-slate-600">{{ proximoPaciente.idade }} anos - {{ proximoPaciente.especialidade }}</p>
+        
+        <!-- Detalhes da Cirurgia -->
+        <div v-if="proximoPaciente.dataCirurgia" class="mt-2 flex flex-wrap gap-2">
+          <div class="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 border border-slate-200">
+            Cirurgia: {{ new Date(proximoPaciente.dataCirurgia).toLocaleDateString('pt-BR') }}
+          </div>
+          <div v-if="proximoPaciente.turno" class="flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600 border border-blue-100 uppercase">
+            Turno: {{ proximoPaciente.turno }}
+          </div>
+        </div>
         <UiBadge
           v-if="tipoReserva"
           variant="outline"
@@ -46,6 +62,19 @@
       </div>
 
       <p v-else class="pl-4 text-slate-500">Sem reserva</p>
+      
+      <!-- Alerta de Conflito -->
+      <div v-if="temConflito" class="mt-2 rounded-lg bg-red-50 p-3 border border-red-200">
+        <div class="flex items-start gap-2">
+          <ExclamationTriangleIcon class="h-5 w-5 text-red-600 shrink-0" />
+          <div>
+            <p class="text-xs font-bold text-red-700 uppercase">Conflito detectado</p>
+            <p class="text-[11px] leading-tight text-red-600 mt-0.5">
+              Leito ocupado por outro paciente no AGHU. Verifique a reserva.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-if="true" class="mt-5 flex gap-2">
@@ -76,17 +105,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+import { ExclamationTriangleIcon, ClockIcon } from '@heroicons/vue/24/outline';
 import StatusBadge from './StatusBadge.vue';
 import UiBadge from './ui/Badge.vue';
 
-type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta';
+type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
 
 type Patient = {
   prontuario: string;
   idade: number;
   especialidade: string;
+  dataCirurgia?: string;
+  turno?: string;
 };
 
 const props = defineProps<{
@@ -97,6 +128,7 @@ const props = defineProps<{
   proximoPaciente?: Patient;
   tipoReserva?: string;
   sinalizacaoTransferencia?: boolean;
+  temConflito?: boolean;
   showActions?: boolean;
 }>();
 

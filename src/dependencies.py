@@ -52,10 +52,16 @@ def get_solicitacao_alta_provider(
 ) -> SolicitacaoAltaProvider:
     return SolicitacaoAltaProvider(session=session)
 
+def get_solicitacao_leito_provider(
+    session: AsyncSession = Depends(get_app_db_session)
+) -> SolicitacaoLeitoProvider:
+    return SolicitacaoLeitoProvider(session=session)
+
 def get_leito_controller(
     census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
     estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
-    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider)
+    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
+    solicitacao_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider)
 ) -> LeitosController:
     """
     Constrói o controller injetando as três fontes de dados:
@@ -63,7 +69,7 @@ def get_leito_controller(
     - estado_provider: estado local persistido (SQLite) - Reservas
     - alta_provider: solicitações de alta ricas (SQLite)
     """
-    return LeitosController(census_provider, estado_provider, alta_provider)
+    return LeitosController(census_provider, estado_provider, alta_provider, solicitacao_provider)
 
 # --- ALTAS --------------------------------------------------------------
 
@@ -75,11 +81,6 @@ def get_altas_controller(
     return AltasController(alta_provider, census_provider, estado_provider)
 
 # --- SOLICITACOES LEITO --------------------------------------------------
-
-def get_solicitacao_leito_provider(
-    session: AsyncSession = Depends(get_app_db_session)
-) -> SolicitacaoLeitoProvider:
-    return SolicitacaoLeitoProvider(session=session)
 
 def get_solicitacao_leito_controller(
     leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),

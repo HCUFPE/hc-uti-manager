@@ -1,17 +1,14 @@
 from models.reserva_leito import ReservaLeitoInput
 from typing import List, Dict, Any, Optional
 from datetime import date, datetime
+import asyncio
 
 class LeitosController:
-    def __init__(self, census_provider, estado_provider, alta_provider=None):
-        """
-        census_provider: AGHU (PostgreSQL) — dados em tempo real do hospital.
-        estado_provider: Sempre o banco local (SQLite) - Reservas.
-        alta_provider: Banco local (SQLite) - Solicitações de Alta.
-        """
+    def __init__(self, census_provider, estado_provider, alta_provider=None, solicitacao_provider=None):
         self.census_provider = census_provider
         self.estado_provider = estado_provider
         self.alta_provider = alta_provider
+        self.solicitacao_provider = solicitacao_provider
 
     def _calcular_idade(self, data_nasc) -> int | None:
         if not data_nasc:
@@ -40,15 +37,26 @@ class LeitosController:
 
     async def listar_leitos(self) -> List[Dict[str, Any]]:
         # 1. Busca o censo (Realidade do Hospital)
-        leitos = await self.census_provider.listar_leitos()
-        
+        try:
+            leitos = await self.census_provider.listar_leitos()
+        except Exception as e:
+            print(f"Erro ao buscar censo: {e}")
+            leitos = []
+            
         # 2. Busca estados locais (Reservas)
-        estados = await self.estado_provider.obter_estados()
-        
-        # 3. Busca solicitações de alta (Novas)
+        try:
+            estados = await self.estado_provider.obter_estados()
+        except Exception as e:
+            print(f"Erro ao buscar estados: {e}")
+            estados = {}
+            
+        # 3. Busca solicitações de alta
         altas_map = {}
         if self.alta_provider:
-            altas_map = await self.alta_provider.obter_altas_map()
+            try:
+                altas_map = await self.alta_provider.obter_altas_map()
+            except Exception as e:
+                print(f"Erro ao buscar altas: {e}")
         
         # 4. Merge
         for leito in leitos:
@@ -68,17 +76,66 @@ class LeitosController:
                 else:
                     leito['alta_solicitada'] = leito.get('alta_solicitada', False)
 
-            # Reservas
+            # Reservas e Sincronização
             if lto_id in estados:
                 est = estados[lto_id]
-                leito['prontuario_proximo'] = est.prontuario_proximo
-                leito['idade_proximo'] = est.idade_proximo
-                leito['especialidade_proximo'] = est.especialidade_proximo
+                
+                prontuario_aghu = leito.get('prontuario_atual')
+                prontuario_reserva = est.prontuario_proximo
+                
+                # Se o leito foi ocupado no AGHU e havia uma reserva
+                if prontuario_aghu and prontuario_reserva:
+                    try:
+                        if str(prontuario_aghu) == str(prontuario_reserva):
+                            # SUCESSO: O paciente reservado chegou!
+                            await self.estado_provider.limpar_reserva(lto_id)
+                            sol_id = getattr(est, 'solicitacao_id', None)
+                            if sol_id and self.solicitacao_provider:
+                                await self.solicitacao_provider.atualizar(sol_id, {"status": "Concluída"})
+                            
+                            leito['prontuario_proximo'] = None
+                        else:
+                            # Só é CONFLITO se não houver uma alta já planejada para o paciente atual
+                            is_alta = leito.get('alta_solicitada', False)
+                            
+                            if not is_alta:
+                                leito['conflito_reserva'] = True
+                            else:
+                                leito['conflito_reserva'] = False
+                                
+                            leito['prontuario_proximo'] = est.prontuario_proximo
+                            leito['idade_proximo'] = est.idade_proximo
+                            leito['especialidade_proximo'] = est.especialidade_proximo
+                            
+                            # Busca info da cirurgia para exibir no card
+                            sol_id = getattr(est, 'solicitacao_id', None)
+                            if sol_id and self.solicitacao_provider:
+                                sol = await self.solicitacao_provider.get_por_id(sol_id)
+                                if sol:
+                                    leito['data_cirurgia_proximo'] = sol.data_cirurgia
+                                    leito['turno_proximo'] = sol.turno
+                    except Exception as e:
+                        print(f"Erro na sincronização do leito {lto_id}: {e}")
+                        leito['prontuario_proximo'] = est.prontuario_proximo
+                else:
+                    # Sem conflito, mantém a exibição da reserva normal
+                    leito['conflito_reserva'] = False
+                    leito['prontuario_proximo'] = est.prontuario_proximo
+                    leito['idade_proximo'] = est.idade_proximo
+                    leito['especialidade_proximo'] = est.especialidade_proximo
+                    
+                    # Busca info da cirurgia
+                    sol_id = getattr(est, 'solicitacao_id', None)
+                    if sol_id and self.solicitacao_provider:
+                        sol = await self.solicitacao_provider.get_por_id(sol_id)
+                        if sol:
+                            leito['data_cirurgia_proximo'] = sol.data_cirurgia
+                            leito['turno_proximo'] = sol.turno
             else:
+                leito['conflito_reserva'] = False
                 leito['prontuario_proximo'] = None
                 leito['idade_proximo'] = None
                 leito['especialidade_proximo'] = None
-                
         return leitos
 
     async def listar(self):
@@ -142,5 +199,12 @@ class LeitosController:
         leitos = await self.listar_leitos()
         return [
             l for l in leitos 
-            if l.get('alta_solicitada') and not l.get('prontuario_proximo')
+            if (
+                # Caso 1: Leito está vazio no AGHU
+                str(l.get('status')).upper() == 'DESOCUPADO' or 
+                # Caso 2: Leito está ocupado mas tem alta solicitada no sistema
+                l.get('alta_solicitada')
+            ) 
+            # Em ambos os casos, não pode ter uma reserva já feita
+            and not l.get('prontuario_proximo')
         ]

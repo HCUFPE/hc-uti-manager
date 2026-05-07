@@ -79,7 +79,7 @@ import UiButton from '../components/ui/Button.vue';
 import { useToast } from 'vue-toastification';
 import api from '../services/api';
 
-type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta';
+type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
 type StatusFilter = BedStatus | 'todos';
 
@@ -87,6 +87,8 @@ type Patient = {
   prontuario: string;
   idade: number;
   especialidade: string;
+  dataCirurgia?: string;
+  turno?: string;
 };
 
 type Leito = {
@@ -97,6 +99,7 @@ type Leito = {
   proximoPaciente?: Patient;
   tipoReserva?: string;
   sinalizacaoTransferencia?: boolean;
+  temConflito?: boolean;
 };
 
 const leitos = ref<Leito[]>([]);
@@ -109,6 +112,7 @@ const loadLeitos = async () => {
       leitoNumero: l.lto_lto_id,
       status: l.alta_solicitada ? 'alta' :
               (l.status || '').toLowerCase() === 'ocupado' ? 'ocupado' :
+              l.prontuario_proximo ? 'reservado' :
               (l.status || '').toLowerCase() === 'desocupado' ? 'disponivel' :
               (l.status || '').toLowerCase() === 'limpeza' ? 'higienizacao' :
               (l.status || '').toLowerCase() === 'interditado' ? 'desativado' : 'disponivel',
@@ -123,7 +127,10 @@ const loadLeitos = async () => {
         prontuario: String(l.prontuario_proximo),
         idade: l.idade_proximo || 0,
         especialidade: l.especialidade_proximo || 'ND',
+        dataCirurgia: l.data_cirurgia_proximo,
+        turno: l.turno_proximo,
       } : undefined,
+      temConflito: l.conflito_reserva || false,
     }));
   } catch (error) {
     console.error('Erro ao buscar leitos:', error);
@@ -162,6 +169,7 @@ const statusFilterOptions: { label: string; value: StatusFilter }[] = [
   { label: 'Higienizacao', value: 'higienizacao' },
   { label: 'Desativados', value: 'desativado' },
   { label: 'Alta', value: 'alta' },
+  { label: 'Reservado', value: 'reservado' },
 ];
 
 const statusFilter = ref<StatusFilter>('todos');
@@ -192,6 +200,8 @@ const dotColor = (valor: StatusFilter) => {
       return 'bg-slate-400';
     case 'alta':
       return 'bg-fuchsia-500';
+    case 'reservado':
+      return 'bg-purple-500';
     default:
       return 'bg-slate-300';
   }

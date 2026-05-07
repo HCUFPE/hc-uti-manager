@@ -30,10 +30,17 @@ class LeitoAghuProvider(LeitoProviderInterface):
 
     async def listar_leitos(self) -> List[Dict[str, Any]]:
         """Busca o censo de leitos ativos na UTI (unf_seq=115)."""
-        query_text = get_sql_query('censo_leitos.sql')
-        result = await self.session.execute(text(query_text))
-        rows = result.mappings().all()
-        return [dict(r) for r in rows]
+        if not self.session:
+            return []
+
+        try:
+            query_text = get_sql_query('censo_leitos.sql')
+            result = await self.session.execute(text(query_text))
+            rows = result.mappings().all()
+            return [dict(r) for r in rows]
+        except Exception as e:
+            print(f"Erro ao consultar AGHU: {e}")
+            return []
 
     async def listar_leitos_disponiveis_para_reserva(self) -> List[Dict[str, Any]]:
         """

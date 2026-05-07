@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta';
+type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 
 const props = defineProps<{
   status: BedStatus;
@@ -36,6 +36,10 @@ const statusConfig: Record<BedStatus, { label: string; className: string }> = {
   alta: {
     label: 'Alta Solicitada',
     className: 'bg-rose-100 text-rose-700 border border-rose-200',
+  },
+  reservado: {
+    label: 'Reservado',
+    className: 'bg-purple-100 text-purple-700 border border-purple-200',
   },
 };
 
