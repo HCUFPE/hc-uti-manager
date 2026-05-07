@@ -60,7 +60,10 @@ class LeitosController:
         
         # 4. Merge
         for leito in leitos:
-            lto_id = leito.get('lto_lto_id')
+            # Normaliza o ID para evitar erros de comparação (ex: 'UTI-01 ' vs 'UTI-01')
+            raw_lto_id = leito.get('lto_lto_id', '')
+            lto_id = str(raw_lto_id).strip().upper()
+            leito['lto_lto_id'] = lto_id # Atualiza o ID no objeto para o padrão limpo
             
             if 'data_nascimento' in leito:
                 leito['idade_atual'] = self._calcular_idade(leito['data_nascimento'])
@@ -197,14 +200,27 @@ class LeitosController:
 
     async def listar_leitos_disponiveis_para_reserva(self):
         leitos = await self.listar_leitos()
-        return [
-            l for l in leitos 
-            if (
-                # Caso 1: Leito está vazio no AGHU
-                str(l.get('status')).upper() == 'DESOCUPADO' or 
-                # Caso 2: Leito está ocupado mas tem alta solicitada no sistema
-                l.get('alta_solicitada')
-            ) 
-            # Em ambos os casos, não pode ter uma reserva já feita
-            and not l.get('prontuario_proximo')
-        ]
+        
+        # Termos que o AGHU usa para leitos vazios (apenas para garantir)
+        status_vazios = ['DESOCUPADO', 'DISPONIVEL', 'DISPONÍVEL', 'VAGO', 'LIBERADO', 'LIMPEZA']
+        
+        disponiveis = []
+        for l in leitos:
+            status = str(l.get('status', '')).strip().upper()
+            prontuario_atual = l.get('prontuario_atual')
+            proximo_paciente = l.get('prontuario_proximo')
+            tem_alta = l.get('alta_solicitada', False)
+            
+            # LOGICA INFALÍVEL:
+            # 1. Se não tem ninguém no leito E não tem reserva -> DISPONÍVEL
+            # 2. Se o leito está marcado com um dos status de vazio E não tem reserva -> DISPONÍVEL
+            # 3. Se o leito tem alta solicitada E não tem reserva -> DISPONÍVEL
+            
+            esta_fisicamente_vazio = (prontuario_atual is None or prontuario_atual == "" or prontuario_atual == 0)
+            ja_tem_reserva = proximo_paciente is not None
+            
+            if not ja_tem_reserva:
+                if esta_fisicamente_vazio or (status in status_vazios) or tem_alta:
+                    disponiveis.append(l)
+        
+        return disponiveis
