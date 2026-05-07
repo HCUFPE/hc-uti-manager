@@ -275,7 +275,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { PlusIcon, PencilSquareIcon, BookmarkIcon, TrashIcon, ClipboardIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiButton from '../components/ui/Button.vue';
 import Modal from '../components/Modal.vue';
