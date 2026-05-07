@@ -58,50 +58,53 @@
             :key="sol.id"
             class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
           >
-            <div class="flex items-start justify-between p-6">
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full text-left">
-                <div class="space-y-1">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Prontuário</p>
-                  <p class="text-xl font-black text-slate-800">{{ sol.prontuario }}</p>
-                  <p class="text-sm text-slate-600">{{ sol.idade }} anos • {{ sol.especialidade }}</p>
-                  <p class="text-[10px] text-slate-400">{{ formatarDataHoraBR(sol.dataHora) }}</p>
+            <div class="p-4">
+              <!-- Top Row: ID and Status -->
+              <div class="flex items-start justify-between mb-4">
+                <div class="space-y-0.5 text-left">
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Prontuário</p>
+                  <p class="text-xl font-semibold text-slate-800 leading-tight">{{ sol.prontuario }}</p>
+                  <p class="text-sm font-normal text-slate-500">{{ sol.idade }} anos • {{ sol.especialidade }}</p>
+                  <p class="text-[10px] font-normal text-slate-400">{{ formatarDataHoraBR(sol.dataHora) }}</p>
                 </div>
-                <div class="space-y-1">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tipo</p>
-                  <p class="text-base font-bold text-slate-700">{{ sol.tipo }}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Data Prevista</p>
-                  <p class="text-base font-bold text-slate-700">{{ sol.data_cirurgia ? formatarDataBR(sol.data_cirurgia) : 'Não informada' }}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Turno</p>
-                  <p class="text-base font-bold text-slate-700">{{ sol.turno }}</p>
-                </div>
-              </div>
-              <div class="flex flex-col items-end">
-                <span class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-tighter text-rose-600">
-                  Aguardando
+                <span class="rounded-full bg-rose-500 px-3 py-1 text-[10px] font-bold text-white shadow-sm">
+                  Aguardando Reserva de Leito
                 </span>
               </div>
-            </div>
 
-            <!-- Ações para Pendentes -->
-            <div class="flex items-center gap-2 border-t border-slate-50 bg-slate-50/50 px-6 py-3">
-              <UiButton size="sm" @click="abrirModalReserva(sol)" class="bg-blue-600 text-white hover:bg-blue-700 shadow-sm px-4">
-                Reservar Leito
-              </UiButton>
-              <UiButton size="sm" variant="outline" @click="abrirModalEdicao(sol)" class="shadow-sm">
-                <PencilSquareIcon class="h-4 w-4 mr-1 text-slate-500" />
-                Editar
-              </UiButton>
-              <UiButton 
-                size="sm" 
-                @click="cancelarSolicitacao(sol.id)" 
-                class="bg-red-600 text-white hover:bg-red-700 border-none shadow-sm px-4"
-              >
-                Cancelar Solicitação
-              </UiButton>
+              <!-- Middle Row: Details -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 py-3 border-t border-slate-50 text-left">
+                <div class="space-y-0.5">
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Tipo</p>
+                  <p class="text-sm font-semibold text-slate-700">{{ sol.tipo }}</p>
+                </div>
+                <div class="space-y-0.5">
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Data Prevista da Cirurgia</p>
+                  <p class="text-sm font-semibold text-slate-700">{{ sol.data_cirurgia ? formatarDataBR(sol.data_cirurgia) : 'Não informada' }}</p>
+                </div>
+                <div class="space-y-0.5">
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Turno</p>
+                  <p class="text-sm font-semibold text-slate-700">{{ sol.turno }}</p>
+                </div>
+              </div>
+
+              <!-- Action Row -->
+              <div class="mt-4 flex items-center gap-2">
+                <UiButton size="sm" @click="abrirModalReserva(sol)" class="bg-blue-600 text-white hover:bg-blue-700 shadow-sm px-4">
+                  Reservar Leito
+                </UiButton>
+                <UiButton size="sm" variant="outline" @click="abrirModalEdicao(sol)" class="shadow-sm">
+                  <PencilSquareIcon class="h-4 w-4 mr-1 text-slate-500" />
+                  Editar
+                </UiButton>
+                <UiButton 
+                  size="sm" 
+                  @click="cancelarSolicitacao(sol.id)" 
+                  class="bg-red-600 text-white hover:bg-red-700 border-none shadow-sm px-4"
+                >
+                  Cancelar Solicitação
+                </UiButton>
+              </div>
             </div>
           </article>
         </div>
