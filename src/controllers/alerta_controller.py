@@ -36,8 +36,11 @@ class AlertaController:
         """
         alertas = await self.alerta_provider.get_todos()
         
-        if not perfil_usuario or perfil_usuario == "Administrador":
+        if not perfil_usuario:
             return []
+            
+        if perfil_usuario == "Administrador":
+            return [a.to_dict() for a in alertas]
         
         user_grupo = perfil_usuario.replace("-Admin", "").strip()
         
