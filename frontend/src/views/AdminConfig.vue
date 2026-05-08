@@ -4,10 +4,10 @@
       <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
         <div>
           <h2 class="text-lg font-bold text-slate-800">Gestão de Perfis de Acesso</h2>
-          <p class="text-sm text-slate-500">Defina as permissões internas para cada login do AD</p>
+          <p class="text-sm text-slate-500">Defina o perfil de acesso para cada usuário</p>
         </div>
         <button 
-          @click="showAddModal = true"
+          @click="abrirModalNovo"
           class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           <PlusIcon class="h-4 w-4" />
@@ -38,8 +38,17 @@
                   {{ item.perfil }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-right">
+              <td class="px-6 py-4 text-right flex justify-end gap-2">
                 <button 
+                  v-if="authStore.canManageUser(item.perfil)"
+                  @click="abrirModalEdicao(item)"
+                  class="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition"
+                  title="Editar perfil"
+                >
+                  <PencilSquareIcon class="h-4 w-4" />
+                </button>
+                <button 
+                  v-if="authStore.canManageUser(item.perfil)"
                   @click="removerPerfil(item.username)"
                   class="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition"
                   title="Remover perfil customizado"
@@ -66,7 +75,7 @@
     <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
       <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <h3 class="font-bold text-slate-800">Atribuir Perfil</h3>
+          <h3 class="font-bold text-slate-800">{{ isEditing ? 'Editar Perfil' : 'Atribuir Perfil' }}</h3>
           <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600">
             <XMarkIcon class="h-5 w-5" />
           </button>
@@ -78,7 +87,8 @@
               v-model="form.username"
               type="text" 
               placeholder="ex: daniel.turmina"
-              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
+              :disabled="isEditing"
+              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition disabled:bg-slate-100 disabled:text-slate-500"
             />
           </div>
           <div>
@@ -87,11 +97,7 @@
               v-model="form.perfil"
               class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition bg-white"
             >
-              <option value="Administrador">Administrador</option>
-              <option value="UTI">UTI</option>
-              <option value="NIR">NIR</option>
-              <option value="Solicitante de Leito">Solicitante de Leito</option>
-              <option value="Comum">Usuário Comum</option>
+              <option v-for="p in availableProfiles" :key="p" :value="p">{{ p }}</option>
             </select>
           </div>
         </div>
@@ -116,21 +122,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { PlusIcon, TrashIcon, XMarkIcon, ShieldExclamationIcon } from '@heroicons/vue/24/outline';
+import { ref, onMounted, computed } from 'vue';
+import { PlusIcon, TrashIcon, XMarkIcon, ShieldExclamationIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 import api from '../services/api';
 import { useToast } from 'vue-toastification';
+import { useAuthStore } from '../stores/auth';
+
+const authStore = useAuthStore();
+const availableProfiles = computed(() => authStore.getAssignableProfiles());
 
 const toast = useToast();
 const loading = ref(false);
 const submitting = ref(false);
 const showAddModal = ref(false);
+const isEditing = ref(false);
 const perfis = ref<any[]>([]);
 
 const form = ref({
   username: '',
   perfil: 'Comum'
 });
+
+function abrirModalNovo() {
+  form.value = { username: '', perfil: 'Comum' };
+  isEditing.value = false;
+  showAddModal.value = true;
+}
+
+function abrirModalEdicao(item: any) {
+  form.value.username = item.username;
+  form.value.perfil = item.perfil;
+  isEditing.value = true;
+  showAddModal.value = true;
+}
 
 async function carregarPerfis() {
   loading.value = true;
@@ -174,8 +198,11 @@ async function removerPerfil(username: string) {
 function getRoleStyle(role: string) {
   switch (role) {
     case 'Administrador': return 'bg-purple-50 text-purple-700 border-purple-200';
+    case 'UTI-Admin': return 'bg-blue-100 text-blue-800 border-blue-300';
     case 'UTI': return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'NIR-Admin': return 'bg-amber-100 text-amber-800 border-amber-300';
     case 'NIR': return 'bg-amber-50 text-amber-700 border-amber-200';
+    case 'Solicitante-Admin': return 'bg-emerald-100 text-emerald-800 border-emerald-300';
     case 'Solicitante de Leito': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     default: return 'bg-slate-50 text-slate-600 border-slate-200';
   }

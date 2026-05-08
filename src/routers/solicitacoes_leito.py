@@ -23,7 +23,8 @@ async def criar_solicitacao(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Registra uma nova solicitação de leito."""
-    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR, Role.SOLICITANTE]:
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN, Role.SOLICITANTE, Role.SOLICITANTE_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Você não tem permissão para criar solicitações.")
 
     result = await controller.criar_solicitacao(payload)
@@ -47,7 +48,8 @@ async def atualizar_status(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Atualiza o status ou o destino de uma solicitação."""
-    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Apenas UTI e NIR podem gerenciar o status das solicitações.")
 
     result = await controller.atualizar_status(sol_id, payload)
@@ -73,7 +75,8 @@ async def editar_solicitacao(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Edita os dados clínicos de uma solicitação."""
-    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Você não tem permissão para editar solicitações.")
 
     result = await controller.editar_solicitacao(sol_id, payload)

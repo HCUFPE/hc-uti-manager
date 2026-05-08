@@ -13,7 +13,8 @@ class AdminData(BaseModel):
 
 async def verify_admin_group(current_user: dict = Depends(auth_handler.decode_token)):
     user_perfil = current_user.get("perfil")
-    if user_perfil != Role.ADMIN:
+    allowed_admins = [Role.ADMIN, Role.UTI_ADMIN, Role.NIR_ADMIN, Role.SOLICITANTE_ADMIN]
+    if user_perfil not in allowed_admins:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito a administradores")
     return current_user
 
@@ -42,8 +43,23 @@ async def salvar_perfil(
     username = payload.get("username").strip().lower()
     perfil = payload.get("perfil")
     
-    if not username or not perfil:
-        raise HTTPException(status_code=400, detail="Username e perfil são obrigatórios")
+    if not username or perfil not in [r.value for r in Role]:
+        raise HTTPException(status_code=400, detail="Username e perfil válido são obrigatórios")
+
+    user_perfil = current_user.get("perfil")
+
+    # Regras para admins de setor
+    if user_perfil != Role.ADMIN:
+        allowed_profiles = []
+        if user_perfil == Role.UTI_ADMIN:
+            allowed_profiles = [Role.UTI, Role.COMUM]
+        elif user_perfil == Role.NIR_ADMIN:
+            allowed_profiles = [Role.NIR, Role.COMUM]
+        elif user_perfil == Role.SOLICITANTE_ADMIN:
+            allowed_profiles = [Role.SOLICITANTE, Role.COMUM]
+            
+        if perfil not in allowed_profiles:
+            raise HTTPException(status_code=403, detail="Você só pode atribuir usuários ao seu próprio setor.")
 
     # Verifica se já existe
     stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == username)
@@ -66,6 +82,27 @@ async def excluir_perfil(
     current_user: dict = Depends(verify_admin_group)
 ):
     """Remove o perfil customizado de um usuário."""
+    user_perfil = current_user.get("perfil")
+    
+    # Verifica perfil atual do alvo para admins setoriais
+    if user_perfil != Role.ADMIN:
+        stmt_check = select(UsuarioPerfil).where(UsuarioPerfil.username == username.lower())
+        result_check = await db.execute(stmt_check)
+        alvo = result_check.scalar_one_or_none()
+        
+        if alvo:
+            target_perfil = alvo.perfil
+            has_permission = False
+            if user_perfil == Role.UTI_ADMIN and target_perfil == Role.UTI:
+                has_permission = True
+            elif user_perfil == Role.NIR_ADMIN and target_perfil == Role.NIR:
+                has_permission = True
+            elif user_perfil == Role.SOLICITANTE_ADMIN and target_perfil == Role.SOLICITANTE:
+                has_permission = True
+                
+            if not has_permission:
+                raise HTTPException(status_code=403, detail="Você não tem permissão para remover perfis fora do seu setor.")
+
     stmt = delete(UsuarioPerfil).where(UsuarioPerfil.username == username.lower())
     await db.execute(stmt)
     await db.commit()

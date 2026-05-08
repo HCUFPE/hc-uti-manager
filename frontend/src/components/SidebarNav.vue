@@ -117,7 +117,7 @@ const activeItems = computed(() => {
   }
 
   // Apenas Admin vê Configurações
-  if (authStore.isAdmin) {
+  if (authStore.isAnyAdmin) {
     items.push({
       label: 'Configurações',
       to: '/configuracoes',

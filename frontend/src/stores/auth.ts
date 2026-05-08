@@ -33,12 +33,33 @@ export const useAuthStore = defineStore('auth', () => {
   const perfil = computed(() => user.value?.perfil || 'Comum');
 
   const isAdmin = computed(() => perfil.value === 'Administrador');
-  const isUTI = computed(() => perfil.value === 'UTI' || perfil.value === 'Administrador');
-  const isNIR = computed(() => perfil.value === 'NIR' || perfil.value === 'Administrador');
-  const isSolicitante = computed(() => perfil.value === 'Solicitante de Leito' || perfil.value === 'Administrador');
+  const isUTI = computed(() => ['UTI', 'UTI-Admin', 'Administrador'].includes(perfil.value));
+  const isNIR = computed(() => ['NIR', 'NIR-Admin', 'Administrador'].includes(perfil.value));
+  const isSolicitante = computed(() => ['Solicitante de Leito', 'Solicitante-Admin', 'Administrador'].includes(perfil.value));
+  
+  const isAnyAdmin = computed(() => ['Administrador', 'UTI-Admin', 'NIR-Admin', 'Solicitante-Admin'].includes(perfil.value));
   
   // Para manter compatibilidade com componentes que usam isCoordination
-  const isCoordination = computed(() => ['Administrador', 'UTI', 'NIR'].includes(perfil.value));
+  const isCoordination = computed(() => ['Administrador', 'UTI', 'UTI-Admin', 'NIR', 'NIR-Admin'].includes(perfil.value));
+
+  // Helpers para controle de formulário na tela de AdminConfig
+  function getAssignableProfiles(): string[] {
+    if (isAdmin.value) {
+      return ['Administrador', 'UTI-Admin', 'NIR-Admin', 'Solicitante-Admin', 'UTI', 'NIR', 'Solicitante de Leito', 'Comum'];
+    }
+    if (perfil.value === 'UTI-Admin') return ['UTI', 'Comum'];
+    if (perfil.value === 'NIR-Admin') return ['NIR', 'Comum'];
+    if (perfil.value === 'Solicitante-Admin') return ['Solicitante de Leito', 'Comum'];
+    return [];
+  }
+
+  function canManageUser(targetUserPerfil: string): boolean {
+    if (isAdmin.value) return true;
+    if (perfil.value === 'UTI-Admin' && targetUserPerfil === 'UTI') return true;
+    if (perfil.value === 'NIR-Admin' && targetUserPerfil === 'NIR') return true;
+    if (perfil.value === 'Solicitante-Admin' && targetUserPerfil === 'Solicitante de Leito') return true;
+    return false;
+  }
 
   function setToken(token: string) {
     accessToken.value = token;
@@ -133,10 +154,13 @@ export const useAuthStore = defineStore('auth', () => {
     user, 
     isAuthenticated, 
     isAdmin, 
+    isAnyAdmin,
     isUTI,
     isNIR,
     isSolicitante,
     isCoordination,
+    getAssignableProfiles,
+    canManageUser,
     login, 
     logout,
     setToken,

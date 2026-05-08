@@ -102,7 +102,7 @@ router.beforeEach((to, _from, next: NavigationGuardNext) => {
   }
 
   // Bloqueio para rotas administrativas
-  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+  if (to.meta.requiresAdmin && !authStore.isAnyAdmin) {
     next({ name: 'Leitos' });
     return;
   }

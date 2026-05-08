@@ -2,6 +2,9 @@ from enum import Enum
 
 class Role(str, Enum):
     ADMIN = "Administrador"
+    UTI_ADMIN = "UTI-Admin"
+    NIR_ADMIN = "NIR-Admin"
+    SOLICITANTE_ADMIN = "Solicitante-Admin"
     UTI = "UTI"
     NIR = "NIR"
     SOLICITANTE = "Solicitante de Leito"

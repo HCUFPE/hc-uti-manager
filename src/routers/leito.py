@@ -18,7 +18,8 @@ async def reservar_leito(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Acesso restrito a UTI e NIR.")
     
     result = await controller.reservar(lto_lto_id, payload)
@@ -38,7 +39,8 @@ async def cancelar_reserva(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar reservas.")
 
     result = await controller.cancelar_reserva(leito_id, solicitacao_provider)
@@ -60,7 +62,8 @@ async def solicitar_alta(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI]:
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Apenas a UTI pode solicitar alta.")
 
     await controller.solicitar_alta(leito_id)
@@ -81,7 +84,8 @@ async def cancelar_alta(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    if current_user.get("perfil") not in [Role.ADMIN, Role.UTI, Role.NIR]:
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar alta.")
 
     await controller.cancelar_alta(leito_id)
