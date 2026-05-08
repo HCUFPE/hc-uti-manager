@@ -28,7 +28,7 @@ async def criar_solicitacao(
 ):
     """Cria uma nova solicitação de leito."""
     allowed_roles = [
-        Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN,
+        Role.ADMIN,
         Role.COB, Role.COB_ADMIN, Role.BC, Role.BC_ADMIN, Role.HEM, Role.HEM_ADMIN
     ]
     if current_user.get("perfil") not in allowed_roles:
@@ -67,9 +67,9 @@ async def atualizar_status(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Atualiza o status ou o destino de uma solicitação."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
     if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Apenas UTI e NIR podem gerenciar o status das solicitações.")
+        raise HTTPException(status_code=403, detail="Apenas a UTI pode gerenciar o status das solicitações.")
 
     result = await controller.atualizar_status(sol_id, payload)
     novo_status = payload.get("status", "")
@@ -108,7 +108,7 @@ async def editar_solicitacao(
         user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
 
     user_grupo = user_perfil.replace("-Admin", "")
-    super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    super_usuarios = [Role.ADMIN]
     
     if user_perfil not in super_usuarios:
         if solicitacao.perfil_solicitante != user_grupo:
@@ -145,7 +145,7 @@ async def cancelar_solicitacao(
         user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
 
     user_grupo = user_perfil.replace("-Admin", "")
-    super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    super_usuarios = [Role.ADMIN]
     
     if user_perfil not in super_usuarios:
         if solicitacao.perfil_solicitante != user_grupo:
@@ -169,6 +169,10 @@ async def reservar_leito(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Reserva um leito para uma solicitação pendente."""
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
+    if current_user.get("perfil") not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Apenas a UTI pode reservar leitos.")
+        
     leito_id = payload.get("leito_id")
     result = await controller.reservar_leito(sol_id, leito_id)
     await historico.registrar(
@@ -200,7 +204,7 @@ async def cancelar_reserva(
         user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
 
     user_grupo = user_perfil.replace("-Admin", "")
-    super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
     
     if user_perfil not in super_usuarios:
         if solicitacao.perfil_solicitante != user_grupo:

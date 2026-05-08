@@ -70,18 +70,18 @@
 
           <div class="mt-4 flex flex-wrap gap-2">
             <template v-if="alta.status === 'pendente'">
-              <UiButton size="sm" @click="openDestino(alta)">
+              <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" @click="openDestino(alta)">
                 Indicar Destino
               </UiButton>
-              <UiButton size="sm" variant="destructive" @click="cancelarAlta(alta.id)">
+              <UiButton v-if="authStore.isAdmin || authStore.isUTI" size="sm" variant="destructive" @click="cancelarAlta(alta.id)">
                 Cancelar Alta
               </UiButton>
             </template>
             <template v-else-if="alta.status === 'definida'">
-              <UiButton size="sm" variant="outline" @click="openDestino(alta)">
+              <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" variant="outline" @click="openDestino(alta)">
                 Alterar Destino
               </UiButton>
-              <UiButton size="sm" variant="destructive" @click="cancelarAlta(alta.id)">
+              <UiButton v-if="authStore.isAdmin || authStore.isUTI" size="sm" variant="destructive" @click="cancelarAlta(alta.id)">
                 Cancelar Alta
               </UiButton>
             </template>
@@ -131,6 +131,7 @@ import { useToast } from 'vue-toastification';
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';
 import Modal from '../components/Modal.vue';
+import { useAuthStore } from '../stores/auth';
 import api from '../services/api';
 
 type AltaStatus = 'pendente' | 'definida' | 'cancelada';
@@ -154,6 +155,7 @@ const showModalDestino = ref(false);
 const altaSelecionada = ref<Alta | null>(null);
 const formDestino = ref({ leitoDestino: '', necessidadesEspeciais: '' });
 const toast = useToast();
+const authStore = useAuthStore();
 
 async function carregar() {
   loading.value = true;

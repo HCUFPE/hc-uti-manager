@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <div v-if="true" class="mt-5 flex gap-2">
+    <div v-if="authStore.isAdmin || authStore.isUTI" class="mt-5 flex gap-2">
       <button
         v-if="status === 'ocupado'"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -105,6 +105,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useAuthStore } from '../stores/auth';
 import { ExclamationTriangleIcon, ClockIcon } from '@heroicons/vue/24/outline';
 import StatusBadge from './StatusBadge.vue';
 import UiBadge from './ui/Badge.vue';
@@ -131,6 +132,8 @@ const props = defineProps<{
   temConflito?: boolean;
   showActions?: boolean;
 }>();
+
+const authStore = useAuthStore();
 
 defineEmits<{
   'solicitar-alta': [];

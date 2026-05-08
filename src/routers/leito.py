@@ -18,9 +18,9 @@ async def reservar_leito(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
     if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Acesso restrito a UTI e NIR.")
+        raise HTTPException(status_code=403, detail="Acesso restrito à UTI.")
     
     result = await controller.reservar(lto_lto_id, payload)
     await historico.registrar(
@@ -39,7 +39,7 @@ async def cancelar_reserva(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
     if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar reservas.")
 
@@ -84,7 +84,7 @@ async def cancelar_alta(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
     if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar alta.")
 

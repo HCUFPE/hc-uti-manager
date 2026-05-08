@@ -50,7 +50,7 @@ async def atualizar_destino(
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Atualiza o destino e/ou necessidades especiais de uma solicitação de alta."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    allowed_roles = [Role.ADMIN, Role.NIR, Role.NIR_ADMIN]
     if current_user.get("perfil") not in allowed_roles:
         raise HTTPException(status_code=403, detail="Você não tem permissão para definir o destino da alta.")
 

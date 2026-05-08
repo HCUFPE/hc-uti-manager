@@ -16,7 +16,7 @@
           />
           <UiButton v-if="filtroData" variant="outline" size="sm" @click="filtroData = ''" class="shadow-sm">Limpar</UiButton>
         </div>
-        <UiButton v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR || authStore.isSolicitante" size="sm" class="shadow-sm" @click="showModalNova = true">
+        <UiButton v-if="authStore.isAdmin || authStore.isSolicitante" size="sm" class="shadow-sm" @click="showModalNova = true">
           <PlusIcon class="h-5 w-5 text-white mr-1" />
           Nova Solicitação
         </UiButton>
@@ -97,14 +97,14 @@
               <!-- Action Row -->
               <div class="mt-4 flex items-center gap-2">
                 <!-- UTI/NIR ou o Dono podem gerenciar (reservar é só UTI/NIR) -->
-                <template v-if="authStore.isUTI || authStore.isNIR">
+                <template v-if="authStore.isUTI">
                   <UiButton size="sm" @click="abrirModalReserva(sol)" class="bg-blue-600 text-white hover:bg-blue-700 shadow-sm px-4">
                     Reservar Leito
                   </UiButton>
                 </template>
 
                 <UiButton 
-                  v-if="authStore.isUTI || authStore.isNIR || podeGerenciar(sol)" 
+                  v-if="podeGerenciar(sol)" 
                   size="sm" 
                   variant="outline" 
                   @click="abrirModalEdicao(sol)" 
@@ -115,7 +115,7 @@
                 </UiButton>
                 
                 <UiButton 
-                  v-if="authStore.isUTI || authStore.isNIR || podeGerenciar(sol)" 
+                  v-if="podeGerenciar(sol)" 
                   size="sm" 
                   @click="cancelarSolicitacao(sol.id)" 
                   class="bg-red-600 text-white hover:bg-red-700 border-none shadow-sm px-4"
@@ -175,8 +175,8 @@
               </div>
             </div>
             <!-- Ações para Reservados -->
-            <div v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR || podeGerenciar(sol)" class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
-              <template v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR">
+            <div v-if="authStore.isAdmin || authStore.isUTI || podeGerenciar(sol)" class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
+              <template v-if="authStore.isAdmin">
                 <UiButton
                   size="sm"
                   variant="outline"
@@ -534,7 +534,7 @@ function podeGerenciar(sol: any) {
   const userGrupo = userPerfil.replace("-Admin", "").trim().toUpperCase();
   const solPerfil = (sol.perfil_solicitante || "").trim().toUpperCase();
   
-  if (authStore.isAdmin || authStore.isUTI || authStore.isNIR) return true;
+  if (authStore.isAdmin) return true;
   
   if (!userGrupo || userGrupo === "COMUM") return false;
   if (!solPerfil) return false;

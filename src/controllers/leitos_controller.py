@@ -40,6 +40,14 @@ class LeitosController:
         # 1. Busca o censo (Realidade do Hospital)
         try:
             leitos = await self.census_provider.listar_leitos()
+            # Injeção manual de leitos de teste para desenvolvimento
+            if os.getenv("ENV") == "development":
+                leitos.extend([
+                    {"lto_lto_id": "UTI-01", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+                    {"lto_lto_id": "UTI-02", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "999999", "nome_atual": "PACIENTE TESTE ALTA", "idade_atual": 45, "especialidade_atual": "CARDIOLOGIA"},
+                    {"lto_lto_id": "UTI-03", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+                    {"lto_lto_id": "UTI-04", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+                ])
         except Exception as e:
             print(f"Erro ao buscar censo: {e}")
             leitos = []
@@ -53,19 +61,7 @@ class LeitosController:
 
         # MESCLA LEITOS DE TESTE (Apenas em ambiente de desenvolvimento)
         if os.getenv("ENV") == "development":
-            censo_ids = {l['lto_lto_id'] for l in leitos}
-            for lto_id, estado in estados.items():
-                if lto_id not in censo_ids:
-                    leitos.append({
-                        "lto_lto_id": lto_id,
-                        "status": "DISPONIVEL",
-                        "prontuario_atual": None,
-                        "nome_paciente": None,
-                        "ala": "TESTE",
-                        "tipo": "TESTE",
-                        "alta_solicitada": False,
-                        "prontuario_proximo": None
-                    })
+            pass
             
         # 3. Busca solicitações de alta
         altas_map = {}
