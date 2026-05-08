@@ -2,6 +2,7 @@ from models.reserva_leito import ReservaLeitoInput
 from typing import List, Dict, Any, Optional
 from datetime import date, datetime
 import asyncio
+import os
 
 class LeitosController:
     def __init__(self, census_provider, estado_provider, alta_provider=None, solicitacao_provider=None):
@@ -49,6 +50,22 @@ class LeitosController:
         except Exception as e:
             print(f"Erro ao buscar estados: {e}")
             estados = {}
+
+        # MESCLA LEITOS DE TESTE (Apenas em ambiente de desenvolvimento)
+        if os.getenv("ENV") == "development":
+            censo_ids = {l['lto_lto_id'] for l in leitos}
+            for lto_id, estado in estados.items():
+                if lto_id not in censo_ids:
+                    leitos.append({
+                        "lto_lto_id": lto_id,
+                        "status": "DISPONIVEL",
+                        "prontuario_atual": None,
+                        "nome_paciente": None,
+                        "ala": "TESTE",
+                        "tipo": "TESTE",
+                        "alta_solicitada": False,
+                        "prontuario_proximo": None
+                    })
             
         # 3. Busca solicitações de alta
         altas_map = {}
@@ -201,26 +218,26 @@ class LeitosController:
     async def listar_leitos_disponiveis_para_reserva(self):
         leitos = await self.listar_leitos()
         
-        # Termos que o AGHU usa para leitos vazios (apenas para garantir)
-        status_vazios = ['DESOCUPADO', 'DISPONIVEL', 'DISPONÍVEL', 'VAGO', 'LIBERADO', 'LIMPEZA']
+        # Termos que o AGHU usa para leitos vazios
+        status_vazios = ['DESOCUPADO', 'DISPONIVEL', 'DISPONÍVEL', 'VAGO', 'LIBERADO', 'LIMPEZA', 'VAGO/LIMPO']
         
         disponiveis = []
         for l in leitos:
             status = str(l.get('status', '')).strip().upper()
+            status_local = str(l.get('status_local', '')).strip().upper()
             prontuario_atual = l.get('prontuario_atual')
             proximo_paciente = l.get('prontuario_proximo')
             tem_alta = l.get('alta_solicitada', False)
             
-            # LOGICA INFALÍVEL:
-            # 1. Se não tem ninguém no leito E não tem reserva -> DISPONÍVEL
-            # 2. Se o leito está marcado com um dos status de vazio E não tem reserva -> DISPONÍVEL
-            # 3. Se o leito tem alta solicitada E não tem reserva -> DISPONÍVEL
+            # Um leito está disponível para reserva se:
+            # 1. Não tem reserva já feita (proximo_paciente é nulo ou vazio)
+            # 2. E (está fisicamente vago OU tem status de vazio OU tem alta solicitada)
             
-            esta_fisicamente_vazio = (prontuario_atual is None or prontuario_atual == "" or prontuario_atual == 0)
-            ja_tem_reserva = proximo_paciente is not None
+            ja_tem_reserva = proximo_paciente is not None and str(proximo_paciente).strip() != ""
+            esta_fisicamente_vazio = (prontuario_atual is None or str(prontuario_atual).strip() in ["", "0", "N/D"])
             
             if not ja_tem_reserva:
-                if esta_fisicamente_vazio or (status in status_vazios) or tem_alta:
+                if esta_fisicamente_vazio or (status in status_vazios) or (status_local in status_vazios) or tem_alta:
                     disponiveis.append(l)
         
         return disponiveis

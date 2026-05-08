@@ -103,7 +103,7 @@ async def listar_leitos(
     """Retorna todos os leitos da unidade selecionada, com dados unificados do banco local e AGHU."""
     return await controller.listar_leitos()
 
-@router.get("/disponiveis-para-reserva")
+@router.get("/disponiveis")
 async def listar_leitos_disponiveis_para_reserva(
     controller: LeitosController = Depends(get_leito_controller)
 ):
