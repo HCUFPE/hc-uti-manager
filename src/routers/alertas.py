@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any
 from controllers.alerta_controller import AlertaController
 from dependencies import get_alerta_controller
+from auth.auth import auth_handler
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/alertas", tags=["Alertas"])
@@ -11,10 +12,12 @@ class AtualizarLeituraInput(BaseModel):
 
 @router.get("", response_model=List[Dict[str, Any]])
 async def listar_alertas(
-    controller: AlertaController = Depends(get_alerta_controller)
+    controller: AlertaController = Depends(get_alerta_controller),
+    current_user: dict = Depends(auth_handler.decode_token)
 ):
-    """Retorna todos os alertas persistidos no banco de dados."""
-    return await controller.listar_alertas()
+    """Retorna todos os alertas persistidos, filtrados pelo perfil do usuário."""
+    perfil = current_user.get("perfil", "Comum")
+    return await controller.listar_alertas(perfil)
 
 @router.put("/{alerta_id}/lido")
 async def atualizar_status_leitura(
@@ -24,6 +27,15 @@ async def atualizar_status_leitura(
 ):
     """Atualiza o status de leitura de um alerta."""
     return await controller.atualizar_status_leitura(alerta_id, payload.lido)
+
+@router.put("/lidos")
+async def marcar_todos_como_lidos(
+    controller: AlertaController = Depends(get_alerta_controller),
+    current_user: dict = Depends(auth_handler.decode_token)
+):
+    """Marca todos os alertas visíveis para o usuário como lidos."""
+    perfil = current_user.get("perfil", "Comum")
+    return await controller.marcar_todos_como_lidos(perfil)
 
 @router.post("/gerar", status_code=status.HTTP_201_CREATED)
 async def gerar_alertas(

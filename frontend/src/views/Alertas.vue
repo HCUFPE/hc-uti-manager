@@ -1,16 +1,10 @@
 <template>
   <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 class="text-3xl font-bold text-slate-900">Alertas do Sistema</h2>
-      <div class="flex flex-wrap gap-2">
-        <UiButton
-          v-for="filtro in filtros"
-          :key="filtro.value"
-          :variant="filtroTipo === filtro.value ? 'default' : 'outline'"
-          size="sm"
-          @click="toggleFiltro(filtro.value)"
-        >
-          {{ filtro.label }}
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-4 mb-6">
+      <div class="flex items-center gap-4">
+        <h2 class="text-3xl font-bold text-slate-900">Alertas do Sistema</h2>
+        <UiButton v-if="alertasNaoLidos.length > 0" variant="outline" size="sm" @click="marcarTodosLidos" class="text-xs h-8">
+          Marcar todos como lidos
         </UiButton>
       </div>
     </div>
@@ -19,16 +13,13 @@
       <article
         v-for="alerta in alertasFiltrados"
         :key="alerta.id"
-        class="rounded-xl border shadow-sm transition cursor-pointer"
+        class="rounded-xl border shadow-sm transition group relative"
         :class="[
           alerta.lido ? alertConfig[alerta.tipo].readClass : alertConfig[alerta.tipo].cardClass,
           alerta.lido ? 'opacity-60 saturate-50' : 'hover:shadow-md'
         ]"
-        role="button"
-        tabindex="0"
-        @click="openModal(alerta)"
       >
-        <div class="p-4">
+        <div class="p-4" @click="openModal(alerta)" role="button" tabindex="0">
           <div class="flex items-start gap-4">
             <div
               class="rounded-full p-2"
@@ -56,11 +47,17 @@
                     {{ alerta.mensagem }}
                   </p>
                 </div>
-                <UiBadge
-                  :class="alerta.lido ? 'border-slate-200 bg-slate-100 text-slate-500' : alertConfig[alerta.tipo].badgeClass"
-                >
-                  {{ formatTipo(alerta.tipo) }}
-                </UiBadge>
+                <div class="flex items-center gap-2">
+                  <!-- Botão Ciente com Estilo de Pílula (Badge) -->
+                  <button 
+                    v-if="!alerta.lido"
+                    class="h-7 px-4 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
+                    :class="alertConfig[alerta.tipo].badgeClass"
+                    @click.stop="marcarComoLido(alerta)"
+                  >
+                    Ciente
+                  </button>
+                </div>
               </div>
               <div
                 class="flex items-center gap-2 text-xs"
@@ -155,6 +152,7 @@ import Modal from '../components/Modal.vue';
 import { computed, ref, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import api from '../services/api';
+import { useAuthStore } from '../stores/auth';
 
 type AlertType = 'critico' | 'aviso' | 'info';
 type AlertCategory = 'Infeccioso' | 'Permanencia' | 'Gargalo' | 'Limpeza' | 'Outros';
@@ -174,12 +172,17 @@ const alertas = ref<Alert[]>([]);
 const toast = useToast();
 const showModal = ref(false);
 const selectedAlert = ref<Alert | null>(null);
-const filtroTipo = ref<AlertFilter>('todos');
+const authStore = useAuthStore();
 
 async function fetchAlertas() {
   try {
     const response = await api.get('/api/alertas');
     alertas.value = response.data;
+    
+    // Dispara a atualização do motor de alertas em background
+    // Não usamos 'await' aqui para não travar a UI
+    api.post('/api/alertas/gerar').catch(err => console.error('Erro background sync:', err));
+    
   } catch (error) {
     console.error('Erro ao buscar alertas:', error);
     toast.error('Erro ao carregar alertas.');
@@ -229,12 +232,6 @@ const alertConfig: Record<
 
 const formatTipo = (tipo: AlertType) => tipo.charAt(0).toUpperCase() + tipo.slice(1);
 
-const filtros = [
-  { label: 'Criticos', value: 'critico' },
-  { label: 'Avisos', value: 'aviso' },
-  { label: 'Informacoes', value: 'info' },
-] as const;
-
 const openModal = (alerta: Alert) => {
   selectedAlert.value = alerta;
   showModal.value = true;
@@ -250,17 +247,47 @@ const modalTitle = computed(() =>
 );
 
 const alertasFiltrados = computed(() => {
-  if (filtroTipo.value === 'todos') return alertas.value;
-  return alertas.value.filter(alerta => alerta.tipo === filtroTipo.value);
+  if (authStore.isAdmin) return [];
+  return alertas.value;
 });
 
-const toggleFiltro = (valor: AlertFilter) => {
-  filtroTipo.value = filtroTipo.value === valor ? 'todos' : valor;
-};
+const alertasNaoLidos = computed(() => {
+  return alertasFiltrados.value.filter(a => !a.lido);
+});
 
 const primaryActionLabel = computed(() =>
   selectedAlert.value?.lido ? 'Marcar como não lida' : 'Sim, marcar como lida'
 );
+
+const marcarComoLido = async (alerta: Alert) => {
+  try {
+    await api.put(`/api/alertas/${alerta.id}/lido`, { lido: true });
+    const idx = alertas.value.findIndex(a => a.id === alerta.id);
+    if (idx >= 0) {
+      alertas.value[idx].lido = true;
+    }
+    toast.success('Alerta arquivado.');
+  } catch (error) {
+    console.error('Erro ao marcar como lido:', error);
+    toast.error('Erro ao atualizar alerta.');
+  }
+};
+
+const marcarTodosLidos = async () => {
+  try {
+    await api.put('/api/alertas/lidos');
+    alertas.value.forEach(a => {
+      // Se estiver nos filtrados, marca como lido
+      if (alertasFiltrados.value.some(f => f.id === a.id)) {
+        a.lido = true;
+      }
+    });
+    toast.success('Todos os alertas foram marcados como lidos.');
+  } catch (error) {
+    console.error('Erro ao marcar todos como lidos:', error);
+    toast.error('Erro ao processar requisição.');
+  }
+};
 
 const toggleRead = async () => {
   if (!selectedAlert.value) return;

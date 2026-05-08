@@ -80,13 +80,22 @@ def get_altas_controller(
 ) -> AltasController:
     return AltasController(alta_provider, census_provider, estado_provider)
 
+# --- HISTORICO --------------------------------------------------
+
+def get_historico_provider(
+    session: AsyncSession = Depends(get_app_db_session),
+) -> HistoricoProvider:
+    """Provedor para registro e consulta do histórico de ações."""
+    return HistoricoProvider(session=session)
+
 # --- SOLICITACOES LEITO --------------------------------------------------
 
 def get_solicitacao_leito_controller(
     leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
-    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider)
+    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
+    historico_provider: HistoricoProvider = Depends(get_historico_provider)
 ) -> SolicitacaoLeitoController:
-    return SolicitacaoLeitoController(leito_provider, estado_provider)
+    return SolicitacaoLeitoController(leito_provider, estado_provider, historico_provider)
 
 # --- ALERTAS --------------------------------------------------
 
@@ -99,9 +108,10 @@ def get_alerta_controller(
     alerta_provider: AlertaProvider = Depends(get_alerta_provider),
     census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
     alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
-    solicitacao_leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider)
+    solicitacao_leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
+    historico_provider: HistoricoProvider = Depends(get_historico_provider)
 ) -> AlertaController:
-    return AlertaController(alerta_provider, census_provider, alta_provider, solicitacao_leito_provider)
+    return AlertaController(alerta_provider, census_provider, alta_provider, solicitacao_leito_provider, historico_provider)
 
 # --- INDICADORES --------------------------------------------------
 
@@ -117,10 +127,3 @@ def get_indicadores_controller(
     return IndicadoresController(indicadores_provider)
 
 
-# --- HISTORICO --------------------------------------------------
-
-def get_historico_provider(
-    session: AsyncSession = Depends(get_app_db_session),
-) -> HistoricoProvider:
-    """Provedor para registro e consulta do histórico de ações."""
-    return HistoricoProvider(session=session)

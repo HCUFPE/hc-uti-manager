@@ -383,10 +383,34 @@ const formNova = ref({
 
 const solicitacoesFiltradas = computed(() => {
   let lista = [...solicitacoes.value];
+  
+  // 1. Aplicar filtro de data se existir
   if (filtroData.value) {
     lista = lista.filter(s => s.data_cirurgia === filtroData.value);
   }
-  return lista;
+
+  // 2. Ordenação Multinível
+  return lista.sort((a, b) => {
+    // Nível 1: Data Prevista da Cirurgia
+    const dataA = a.data_cirurgia || '9999-99-99';
+    const dataB = b.data_cirurgia || '9999-99-99';
+    if (dataA !== dataB) return dataA.localeCompare(dataB);
+
+    // Nível 2: Turno (Manhã < Tarde < Noite)
+    const pesoTurno: Record<string, number> = { 'Manhã': 1, 'Tarde': 2, 'Noite': 3 };
+    const turnoA = pesoTurno[a.turno] || 99;
+    const turnoB = pesoTurno[b.turno] || 99;
+    if (turnoA !== turnoB) return turnoA - turnoB;
+
+    // Nível 3: Prioridade (P1 < P2 < P3 < P4 < P5)
+    const pesoPrio: Record<string, number> = { 'P1': 1, 'P2': 2, 'P3': 3, 'P4': 4, 'P5': 5 };
+    const prioA = pesoPrio[a.prioridade || ''] || 99;
+    const prioB = pesoPrio[b.prioridade || ''] || 99;
+    if (prioA !== prioB) return prioA - prioB;
+
+    // Nível 4: Data da Solicitação (Desempate por ordem de chegada)
+    return a.dataHora.localeCompare(b.dataHora);
+  });
 });
 
 const solicitacoesPendentes = computed(() => solicitacoesFiltradas.value.filter(s => s.status === 'Pendente'));

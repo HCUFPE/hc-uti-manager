@@ -44,7 +44,12 @@ class AlertaProvider:
 
     async def deletar_todos(self) -> bool:
         """Utilitario para resetar alertas durante o job de sincronizacao (se necessario)"""
-        # Em vez de deletar, poderíamos marcar como "resolvido" ou apagar os antigos
         await self.session.execute(delete(Alerta))
+        await self.session.commit()
+        return True
+
+    async def deletar(self, id: int) -> bool:
+        """Deleta um alerta específico por ID."""
+        await self.session.execute(delete(Alerta).where(Alerta.id == id))
         await self.session.commit()
         return True

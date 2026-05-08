@@ -51,6 +51,17 @@ class MockAuthProvider(AuthProviderInterface):
             "comum": "comum"
         }
 
+        # Se password for None, estamos apenas buscando info (ex: refresh token)
+        if password is None:
+            if username in mock_users:
+                return {
+                    "username": username,
+                    "displayName": [f"Mock {username.upper()}"],
+                    "groups": ["Users"],
+                    "email": f"{username}@mock.com"
+                }
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
         if username in mock_users and password == mock_users[username]:
             print(f"SECURITY: Mock Authentication SUCCESSFUL for user: {username}")
             return {
@@ -102,18 +113,18 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
         user_conn = None
         search_conn = None
         try:
-            user_bind_dn = f"EBSERHNET\\{username}"
-            # 1. Validar a senha do usuário IMEDIATAMENTE
-            user_conn = self._bind(user_bind_dn, password)
+            # Se tivermos senha, validamos o usuário primeiro
+            if password:
+                user_bind_dn = f"EBSERHNET\\{username}"
+                user_conn = self._bind(user_bind_dn, password)
+                search_conn = user_conn
 
-            # 2. Se validou, agora busca os dados (usando conta de serviço ou a do próprio usuário)
-            search_conn = user_conn
-            if self.ad_bind_user and self.ad_bind_password:
-                try:
+            # Se não tivermos senha (refresh), precisamos da conta de serviço
+            if not search_conn:
+                if self.ad_bind_user and self.ad_bind_password:
                     search_conn = self._bind(self.ad_bind_user, self.ad_bind_password)
-                except Exception as e:
-                    print(f"WARNING: Service account bind failed, falling back to user bind: {e}")
-                    search_conn = user_conn
+                else:
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Password required for initial auth")
 
             search_filter = f"(&(objectClass=user)(sAMAccountName={username}))"
             search_conn.search(

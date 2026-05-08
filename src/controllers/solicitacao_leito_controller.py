@@ -1,16 +1,24 @@
 from typing import List, Dict, Any, Optional
+from datetime import timedelta
 from fastapi import HTTPException
 from providers.implementations.solicitacao_leito_provider import SolicitacaoLeitoProvider
 from providers.implementations.leito_estado_provider import LeitoEstadoProvider
+from providers.implementations.historico_provider import HistoricoProvider
 
 class SolicitacaoLeitoController:
     """
     Controller para gerenciar solicitações de vaga/leito na UTI.
     """
 
-    def __init__(self, leito_provider: SolicitacaoLeitoProvider, estado_provider: LeitoEstadoProvider | None = None):
+    def __init__(
+        self, 
+        leito_provider: SolicitacaoLeitoProvider, 
+        estado_provider: LeitoEstadoProvider | None = None,
+        historico_provider: HistoricoProvider | None = None
+    ):
         self.leito_provider = leito_provider
         self.estado_provider = estado_provider
+        self.historico_provider = historico_provider
 
     async def _remanejar_prioridades(self, data_cirurgia: str, turno: str, prioridade_alvo: str, skip_id: int | None = None):
         """
@@ -62,7 +70,7 @@ class SolicitacaoLeitoController:
                 "prioridade": s.prioridade,
                 "perfil_solicitante": s.perfil_solicitante,
                 "destino": s.destino,
-                "dataHora": s.criado_em.strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
+                "dataHora": (s.criado_em - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
             }
             for s in solicitacoes
         ]

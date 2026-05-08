@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer, DateTime
 from sqlalchemy.sql import func
+from datetime import timedelta
 from resources.database import Base
 
 class SolicitacaoLeito(Base):
@@ -24,6 +25,10 @@ class SolicitacaoLeito(Base):
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     def to_dict(self):
+        # Ajuste para horário de Brasília (-3h)
+        criado_local = (self.criado_em - timedelta(hours=3)) if self.criado_em else None
+        atualizado_local = (self.atualizado_em - timedelta(hours=3)) if self.atualizado_em else None
+        
         return {
             "id": self.id,
             "prontuario": self.prontuario,
@@ -36,6 +41,6 @@ class SolicitacaoLeito(Base):
             "prioridade": self.prioridade,
             "destino": self.destino,
             "perfil_solicitante": self.perfil_solicitante,
-            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
-            "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
+            "criado_em": criado_local.isoformat() if criado_local else None,
+            "atualizado_em": atualizado_local.isoformat() if atualizado_local else None,
         }

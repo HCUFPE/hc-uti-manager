@@ -28,6 +28,13 @@
       >
         <component :is="item.icon" class="h-5 w-5" />
         <span v-if="!collapsed">{{ item.label }}</span>
+        <span
+          v-if="item.label === 'Alertas' && unreadCount > 0"
+          class="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white"
+          :class="collapsed ? 'absolute top-1.5 right-1.5' : 'ml-auto'"
+        >
+          {{ unreadCount }}
+        </span>
       </RouterLink>
 
       <div
@@ -50,8 +57,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
+import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import {
   Bed,
@@ -126,6 +134,30 @@ const activeItems = computed(() => {
   }
 
   return items;
+});
+
+const unreadCount = ref(0);
+
+async function fetchUnreadCount() {
+  if (!authStore.isAuthenticated) return;
+  try {
+    const { data } = await api.get('/api/alertas');
+    unreadCount.value = authStore.isAdmin ? 0 : data.filter((a: any) => !a.lido).length;
+  } catch (error) {
+    console.error('Erro ao buscar contagem de alertas:', error);
+  }
+}
+
+let intervalId: any = null;
+
+onMounted(() => {
+  fetchUnreadCount();
+  // Atualiza a cada 10 segundos para maior agilidade
+  intervalId = setInterval(fetchUnreadCount, 10000);
+});
+
+onUnmounted(() => {
+  if (intervalId) clearInterval(intervalId);
 });
 
 const disabledItems: Array<{ label: string; icon: any }> = [];

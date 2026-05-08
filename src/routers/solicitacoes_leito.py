@@ -46,15 +46,29 @@ async def criar_solicitacao(
     grupo_solicitante = user_perfil.replace("-Admin", "")
     payload["perfil_solicitante"] = grupo_solicitante
     
+    # Primeiro cria a solicitação
     result = await controller.criar_solicitacao(payload)
+    
+    # Busca a solicitação recém criada para pegar o ID real
+    sols = await controller.leito_provider.get_todas()
+    nova_vaga = next((s for s in sols if str(s.prontuario) == str(payload.get("prontuario"))), None)
+    sol_id = nova_vaga.id if nova_vaga else "?"
+
     prontuario = payload.get("prontuario", "")
     especialidade = payload.get("especialidade", "")
     tipo_sol = payload.get("tipo", "")
+    
+    data_original = payload.get("data_cirurgia", "")
+    data_br = data_original
+    if data_original and "-" in data_original:
+        p = data_original.split("-")
+        if len(p) == 3: data_br = f"{p[2]}/{p[1]}/{p[0]}"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
-        tipo="solicitacao",
+        tipo="nova_solicitacao",
         acao="Nova solicitação de vaga",
-        detalhes=f"Prontuário {prontuario} — {especialidade} ({tipo_sol})",
+        detalhes=f"Solicitação #{sol_id} - Prontuário {prontuario} — {especialidade} ({tipo_sol}) - Data: {data_br}",
     )
     return result
 
@@ -116,11 +130,24 @@ async def editar_solicitacao(
 
     await controller.editar_solicitacao(sol_id, payload)
     prontuario = payload.get("prontuario", "N/D")
+    
+    # Se mudou a prioridade, usamos um tipo específico para o alerta
+    tipo_hist = "edicao"
+    if "prioridade" in payload:
+        tipo_hist = "alteracao_prioridade"
+
+    # Tenta pegar a data nova (payload) ou a antiga (solicitacao)
+    data_raw = payload.get("data_cirurgia") or solicitacao.data_cirurgia
+    data_br = data_raw
+    if data_raw and "-" in data_raw:
+        p = data_raw.split("-")
+        if len(p) == 3: data_br = f"{p[2]}/{p[1]}/{p[0]}"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
-        tipo="edicao",
+        tipo=tipo_hist,
         acao="Editou solicitação de vaga",
-        detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario})",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) - Data: {data_br}",
     )
     return {"message": "Solicitação editada com sucesso"}
 
@@ -152,11 +179,17 @@ async def cancelar_solicitacao(
             raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar esta solicitação.")
 
     await controller.cancelar_solicitacao(sol_id)
+    # Formata data para o histórico (BR)
+    data_formatada = solicitacao.data_cirurgia
+    if data_formatada and "-" in data_formatada:
+        p = data_formatada.split("-")
+        if len(p) == 3: data_formatada = f"{p[2]}/{p[1]}/{p[0]}"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
-        tipo="cancelamento",
+        tipo="exclusao_solicitacao",
         acao="Cancelou solicitação de vaga",
-        detalhes=f"Solicitação #{sol_id}",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Data: {data_formatada}",
     )
     return {"message": "Solicitação cancelada com sucesso"}
 

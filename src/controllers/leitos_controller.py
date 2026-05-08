@@ -45,7 +45,7 @@ class LeitosController:
                 leitos.extend([
                     {"lto_lto_id": "UTI-01", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
                     {"lto_lto_id": "UTI-02", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "999999", "nome_atual": "PACIENTE TESTE ALTA", "idade_atual": 45, "especialidade_atual": "CARDIOLOGIA"},
-                    {"lto_lto_id": "UTI-03", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+                    {"lto_lto_id": "UTI-03", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "123456", "nome_atual": "PACIENTE ATUAL", "prontuario_proximo": "987654", "nome_proximo": "PACIENTE CHEGANDO"},
                     {"lto_lto_id": "UTI-04", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
                 ])
         except Exception as e:

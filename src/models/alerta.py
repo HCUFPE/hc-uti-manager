@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer, Boolean, DateTime
 from sqlalchemy.sql import func
+from datetime import timedelta
 from resources.database import Base
 
 class Alerta(Base):
@@ -18,20 +19,24 @@ class Alerta(Base):
     # Identificadores opcionais para linkar o alerta a um objeto específico
     lto_id = Column(String(14), nullable=True) 
     prontuario = Column(String(50), nullable=True)
+    perfil_alvo = Column(String(50), nullable=True) # Se nulo, visível para UTI/NIR/Admin
 
     criado_em = Column(DateTime, server_default=func.now())
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     def to_dict(self):
+        # Ajuste para horário de Brasília (-3h)
+        data_local = (self.criado_em - timedelta(hours=3)) if self.criado_em else None
+        
         return {
             "id": str(self.id),
             "tipo": self.tipo,
             "categoria": self.categoria,
             "titulo": self.titulo,
             "mensagem": self.mensagem,
+            "dataHora": data_local.strftime("%d/%m/%Y %H:%M") if data_local else "",
             "lido": self.lido,
             "lto_id": self.lto_id,
             "prontuario": self.prontuario,
-            "dataHora": self.criado_em.strftime("%Y-%m-%d %H:%M") if self.criado_em else None,
-            "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
+            "perfil_alvo": self.perfil_alvo
         }

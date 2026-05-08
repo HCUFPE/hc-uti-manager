@@ -1,3 +1,4 @@
+# Versão Estável 1.2 - Alertas Corrigidos
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse

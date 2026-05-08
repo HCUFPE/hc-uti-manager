@@ -1,6 +1,6 @@
 """Modelo SQLAlchemy para o Histórico de Ações do sistema."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, String, DateTime
 from resources.database import Base
 
@@ -18,11 +18,15 @@ class HistoricoAcao(Base):
     criado_em = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     def to_dict(self) -> dict:
+        # Ajuste para horário de Brasília (-3h)
+        data_local = (self.criado_em - timedelta(hours=3)) if self.criado_em else None
+        
         return {
             "id": str(self.id),
+            "criado_em": self.criado_em,
             "operador": self.operador,
             "tipo": self.tipo,
             "acao": self.acao,
             "detalhes": self.detalhes or "",
-            "dataHora": self.criado_em.strftime("%Y-%m-%d %H:%M") if self.criado_em else "",
+            "dataHora": data_local.strftime("%d/%m/%Y %H:%M") if data_local else "",
         }

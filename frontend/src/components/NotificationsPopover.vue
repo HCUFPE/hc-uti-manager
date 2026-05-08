@@ -8,10 +8,10 @@
     >
       <Bell class="h-5 w-5" />
       <span
-        v-if="unreadCount > 0"
+        v-if="totalUnreadCount > 0"
         class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow"
       >
-        {{ unreadCount }}
+        {{ totalUnreadCount }}
       </span>
     </button>
 
@@ -23,7 +23,7 @@
       >
         <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <h3 class="font-semibold text-slate-900">Notificacoes</h3>
-          <span class="text-xs text-slate-500">{{ unreadCount }} nao lidas</span>
+          <span class="text-xs text-slate-500">{{ totalUnreadCount }} nao lidas</span>
         </div>
 
         <div class="max-h-96 overflow-auto p-2">
@@ -76,6 +76,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 import {
   AlertTriangle,
   Bell,
@@ -97,14 +98,18 @@ type NotificationItem = {
 };
 
 const notifications = ref<NotificationItem[]>([]);
+const totalUnreadCount = ref(0);
 
 const fetchNotifications = async () => {
   try {
     const response = await api.get('/api/alertas');
     const alertas = response.data;
     
+    const allUnread = authStore.isAdmin ? [] : alertas.filter((a: any) => !a.lido);
+    totalUnreadCount.value = allUnread.length;
+    
     // Pegamos apenas os não lidos para o popover, limitando a 5 recentes
-    const unreadAlerts = alertas.filter((a: any) => !a.lido).slice(0, 5);
+    const unreadAlerts = allUnread.slice(0, 5);
     
     notifications.value = unreadAlerts.map((a: any) => {
       // Mapear categoria/tipo para os ícones do popover
@@ -155,6 +160,7 @@ const open = ref(false);
 const trigger = ref<HTMLElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const router = useRouter();
+const authStore = useAuthStore();
 
 const unreadCount = computed(() => notifications.value.filter(n => n.unread).length);
 

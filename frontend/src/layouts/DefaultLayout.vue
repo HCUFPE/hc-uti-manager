@@ -1,11 +1,11 @@
 <template>
   <div class="min-h-screen bg-slate-100 text-slate-900 overflow-hidden">
     <div class="flex h-screen overflow-hidden">
-      <SidebarNav :collapsed="sidebarCollapsed" @toggle="toggleSidebar" />
+      <SidebarNav v-if="authStore.isAuthenticated" :collapsed="sidebarCollapsed" @toggle="toggleSidebar" />
 
       <div
         class="flex min-w-0 flex-1 flex-col transition-[padding] duration-200"
-        :class="sidebarCollapsed ? 'pl-20' : 'pl-64'"
+        :class="!authStore.isAuthenticated ? 'pl-0' : (sidebarCollapsed ? 'pl-20' : 'pl-64')"
       >
         <header class="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
           <div class="flex items-center justify-between gap-3">
@@ -13,7 +13,8 @@
               <h1 class="text-xl font-semibold text-slate-900">{{ headerTitle }}</h1>
             </div>
             <div class="flex items-center gap-3">
-              <NotificationsPopover />
+              <!-- Sininho desativado temporariamente -->
+              <!-- <NotificationsPopover /> -->
               <ProfileDropdown v-if="authStore.isAuthenticated" />
               <router-link
                 v-else
