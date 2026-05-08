@@ -95,19 +95,32 @@
               </div>
 
               <!-- Action Row -->
-              <div v-if="authStore.isUTI || authStore.isNIR" class="mt-4 flex items-center gap-2">
-                <UiButton size="sm" @click="abrirModalReserva(sol)" class="bg-blue-600 text-white hover:bg-blue-700 shadow-sm px-4">
-                  Reservar Leito
-                </UiButton>
-                <UiButton size="sm" variant="outline" @click="abrirModalEdicao(sol)" class="shadow-sm">
+              <div class="mt-4 flex items-center gap-2">
+                <!-- UTI/NIR ou o Dono podem gerenciar (reservar é só UTI/NIR) -->
+                <template v-if="authStore.isUTI || authStore.isNIR">
+                  <UiButton size="sm" @click="abrirModalReserva(sol)" class="bg-blue-600 text-white hover:bg-blue-700 shadow-sm px-4">
+                    Reservar Leito
+                  </UiButton>
+                </template>
+
+                <UiButton 
+                  v-if="authStore.isUTI || authStore.isNIR || podeGerenciar(sol)" 
+                  size="sm" 
+                  variant="outline" 
+                  @click="abrirModalEdicao(sol)" 
+                  class="shadow-sm"
+                >
                   <PencilSquareIcon class="h-4 w-4 mr-1 text-slate-500" />
                   Editar
                 </UiButton>
+                
                 <UiButton 
+                  v-if="authStore.isUTI || authStore.isNIR || podeGerenciar(sol)" 
                   size="sm" 
                   @click="cancelarSolicitacao(sol.id)" 
                   class="bg-red-600 text-white hover:bg-red-700 border-none shadow-sm px-4"
                 >
+                  <TrashIcon class="h-4 w-4 mr-1" />
                   Cancelar Solicitação
                 </UiButton>
               </div>
@@ -162,20 +175,22 @@
               </div>
             </div>
             <!-- Ações para Reservados -->
-            <div v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR" class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
-              <UiButton
-                size="sm"
-                variant="outline"
-                @click="abrirModalEdicao(sol)"
-                class="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-              >
-                <PencilSquareIcon class="h-4 w-4 mr-1" />
-                Editar
-              </UiButton>
+            <div v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR || podeGerenciar(sol)" class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
+              <template v-if="authStore.isAdmin || authStore.isUTI || authStore.isNIR">
+                <UiButton
+                  size="sm"
+                  variant="outline"
+                  @click="abrirModalEdicao(sol)"
+                  class="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+                >
+                  <PencilSquareIcon class="h-4 w-4 mr-1" />
+                  Editar
+                </UiButton>
+              </template>
               <UiButton 
                 size="sm" 
                 @click="cancelarReserva(sol.id)" 
-                class="bg-rose-600 text-white hover:bg-rose-700 border-none shadow-sm"
+                class="bg-rose-600 text-white hover:bg-rose-700 border-none shadow-sm px-4"
               >
                 <TrashIcon class="h-4 w-4 mr-1" />
                 Cancelar Reserva
@@ -229,16 +244,16 @@
       <template #header>{{ isEditing ? 'Editar Solicitação' : 'Nova Solicitação' }}</template>
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700">Prontuário</label>
-          <input v-model="formNova.prontuario" type="text" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+          <label class="block text-sm font-medium text-slate-700">Prontuário <span class="text-red-500">*</span></label>
+          <input v-model="formNova.prontuario" type="text" placeholder="Digite o prontuário" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-slate-700">Idade</label>
+            <label class="block text-sm font-medium text-slate-700">Idade <span class="text-red-500">*</span></label>
             <input v-model="formNova.idade" type="number" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-slate-700">Tipo</label>
+            <label class="block text-sm font-medium text-slate-700">Tipo <span class="text-red-500">*</span></label>
             <select v-model="formNova.tipo" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
               <option value="" disabled selected>Selecione o Tipo</option>
               <option value="Clinico">Clinico</option>
@@ -249,7 +264,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700">Especialidade</label>
+          <label class="block text-sm font-medium text-slate-700">Especialidade <span class="text-red-500">*</span></label>
           <select v-model="formNova.especialidade" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
             <option value="" disabled selected>Selecione a Especialidade</option>
             <option value="BUCO (BUCOMAXILOFACIAL)">BUCO (BUCOMAXILOFACIAL)</option>
@@ -276,11 +291,11 @@
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-slate-700">Data Cirurgia</label>
+            <label class="block text-sm font-medium text-slate-700">Data Cirurgia <span class="text-red-500">*</span></label>
             <input v-model="formNova.data_cirurgia" type="date" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-slate-700">Turno</label>
+            <label class="block text-sm font-medium text-slate-700">Turno <span class="text-red-500">*</span></label>
             <select v-model="formNova.turno" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
               <option value="" disabled selected>Selecione o Turno</option>
               <option value="Manhã">Manhã</option>
@@ -303,7 +318,10 @@
       </div>
       <template #footer>
         <UiButton variant="outline" @click="fecharModalNova">Cancelar</UiButton>
-        <UiButton :disabled="submetendoNova" @click="salvarNova">
+        <UiButton 
+          :disabled="submetendoNova || !formNova.prontuario || !formNova.especialidade || !formNova.tipo || !formNova.idade || !formNova.data_cirurgia || !formNova.turno" 
+          @click="salvarNova"
+        >
           {{ submetendoNova ? 'Salvando...' : 'Salvar' }}
         </UiButton>
       </template>
@@ -336,6 +354,7 @@ type Solicitacao = {
   prioridade?: string;
   destino?: string;
   dataHora: string;
+  perfil_solicitante?: string;
 };
 
 const solicitacoes = ref<Solicitacao[]>([]);
@@ -362,120 +381,106 @@ const formNova = ref({
   prioridade: ''
 });
 
-function formatarDataHoraBR(dataHoraISO: string) {
-  if (!dataHoraISO) return '';
-  const [data, hora] = dataHoraISO.split(' ');
-  const [ano, mes, dia] = data.split('-');
-  return `${dia}/${mes}/${ano} ${hora || ''}`;
-}
-
-function formatarDataBR(data: string) {
-  if (!data) return '';
-  const [ano, mes, dia] = data.split('-');
-  return `${dia}/${mes}/${ano}`;
-}
-
 const solicitacoesFiltradas = computed(() => {
   let lista = [...solicitacoes.value];
   if (filtroData.value) {
-    lista = lista.filter(sol => sol.data_cirurgia === filtroData.value);
+    lista = lista.filter(s => s.data_cirurgia === filtroData.value);
   }
-  const ordemTurno: Record<string, number> = { 'Manhã': 1, 'Tarde': 2, 'Noite': 3 };
-  const ordemPrioridade: Record<string, number> = { 'P1': 1, 'P2': 2, 'P3': 3, 'P4': 4, 'P5': 5 };
-
-  return lista.sort((a, b) => {
-    // 1. Data da Cirurgia
-    const dataA = a.data_cirurgia || '9999-12-31';
-    const dataB = b.data_cirurgia || '9999-12-31';
-    if (dataA !== dataB) return dataA.localeCompare(dataB);
-
-    // 2. Turno
-    const turnoA = ordemTurno[a.turno] || 99;
-    const turnoB = ordemTurno[b.turno] || 99;
-    if (turnoA !== turnoB) return turnoA - turnoB;
-
-    // 3. Prioridade
-    const prioA = ordemPrioridade[a.prioridade || ''] || 99;
-    const prioB = ordemPrioridade[b.prioridade || ''] || 99;
-    if (prioA !== prioB) return prioA - prioB;
-
-    // 4. Hora da Solicitação
-    const horaA = a.dataHora || '';
-    const horaB = b.dataHora || '';
-    return horaA.localeCompare(horaB);
-  });
+  return lista;
 });
 
 const solicitacoesPendentes = computed(() => solicitacoesFiltradas.value.filter(s => s.status === 'Pendente'));
 const solicitacoesReservadas = computed(() => solicitacoesFiltradas.value.filter(s => s.status === 'Reservado'));
 
-async function carregar() {
+async function carregarSolicitacoes() {
   loading.value = true;
   try {
-    const resp = await api.get('/api/solicitacoes-leito');
-    solicitacoes.value = resp.data;
-  } catch (e) {
-    toast.error('Erro ao carregar solicitações.');
+    const { data } = await api.get('/api/solicitacoes');
+    solicitacoes.value = data;
+  } catch (error) {
+    console.error('Erro ao carregar solicitações:', error);
+    toast.error('Não foi possível carregar as solicitações.');
   } finally {
     loading.value = false;
   }
 }
 
-async function abrirModalReserva(sol: Solicitacao) {
-  solSelecionada.value = sol;
-  leitoEscolhido.value = null;
-  showModalReserva.value = true;
+async function carregarLeitosDisponiveis() {
   loadingLeitos.value = true;
   try {
-    const resp = await api.get('/api/leitos/disponiveis-para-reserva');
-    leitosDisponiveis.value = resp.data;
-  } catch (e) {
-    toast.error('Erro ao buscar leitos disponíveis.');
+    const { data } = await api.get('/api/leitos/disponiveis');
+    leitosDisponiveis.value = data;
+  } catch (error) {
+    console.error('Erro ao carregar leitos:', error);
   } finally {
     loadingLeitos.value = false;
   }
+}
+
+function abrirModalReserva(sol: Solicitacao) {
+  solSelecionada.value = sol;
+  leitoEscolhido.value = null;
+  showModalReserva.value = true;
+  carregarLeitosDisponiveis();
 }
 
 async function confirmarReserva() {
   if (!solSelecionada.value || !leitoEscolhido.value) return;
   submetendo.value = true;
   try {
-    await api.post(`/api/solicitacoes-leito/${solSelecionada.value.id}/reservar`, { leito_id: leitoEscolhido.value });
-    toast.success('Reserva realizada com sucesso!');
+    await api.post(`/api/solicitacoes/${solSelecionada.value.id}/reservar`, {
+      leito_id: leitoEscolhido.value
+    });
+    toast.success('Leito reservado com sucesso!');
     showModalReserva.value = false;
-    await carregar();
-  } catch (e) {
-    toast.error('Erro ao realizar reserva.');
+    carregarSolicitacoes();
+  } catch (error) {
+    console.error('Erro ao reservar leito:', error);
+    toast.error('Erro ao reservar leito.');
   } finally {
     submetendo.value = false;
+  }
+}
+
+async function cancelarReserva(id: string) {
+  if (!confirm('Deseja realmente cancelar esta reserva?')) return;
+  try {
+    await api.post(`/api/solicitacoes/${id}/cancelar-reserva`);
+    toast.success('Reserva cancelada!');
+    carregarSolicitacoes();
+  } catch (error: any) {
+    toast.error(error.response?.data?.detail || 'Erro ao cancelar reserva.');
   }
 }
 
 async function cancelarSolicitacao(id: string) {
   if (!confirm('Deseja realmente cancelar esta solicitação?')) return;
   try {
-    await api.delete(`/api/solicitacoes-leito/${id}`);
-    toast.warning('Solicitação cancelada.');
-    await carregar();
-  } catch (e) {
-    toast.error('Erro ao cancelar solicitação.');
+    await api.delete(`/api/solicitacoes/${id}`);
+    toast.success('Solicitação cancelada!');
+    carregarSolicitacoes();
+  } catch (error: any) {
+    toast.error(error.response?.data?.detail || 'Erro ao cancelar solicitação.');
   }
 }
 
-async function cancelarReserva(id: string) {
-  if (!confirm('Deseja liberar este leito? O paciente voltará para a fila de espera.')) return;
-  try {
-    await api.post(`/api/solicitacoes-leito/${id}/cancelar-reserva`);
-    toast.success('Reserva cancelada. Paciente voltou para a fila.');
-    await carregar();
-  } catch (e) {
-    toast.error('Erro ao cancelar reserva.');
-  }
+function fecharModalNova() {
+  showModalNova.value = false;
+  isEditing.value = false;
+  formNova.value = {
+    prontuario: '',
+    idade: null,
+    especialidade: '',
+    tipo: '',
+    data_cirurgia: '',
+    turno: '',
+    prioridade: ''
+  };
 }
 
-async function abrirModalEdicao(sol: Solicitacao) {
-  isEditing.value = true;
+function abrirModalEdicao(sol: Solicitacao) {
   solSelecionada.value = sol;
+  isEditing.value = true;
   formNova.value = {
     prontuario: sol.prontuario,
     idade: sol.idade,
@@ -488,42 +493,56 @@ async function abrirModalEdicao(sol: Solicitacao) {
   showModalNova.value = true;
 }
 
-function fecharModalNova() {
-  showModalNova.value = false;
-  isEditing.value = false;
-  solSelecionada.value = null;
-  formNova.value = { prontuario: '', idade: null, especialidade: '', tipo: '', data_cirurgia: '', turno: '', prioridade: '' };
-}
-
 async function salvarNova() {
-  if (
-    !formNova.value.prontuario || 
-    !formNova.value.idade || 
-    !formNova.value.especialidade || 
-    !formNova.value.tipo || 
-    !formNova.value.data_cirurgia || 
-    !formNova.value.turno
-  ) {
-    toast.error('Atenção, preencha todos os campos!');
-    return;
-  }
   submetendoNova.value = true;
   try {
     if (isEditing.value && solSelecionada.value) {
-      await api.patch(`/api/solicitacoes-leito/${solSelecionada.value.id}`, formNova.value);
-      toast.success('Solicitação atualizada com sucesso!');
+      await api.patch(`/api/solicitacoes/${solSelecionada.value.id}`, formNova.value);
+      toast.success('Solicitação atualizada!');
     } else {
-      await api.post('/api/solicitacoes-leito', formNova.value);
-      toast.success('Solicitação criada com sucesso!');
+      await api.post('/api/solicitacoes', formNova.value);
+      toast.success('Solicitação criada!');
     }
     fecharModalNova();
-    await carregar();
-  } catch (e) {
+    carregarSolicitacoes();
+  } catch (error) {
+    console.error('Erro ao salvar:', error);
     toast.error('Erro ao salvar solicitação.');
   } finally {
     submetendoNova.value = false;
   }
 }
 
-onMounted(carregar);
+function formatarDataHoraBR(dataStr: string) {
+  if (!dataStr) return '';
+  const [data, hora] = dataStr.split(' ');
+  const [ano, mes, dia] = data.split('-');
+  return `${dia}/${mes}/${ano} ${hora || ''}`;
+}
+
+function formatarDataBR(dataStr: string) {
+  if (!dataStr) return '';
+  const [ano, mes, dia] = dataStr.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+// Verifica se o usuário atual pode cancelar/gerenciar esta solicitação específica
+function podeGerenciar(sol: any) {
+  if (!sol) return false;
+  
+  const userPerfil = authStore.perfil || "";
+  const userGrupo = userPerfil.replace("-Admin", "").trim().toUpperCase();
+  const solPerfil = (sol.perfil_solicitante || "").trim().toUpperCase();
+  
+  if (authStore.isAdmin || authStore.isUTI || authStore.isNIR) return true;
+  
+  if (!userGrupo || userGrupo === "COMUM") return false;
+  if (!solPerfil) return false;
+  
+  return solPerfil === userGrupo;
+}
+
+onMounted(() => {
+  carregarSolicitacoes();
+});
 </script>

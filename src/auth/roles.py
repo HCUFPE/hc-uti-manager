@@ -4,10 +4,14 @@ class Role(str, Enum):
     ADMIN = "Administrador"
     UTI_ADMIN = "UTI-Admin"
     NIR_ADMIN = "NIR-Admin"
-    SOLICITANTE_ADMIN = "Solicitante-Admin"
+    COB_ADMIN = "COB-Admin"
+    BC_ADMIN = "BC-Admin"
+    HEM_ADMIN = "HEM-Admin"
     UTI = "UTI"
     NIR = "NIR"
-    SOLICITANTE = "Solicitante de Leito"
+    COB = "COB"
+    BC = "BC"
+    HEM = "HEM"
     COMUM = "Comum"
 
 def has_role(user_perfil: str, required_role: Role) -> bool:

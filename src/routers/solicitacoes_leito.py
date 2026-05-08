@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from auth.roles import Role
 from typing import List, Dict, Any
 from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
-from dependencies import get_solicitacao_leito_controller, get_historico_provider
+from dependencies import get_solicitacao_leito_controller, get_historico_provider, get_app_db_session
 from providers.implementations.historico_provider import HistoricoProvider
+from models.usuario_perfil import UsuarioPerfil
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from auth.auth import auth_handler
 
-router = APIRouter(prefix="/api/solicitacoes-leito", tags=["Solicitacoes Leito"])
+router = APIRouter(prefix="/api/solicitacoes", tags=["Solicitacoes"])
 
 @router.get("", response_model=List[Dict[str, Any]])
 async def listar_solicitacoes(
@@ -21,12 +24,28 @@ async def criar_solicitacao(
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
+    db: AsyncSession = Depends(get_app_db_session)
 ):
-    """Registra uma nova solicitação de leito."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN, Role.SOLICITANTE, Role.SOLICITANTE_ADMIN]
+    """Cria uma nova solicitação de leito."""
+    allowed_roles = [
+        Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN,
+        Role.COB, Role.COB_ADMIN, Role.BC, Role.BC_ADMIN, Role.HEM, Role.HEM_ADMIN
+    ]
     if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Você não tem permissão para criar solicitações.")
+        # Se não estiver no token, vamos dar uma última chance buscando no banco
+        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
+        result = await db.execute(stmt)
+        perfil_obj = result.scalar_one_or_none()
+        if not perfil_obj or perfil_obj.perfil not in allowed_roles:
+            raise HTTPException(status_code=403, detail="Você não tem permissão para criar solicitações.")
+        user_perfil = perfil_obj.perfil
+    else:
+        user_perfil = current_user.get("perfil")
 
+    # Remove o sufixo -Admin para gravar apenas o grupo base
+    grupo_solicitante = user_perfil.replace("-Admin", "")
+    payload["perfil_solicitante"] = grupo_solicitante
+    
     result = await controller.criar_solicitacao(payload)
     prontuario = payload.get("prontuario", "")
     especialidade = payload.get("especialidade", "")
@@ -73,13 +92,29 @@ async def editar_solicitacao(
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
+    db: AsyncSession = Depends(get_app_db_session)
 ):
-    """Edita os dados clínicos de uma solicitação."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Você não tem permissão para editar solicitações.")
+    """Atualiza dados de uma solicitação (apenas para UTI/NIR ou o próprio dono)."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
 
-    result = await controller.editar_solicitacao(sol_id, payload)
+    # Identifica o perfil (token ou banco)
+    user_perfil = current_user.get("perfil")
+    if not user_perfil:
+        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
+        db_result = await db.execute(stmt)
+        perfil_obj = db_result.scalar_one_or_none()
+        user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
+
+    user_grupo = user_perfil.replace("-Admin", "")
+    super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    
+    if user_perfil not in super_usuarios:
+        if solicitacao.perfil_solicitante != user_grupo:
+            raise HTTPException(status_code=403, detail="Você não tem permissão para editar esta solicitação.")
+
+    await controller.editar_solicitacao(sol_id, payload)
     prontuario = payload.get("prontuario", "N/D")
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -87,16 +122,35 @@ async def editar_solicitacao(
         acao="Editou solicitação de vaga",
         detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario})",
     )
-    return result
+    return {"message": "Solicitação editada com sucesso"}
 
-@router.delete("/{sol_id}", status_code=204)
+@router.delete("/{sol_id}")
 async def cancelar_solicitacao(
     sol_id: int,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
+    db: AsyncSession = Depends(get_app_db_session)
 ):
     """Cancela uma solicitação de leito."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+
+    user_perfil = current_user.get("perfil")
+    if not user_perfil:
+        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
+        db_result = await db.execute(stmt)
+        perfil_obj = db_result.scalar_one_or_none()
+        user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
+
+    user_grupo = user_perfil.replace("-Admin", "")
+    super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    
+    if user_perfil not in super_usuarios:
+        if solicitacao.perfil_solicitante != user_grupo:
+            raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar esta solicitação.")
+
     await controller.cancelar_solicitacao(sol_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -104,6 +158,7 @@ async def cancelar_solicitacao(
         acao="Cancelou solicitação de vaga",
         detalhes=f"Solicitação #{sol_id}",
     )
+    return {"message": "Solicitação cancelada com sucesso"}
 
 @router.post("/{sol_id}/reservar")
 async def reservar_leito(
@@ -113,9 +168,7 @@ async def reservar_leito(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
-    """Reserva um leito para uma solicitação pendente.
-    Payload: {"leito_id": "0502A"}
-    """
+    """Reserva um leito para uma solicitação pendente."""
     leito_id = payload.get("leito_id")
     result = await controller.reservar_leito(sol_id, leito_id)
     await historico.registrar(
@@ -132,8 +185,27 @@ async def cancelar_reserva(
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
+    db: AsyncSession = Depends(get_app_db_session)
 ):
     """Cancela a reserva de um leito, voltando a solicitação para Pendente."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+
+    user_perfil = current_user.get("perfil")
+    if not user_perfil:
+        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
+        db_result = await db.execute(stmt)
+        perfil_obj = db_result.scalar_one_or_none()
+        user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
+
+    user_grupo = user_perfil.replace("-Admin", "")
+    super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN]
+    
+    if user_perfil not in super_usuarios:
+        if solicitacao.perfil_solicitante != user_grupo:
+            raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar a reserva deste paciente.")
+
     result = await controller.cancelar_reserva(sol_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),

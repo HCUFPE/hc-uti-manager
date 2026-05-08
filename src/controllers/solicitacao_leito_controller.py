@@ -60,6 +60,7 @@ class SolicitacaoLeitoController:
                 "turno": s.turno,
                 "data_cirurgia": s.data_cirurgia,
                 "prioridade": s.prioridade,
+                "perfil_solicitante": s.perfil_solicitante,
                 "destino": s.destino,
                 "dataHora": s.criado_em.strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
             }
@@ -77,6 +78,7 @@ class SolicitacaoLeitoController:
             "data_cirurgia": payload.get("data_cirurgia"),
             "prioridade": payload.get("prioridade"),
             "status": "Pendente",
+            "perfil_solicitante": payload.get("perfil_solicitante")
         }
 
         if not all([nova_solicitacao["prontuario"], nova_solicitacao["idade"], nova_solicitacao["especialidade"]]):
@@ -127,6 +129,13 @@ class SolicitacaoLeitoController:
         
         if not dados_atualizar:
             raise HTTPException(status_code=400, detail="Nenhum campo válido para atualização fornecido.")
+
+        # Validação de campos obrigatórios (não podem ser vazios se fornecidos)
+        campos_obrigatorios = ["prontuario", "idade", "especialidade", "tipo", "data_cirurgia", "turno"]
+        for campo in campos_obrigatorios:
+            valor = dados_atualizar.get(campo)
+            if campo in dados_atualizar and (valor is None or str(valor).strip() == ""):
+                raise HTTPException(status_code=400, detail=f"O campo '{campo}' é obrigatório e não pode ficar vazio.")
 
         # Se mudou prioridade, data ou turno, precisa remanejar
         prio = dados_atualizar.get("prioridade", alvo.prioridade)

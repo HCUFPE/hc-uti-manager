@@ -18,6 +18,7 @@ class SolicitacaoLeito(Base):
     data_cirurgia = Column(String(20), nullable=True) # Data prevista
     destino = Column(String(100), nullable=True) # Ex: Leito 05
     prioridade = Column(String(10), nullable=True) # P1, P2, P3, P4, P5
+    perfil_solicitante = Column(String(50), nullable=True) # COB, BC, HEM, UTI, etc.
     
     criado_em = Column(DateTime, server_default=func.now())
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -34,6 +35,7 @@ class SolicitacaoLeito(Base):
             "data_cirurgia": self.data_cirurgia,
             "prioridade": self.prioridade,
             "destino": self.destino,
+            "perfil_solicitante": self.perfil_solicitante,
             "criado_em": self.criado_em.isoformat() if self.criado_em else None,
             "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
         }

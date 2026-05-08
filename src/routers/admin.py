@@ -13,7 +13,10 @@ class AdminData(BaseModel):
 
 async def verify_admin_group(current_user: dict = Depends(auth_handler.decode_token)):
     user_perfil = current_user.get("perfil")
-    allowed_admins = [Role.ADMIN, Role.UTI_ADMIN, Role.NIR_ADMIN, Role.SOLICITANTE_ADMIN]
+    allowed_admins = [
+        Role.ADMIN, Role.UTI_ADMIN, Role.NIR_ADMIN, 
+        Role.COB_ADMIN, Role.BC_ADMIN, Role.HEM_ADMIN
+    ]
     if user_perfil not in allowed_admins:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito a administradores")
     return current_user
@@ -55,8 +58,12 @@ async def salvar_perfil(
             allowed_profiles = [Role.UTI, Role.COMUM]
         elif user_perfil == Role.NIR_ADMIN:
             allowed_profiles = [Role.NIR, Role.COMUM]
-        elif user_perfil == Role.SOLICITANTE_ADMIN:
-            allowed_profiles = [Role.SOLICITANTE, Role.COMUM]
+        elif user_perfil == Role.COB_ADMIN:
+            allowed_profiles = [Role.COB, Role.COMUM]
+        elif user_perfil == Role.BC_ADMIN:
+            allowed_profiles = [Role.BC, Role.COMUM]
+        elif user_perfil == Role.HEM_ADMIN:
+            allowed_profiles = [Role.HEM, Role.COMUM]
             
         if perfil not in allowed_profiles:
             raise HTTPException(status_code=403, detail="Você só pode atribuir usuários ao seu próprio setor.")
@@ -97,7 +104,11 @@ async def excluir_perfil(
                 has_permission = True
             elif user_perfil == Role.NIR_ADMIN and target_perfil == Role.NIR:
                 has_permission = True
-            elif user_perfil == Role.SOLICITANTE_ADMIN and target_perfil == Role.SOLICITANTE:
+            elif user_perfil == Role.COB_ADMIN and target_perfil == Role.COB:
+                has_permission = True
+            elif user_perfil == Role.BC_ADMIN and target_perfil == Role.BC:
+                has_permission = True
+            elif user_perfil == Role.HEM_ADMIN and target_perfil == Role.HEM:
                 has_permission = True
                 
             if not has_permission:

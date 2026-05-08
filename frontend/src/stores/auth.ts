@@ -35,9 +35,17 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() => perfil.value === 'Administrador');
   const isUTI = computed(() => ['UTI', 'UTI-Admin', 'Administrador'].includes(perfil.value));
   const isNIR = computed(() => ['NIR', 'NIR-Admin', 'Administrador'].includes(perfil.value));
-  const isSolicitante = computed(() => ['Solicitante de Leito', 'Solicitante-Admin', 'Administrador'].includes(perfil.value));
+  const isSolicitante = computed(() => [
+    'COB', 'COB-Admin',
+    'BC', 'BC-Admin',
+    'HEM', 'HEM-Admin',
+    'Administrador'
+  ].includes(perfil.value));
   
-  const isAnyAdmin = computed(() => ['Administrador', 'UTI-Admin', 'NIR-Admin', 'Solicitante-Admin'].includes(perfil.value));
+  const isAnyAdmin = computed(() => [
+    'Administrador', 'UTI-Admin', 'NIR-Admin', 
+    'COB-Admin', 'BC-Admin', 'HEM-Admin'
+  ].includes(perfil.value));
   
   // Para manter compatibilidade com componentes que usam isCoordination
   const isCoordination = computed(() => ['Administrador', 'UTI', 'UTI-Admin', 'NIR', 'NIR-Admin'].includes(perfil.value));
@@ -45,11 +53,17 @@ export const useAuthStore = defineStore('auth', () => {
   // Helpers para controle de formulário na tela de AdminConfig
   function getAssignableProfiles(): string[] {
     if (isAdmin.value) {
-      return ['Administrador', 'UTI-Admin', 'NIR-Admin', 'Solicitante-Admin', 'UTI', 'NIR', 'Solicitante de Leito', 'Comum'];
+      return [
+        'Administrador', 'UTI-Admin', 'NIR-Admin', 
+        'COB-Admin', 'BC-Admin', 'HEM-Admin',
+        'UTI', 'NIR', 'COB', 'BC', 'HEM', 'Comum'
+      ];
     }
     if (perfil.value === 'UTI-Admin') return ['UTI', 'Comum'];
     if (perfil.value === 'NIR-Admin') return ['NIR', 'Comum'];
-    if (perfil.value === 'Solicitante-Admin') return ['Solicitante de Leito', 'Comum'];
+    if (perfil.value === 'COB-Admin') return ['COB', 'Comum'];
+    if (perfil.value === 'BC-Admin') return ['BC', 'Comum'];
+    if (perfil.value === 'HEM-Admin') return ['HEM', 'Comum'];
     return [];
   }
 
@@ -57,7 +71,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (isAdmin.value) return true;
     if (perfil.value === 'UTI-Admin' && targetUserPerfil === 'UTI') return true;
     if (perfil.value === 'NIR-Admin' && targetUserPerfil === 'NIR') return true;
-    if (perfil.value === 'Solicitante-Admin' && targetUserPerfil === 'Solicitante de Leito') return true;
+    if (perfil.value === 'COB-Admin' && targetUserPerfil === 'COB') return true;
+    if (perfil.value === 'BC-Admin' && targetUserPerfil === 'BC') return true;
+    if (perfil.value === 'HEM-Admin' && targetUserPerfil === 'HEM') return true;
     return false;
   }
 
@@ -85,10 +101,6 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     if (!accessToken.value) {
       setUser(null);
-      return;
-    }
-    if (accessToken.value.startsWith('mock-token-')) {
-      // Skip remote fetch when using mock auth so the session survives refresh
       return;
     }
     try {
@@ -152,6 +164,7 @@ export const useAuthStore = defineStore('auth', () => {
   return { 
     accessToken, 
     user, 
+    perfil,
     isAuthenticated, 
     isAdmin, 
     isAnyAdmin,
