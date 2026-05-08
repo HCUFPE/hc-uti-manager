@@ -162,7 +162,6 @@ const panel = ref<HTMLElement | null>(null);
 const router = useRouter();
 const authStore = useAuthStore();
 
-const unreadCount = computed(() => notifications.value.filter(n => n.unread).length);
 
 const toggle = () => {
   open.value = !open.value;

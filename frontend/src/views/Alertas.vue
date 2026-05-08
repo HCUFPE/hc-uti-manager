@@ -156,7 +156,6 @@ import { useAuthStore } from '../stores/auth';
 
 type AlertType = 'critico' | 'aviso' | 'info';
 type AlertCategory = 'Infeccioso' | 'Permanencia' | 'Gargalo' | 'Limpeza' | 'Outros';
-type AlertFilter = AlertType | 'todos';
 
 type Alert = {
   id: string;

@@ -13,8 +13,7 @@
               <h1 class="text-xl font-semibold text-slate-900">{{ headerTitle }}</h1>
             </div>
             <div class="flex items-center gap-3">
-              <!-- Sininho desativado temporariamente -->
-              <!-- <NotificationsPopover /> -->
+              <NotificationsPopover v-if="authStore.isAuthenticated" />
               <ProfileDropdown v-if="authStore.isAuthenticated" />
               <router-link
                 v-else
