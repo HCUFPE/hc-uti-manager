@@ -171,7 +171,6 @@ const alertas = ref<Alert[]>([]);
 const toast = useToast();
 const showModal = ref(false);
 const selectedAlert = ref<Alert | null>(null);
-const authStore = useAuthStore();
 
 async function fetchAlertas() {
   try {
