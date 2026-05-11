@@ -152,7 +152,6 @@ import Modal from '../components/Modal.vue';
 import { computed, ref, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import api from '../services/api';
-import { useAuthStore } from '../stores/auth';
 
 type AlertType = 'critico' | 'aviso' | 'info';
 type AlertCategory = 'Infeccioso' | 'Permanencia' | 'Gargalo' | 'Limpeza' | 'Outros';
