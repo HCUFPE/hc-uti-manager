@@ -10,12 +10,24 @@
       <div class="px-5 py-4">
         <div class="flex flex-wrap gap-3">
           <!-- Busca livre -->
-          <div class="relative flex-1 min-w-60">
+          <div class="relative flex-[2] min-w-60">
             <MagnifyingGlassIcon class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               v-model="buscaInput"
               type="text"
               placeholder="Buscar por ação, detalhe ou operador..."
+              class="w-full rounded-md border border-slate-200 bg-white px-10 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              @keyup.enter="aplicarFiltros"
+            />
+          </div>
+
+          <!-- Busca por Prontuário -->
+          <div class="relative flex-1 min-w-40">
+            <MagnifyingGlassIcon class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="prontuarioInput"
+              type="text"
+              placeholder="Prontuário..."
               class="w-full rounded-md border border-slate-200 bg-white px-10 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               @keyup.enter="aplicarFiltros"
             />
@@ -152,6 +164,7 @@ const loading = ref(true);
 const erro = ref<string | null>(null);
 
 const buscaInput = ref('');
+const prontuarioInput = ref('');
 const tipoFiltro = ref('');
 
 const limit = ref(30);
@@ -159,6 +172,7 @@ const offset = ref(0);
 const total = ref(0);
 
 const busca = ref('');
+const prontuarioAtivo = ref('');
 const tipoAtivo = ref('');
 
 const fetchHistorico = async () => {
@@ -170,6 +184,7 @@ const fetchHistorico = async () => {
       offset: offset.value,
     };
     if (busca.value) params.busca = busca.value;
+    if (prontuarioAtivo.value) params.prontuario = prontuarioAtivo.value;
     if (tipoAtivo.value) params.tipo = tipoAtivo.value;
 
     const { data } = await api.get('/api/historico', { params });
@@ -191,6 +206,7 @@ const fetchHistorico = async () => {
 
 const aplicarFiltros = () => {
   busca.value = buscaInput.value.trim();
+  prontuarioAtivo.value = prontuarioInput.value.trim();
   tipoAtivo.value = tipoFiltro.value;
   offset.value = 0;
   fetchHistorico();
@@ -198,8 +214,10 @@ const aplicarFiltros = () => {
 
 const limparFiltros = () => {
   buscaInput.value = '';
+  prontuarioInput.value = '';
   tipoFiltro.value = '';
   busca.value = '';
+  prontuarioAtivo.value = '';
   tipoAtivo.value = '';
   offset.value = 0;
   fetchHistorico();

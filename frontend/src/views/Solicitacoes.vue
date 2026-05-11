@@ -254,12 +254,13 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700">Tipo <span class="text-red-500">*</span></label>
-            <select v-model="formNova.tipo" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <select 
+              v-model="formNova.tipo" 
+              class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-50 disabled:text-slate-500"
+              :disabled="!authStore.isAdmin && !authStore.isUTI && tiposDisponiveis.length === 1"
+            >
               <option value="" disabled selected>Selecione o Tipo</option>
-              <option value="Clinico">Clinico</option>
-              <option value="Cirurgico">Cirurgico</option>
-              <option value="HEM">HEM</option>
-              <option value="Obstetrico">Obstetrico</option>
+              <option v-for="t in tiposDisponiveis" :key="t" :value="t">{{ t }}</option>
             </select>
           </div>
         </div>
@@ -330,7 +331,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiButton from '../components/ui/Button.vue';
@@ -379,6 +380,23 @@ const formNova = ref({
   data_cirurgia: '',
   turno: '',
   prioridade: ''
+});
+
+const tiposDisponiveis = computed(() => {
+  const perfil = authStore.user?.perfil || '';
+  if (perfil.includes('COB')) return ['Obstetrico'];
+  if (perfil.includes('HEM')) return ['HEM'];
+  if (perfil.includes('BC')) return ['Cirurgico'];
+  // Admin e UTI veem tudo
+  return ['Clinico', 'Cirurgico', 'HEM', 'Obstetrico'];
+});
+
+watch(showModalNova, (val) => {
+  if (val && !isEditing.value) {
+    if (tiposDisponiveis.value.length === 1) {
+      formNova.value.tipo = tiposDisponiveis.value[0];
+    }
+  }
 });
 
 const solicitacoesFiltradas = computed(() => {

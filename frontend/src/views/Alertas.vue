@@ -246,7 +246,6 @@ const modalTitle = computed(() =>
 );
 
 const alertasFiltrados = computed(() => {
-  if (authStore.isAdmin) return [];
   return alertas.value;
 });
 

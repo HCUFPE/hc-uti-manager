@@ -19,6 +19,7 @@ class HistoricoProvider:
         tipo: str,
         acao: str,
         detalhes: Optional[str] = None,
+        prontuario: Optional[str] = None,
     ) -> HistoricoAcao:
         """Persiste uma nova entrada no histórico.
 
@@ -27,6 +28,7 @@ class HistoricoProvider:
             tipo: Categoria da ação (alta, reserva, destino, cancelamento, solicitacao, status).
             acao: Descrição curta da ação realizada.
             detalhes: Informação complementar (prontuário, leito, etc).
+            prontuario: Número do prontuário do paciente (opcional).
 
         Returns:
             O objeto HistoricoAcao criado.
@@ -36,6 +38,7 @@ class HistoricoProvider:
             tipo=tipo,
             acao=acao,
             detalhes=detalhes,
+            prontuario=prontuario,
         )
         self.session.add(entrada)
         await self.session.commit()
@@ -48,6 +51,7 @@ class HistoricoProvider:
         offset: int = 0,
         tipo: Optional[str] = None,
         operador: Optional[str] = None,
+        prontuario: Optional[str] = None,
         busca: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Retorna entradas do histórico, ordenadas da mais recente para a mais antiga.
@@ -57,7 +61,8 @@ class HistoricoProvider:
             offset: Deslocamento para paginação.
             tipo: Filtra pelo tipo da ação.
             operador: Filtra por nome do operador.
-            busca: Pesquisa livre em acao, detalhes e operador.
+            prontuario: Filtra por prontuário exato.
+            busca: Pesquisa livre em acao, detalhes, operador e prontuario.
 
         Returns:
             Lista de dicionários com os dados das ações.
@@ -68,12 +73,16 @@ class HistoricoProvider:
             stmt = stmt.where(HistoricoAcao.tipo == tipo)
         if operador:
             stmt = stmt.where(HistoricoAcao.operador.ilike(f"%{operador}%"))
+        if prontuario:
+            stmt = stmt.where(HistoricoAcao.prontuario == prontuario)
+            
         if busca:
             termo = f"%{busca}%"
             stmt = stmt.where(
                 HistoricoAcao.acao.ilike(termo)
                 | HistoricoAcao.detalhes.ilike(termo)
                 | HistoricoAcao.operador.ilike(termo)
+                | HistoricoAcao.prontuario.ilike(termo)
             )
 
         stmt = stmt.order_by(desc(HistoricoAcao.criado_em)).limit(limit).offset(offset)

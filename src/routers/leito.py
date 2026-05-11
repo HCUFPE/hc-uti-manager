@@ -28,6 +28,7 @@ async def reservar_leito(
         tipo="reserva",
         acao="Reservou leito",
         detalhes=f"Leito {lto_lto_id} para prontuário {payload.prontuario}",
+        prontuario=str(payload.prontuario)
     )
     return result
 
@@ -44,11 +45,25 @@ async def cancelar_reserva(
         raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar reservas.")
 
     result = await controller.cancelar_reserva(leito_id, solicitacao_provider)
+    solicitacao = result.get("solicitacao")
+    prontuario_reserva = result.get("prontuario")
+    
+    detalhes = f"Leito {leito_id}"
+    prontuario_log = None
+
+    if solicitacao:
+        prontuario_log = str(solicitacao.prontuario)
+        detalhes = f"Solicitação #{solicitacao.id} (Prontuário {prontuario_log}) voltou para Pendente (Leito {leito_id} liberado)"
+    elif prontuario_reserva:
+        prontuario_log = str(prontuario_reserva)
+        detalhes = f"Reserva manual do Prontuário {prontuario_log} cancelada (Leito {leito_id} liberado)"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
-        tipo="cancelamento",
+        tipo="cancelamento_reserva",
         acao="Cancelou reserva",
-        detalhes=f"Leito {leito_id}",
+        detalhes=detalhes,
+        prontuario=prontuario_log
     )
     return result
 
@@ -67,11 +82,17 @@ async def solicitar_alta(
         raise HTTPException(status_code=403, detail="Apenas a UTI pode solicitar alta.")
 
     await controller.solicitar_alta(leito_id)
+    # Busca o prontuário para o histórico (similar ao que o controller faz)
+    leitos_censo = await controller.census_provider.listar_leitos()
+    leito_info = next((l for l in leitos_censo if l['lto_lto_id'] == leito_id), None)
+    prontuario = str(leito_info['prontuario_atual']) if leito_info and leito_info.get('prontuario_atual') else None
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="alta",
         acao="Solicitou alta",
         detalhes=f"Leito {leito_id}",
+        prontuario=prontuario
     )
 
 @router.delete(

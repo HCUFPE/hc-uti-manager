@@ -19,6 +19,16 @@ async def listar_alertas(
     perfil = current_user.get("perfil", "Comum")
     return await controller.listar_alertas(perfil)
 
+@router.get("/unread-count")
+async def get_unread_count(
+    controller: AlertaController = Depends(get_alerta_controller),
+    current_user: dict = Depends(auth_handler.decode_token)
+):
+    perfil = current_user.get("perfil", "Comum")
+    alertas = await controller.listar_alertas(perfil)
+    count = len([a for a in alertas if not a.get("lido")])
+    return {"count": count}
+
 @router.put("/{alerta_id}/lido")
 async def atualizar_status_leitura(
     alerta_id: int,

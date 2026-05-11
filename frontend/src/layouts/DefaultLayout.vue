@@ -34,15 +34,49 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import SidebarNav from '../components/SidebarNav.vue';
 import ProfileDropdown from '../components/ProfileDropdown.vue';
 import { useAuthStore } from '../stores/auth';
+import api from '../services/api';
+import { useToast } from 'vue-toastification';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const toast = useToast();
 const sidebarCollapsed = ref(false);
+const unreadCount = ref(0);
+
+const fetchBackgroundAlerts = async () => {
+  if (authStore.isAuthenticated) {
+    try {
+      await api.post('/api/alertas/gerar');
+      const response = await api.get('/api/alertas/unread-count');
+      const newCount = response.data.count;
+      
+      if (newCount > unreadCount.value && authStore.user?.perfil !== 'Administrador' && route.path !== '/alertas') {
+        toast.info(`Você tem ${newCount} alerta(s) não lido(s).`, {
+          timeout: 5000,
+          onClick: () => { window.location.href = '/alertas'; }
+        });
+      }
+      unreadCount.value = newCount;
+    } catch (err) {
+      console.error('Erro ao sincronizar alertas:', err);
+    }
+  }
+};
+
+onMounted(() => {
+  fetchBackgroundAlerts();
+  // Atualiza alertas em background a cada 2 minutos
+  const interval = setInterval(fetchBackgroundAlerts, 120000);
+  
+  onUnmounted(() => {
+    clearInterval(interval);
+  });
+});
 
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value;

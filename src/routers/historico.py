@@ -20,6 +20,7 @@ async def listar_historico(
     offset: int = Query(default=0, ge=0),
     tipo: Optional[str] = Query(default=None, description="Filtra por tipo: alta, reserva, cancelamento, solicitacao, destino, status"),
     operador: Optional[str] = Query(default=None),
+    prontuario: Optional[str] = Query(default=None),
     busca: Optional[str] = Query(default=None, description="Busca livre em ação, detalhes e operador"),
     provider: HistoricoProvider = Depends(get_historico_provider),
 ):
@@ -29,5 +30,6 @@ async def listar_historico(
         offset=offset,
         tipo=tipo,
         operador=operador,
+        prontuario=prontuario,
         busca=busca,
     )

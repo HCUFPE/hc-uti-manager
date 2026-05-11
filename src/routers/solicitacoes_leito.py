@@ -69,6 +69,7 @@ async def criar_solicitacao(
         tipo="nova_solicitacao",
         acao="Nova solicitação de vaga",
         detalhes=f"Solicitação #{sol_id} - Prontuário {prontuario} — {especialidade} ({tipo_sol}) - Data: {data_br}",
+        prontuario=str(prontuario)
     )
     return result
 
@@ -91,11 +92,16 @@ async def atualizar_status(
     detalhe = f"Solicitação #{sol_id}"
     if destino:
         detalhe += f" → {destino}"
+    # Tenta pegar o prontuário da solicitação para o histórico
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    prontuario = solicitacao.prontuario if solicitacao else None
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="destino" if destino else "status",
         acao=f"Atualizou status para {novo_status}" if novo_status else "Definiu destino",
         detalhes=detalhe,
+        prontuario=str(prontuario) if prontuario else None
     )
     return result
 
@@ -148,6 +154,7 @@ async def editar_solicitacao(
         tipo=tipo_hist,
         acao="Editou solicitação de vaga",
         detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) - Data: {data_br}",
+        prontuario=str(prontuario)
     )
     return {"message": "Solicitação editada com sucesso"}
 
@@ -190,6 +197,7 @@ async def cancelar_solicitacao(
         tipo="exclusao_solicitacao",
         acao="Cancelou solicitação de vaga",
         detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Data: {data_formatada}",
+        prontuario=str(solicitacao.prontuario)
     )
     return {"message": "Solicitação cancelada com sucesso"}
 
@@ -208,11 +216,16 @@ async def reservar_leito(
         
     leito_id = payload.get("leito_id")
     result = await controller.reservar_leito(sol_id, leito_id)
+    # Busca a solicitação para pegar o prontuário
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    prontuario = solicitacao.prontuario if solicitacao else "?"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="reserva",
         acao="Reservou leito para solicitação",
-        detalhes=f"Solicitação #{sol_id} → Leito {leito_id}",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) para Leito {leito_id}",
+        prontuario=str(prontuario)
     )
     return result
 
@@ -248,6 +261,7 @@ async def cancelar_reserva(
         operador=current_user.get("username", "Sistema"),
         tipo="cancelamento_reserva",
         acao="Cancelou reserva de leito",
-        detalhes=f"Solicitação #{sol_id} voltou para Pendente",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) voltou para Pendente",
+        prontuario=str(solicitacao.prontuario)
     )
     return result

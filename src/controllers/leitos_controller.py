@@ -171,17 +171,24 @@ class LeitosController:
         Limpa a reserva de um leito e, se houver uma solicitação vinculada, 
         retorna o status dela para 'Pendente'.
         """
-        # 1. Limpar reserva no estado local e obter o ID da solicitação vinculada
-        sol_id = await self.estado_provider.limpar_reserva(lto_id)
+        # 1. Limpar reserva no estado local e obter dados vinculados
+        dados_reserva = await self.estado_provider.limpar_reserva(lto_id)
+        sol_id = dados_reserva.get("sol_id")
+        prontuario = dados_reserva.get("prontuario")
+        solicitacao = None
         
         # 2. Se temos o ID e o provider, restauramos a solicitação na fila
         if sol_id and solicitacao_provider:
-            await solicitacao_provider.atualizar(sol_id, {
+            solicitacao = await solicitacao_provider.atualizar(sol_id, {
                 "status": "Pendente",
                 "destino": None
             })
             
-        return {"message": f"Reserva do leito {lto_id} cancelada."}
+        return {
+            "message": f"Reserva do leito {lto_id} cancelada.",
+            "solicitacao": solicitacao,
+            "prontuario": prontuario
+        }
     
     async def solicitar_alta(self, leito_id: str):
         """
@@ -229,6 +236,9 @@ class LeitosController:
             # 1. Não tem reserva já feita (proximo_paciente é nulo ou vazio)
             # 2. E (está fisicamente vago OU tem status de vazio OU tem alta solicitada)
             
+            if status == "DESATIVADO":
+                continue
+                
             ja_tem_reserva = proximo_paciente is not None and str(proximo_paciente).strip() != ""
             esta_fisicamente_vazio = (prontuario_atual is None or str(prontuario_atual).strip() in ["", "0", "N/D"])
             

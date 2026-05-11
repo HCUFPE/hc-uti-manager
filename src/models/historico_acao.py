@@ -15,6 +15,7 @@ class HistoricoAcao(Base):
     tipo = Column(String, nullable=False, index=True)  # alta | reserva | destino | cancelamento | solicitacao | status
     acao = Column(String, nullable=False)
     detalhes = Column(String, nullable=True)
+    prontuario = Column(String, nullable=True, index=True)
     criado_em = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     def to_dict(self) -> dict:
@@ -28,5 +29,6 @@ class HistoricoAcao(Base):
             "tipo": self.tipo,
             "acao": self.acao,
             "detalhes": self.detalhes or "",
+            "prontuario": self.prontuario or "",
             "dataHora": data_local.strftime("%d/%m/%Y %H:%M") if data_local else "",
         }
