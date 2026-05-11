@@ -72,43 +72,14 @@ class AlertaController:
         novos_alertas_data = []
         hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
         
-        # 1. Analisar Leitos (Infeccioso, Permanência, Limpeza)
+        # 1. Analisar Leitos (Desativado conforme solicitado: Infeccioso, Permanência, Limpeza)
+        # O loop foi mantido vazio caso queira adicionar novas lógicas de leitos no futuro
         try:
             leitos_aghu = await self.census_provider.listar_leitos()
             for leito in leitos_aghu:
-                lto_id = leito.get("lto_lto_id")
-                nome_pac = leito.get("nome_paciente", "Desconhecido")
-                observacao = str(leito.get("observacao") or "").upper()
-                
-                if any(bac in observacao for bac in ["KPC", "VRE", "ACINETOBACTER", "MRSA", "CONTATO"]):
-                    novos_alertas_data.append({
-                        "tipo": "critico",
-                        "categoria": "Infeccioso",
-                        "titulo": f"Precaução de Contato ({'KPC' if 'KPC' in observacao else 'Multirresistente'})",
-                        "mensagem": f"Leito {lto_id} ({nome_pac}) com indicação de isolamento/precaução.",
-                        "lto_id": lto_id,
-                        "prontuario": str(leito.get("prontuario_atual")) if leito.get("prontuario_atual") else None
-                    })
-
-                tempo_ocupacao = leito.get("tempo_ocupacao")
-                if tempo_ocupacao and isinstance(tempo_ocupacao, int) and tempo_ocupacao > 21:
-                    novos_alertas_data.append({
-                        "tipo": "aviso",
-                        "categoria": "Permanencia",
-                        "titulo": "Permanência Prolongada (> 21 dias)",
-                        "mensagem": f"Leito {lto_id} ({nome_pac}) com {tempo_ocupacao} dias na UTI.",
-                        "lto_id": lto_id,
-                        "prontuario": str(leito.get("prontuario_atual")) if leito.get("prontuario_atual") else None
-                    })
-
-                if leito.get("status") == "LIMPEZA":
-                     novos_alertas_data.append({
-                        "tipo": "info",
-                        "categoria": "Limpeza",
-                        "titulo": "Leito em Higienização",
-                        "mensagem": f"Leito {lto_id} encontra-se no status LIMPEZA.",
-                        "lto_id": lto_id
-                    })
+                pass
+        except Exception as e:
+            logger.error(f"Erro ao analisar leitos: {e}")
         except Exception as e:
             logger.error(f"Erro ao analisar leitos: {e}")
 
