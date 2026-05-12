@@ -1,6 +1,5 @@
 from sqlalchemy import Column, String, Integer, Boolean, DateTime
-from sqlalchemy.sql import func
-from datetime import timedelta
+from datetime import datetime, timedelta
 from resources.database import Base
 
 class Alerta(Base):
@@ -21,8 +20,8 @@ class Alerta(Base):
     prontuario = Column(String(50), nullable=True)
     perfil_alvo = Column(String(50), nullable=True) # Se nulo, visível para UTI/NIR/Admin
 
-    criado_em = Column(DateTime, server_default=func.now())
-    atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    criado_em = Column(DateTime, default=datetime.utcnow)
+    atualizado_em = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         # Ajuste para horário de Brasília (-3h)

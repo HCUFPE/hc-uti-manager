@@ -71,71 +71,65 @@ class LeitosController:
             except Exception as e:
                 print(f"Erro ao buscar altas: {e}")
         
+        # 3b. Mapeia onde cada prontuário está no AGHU para detecção de "paciente chegou em outro leito"
+        census_map = {} # prontuario -> lto_id
+        for l in leitos:
+            p = l.get('prontuario_atual')
+            if p: census_map[str(p).strip()] = str(l.get('lto_lto_id', '')).strip().upper()
+
         # 4. Merge
         for leito in leitos:
             # Normaliza o ID para evitar erros de comparação (ex: 'UTI-01 ' vs 'UTI-01')
             raw_lto_id = leito.get('lto_lto_id', '')
             lto_id = str(raw_lto_id).strip().upper()
-            leito['lto_lto_id'] = lto_id # Atualiza o ID no objeto para o padrão limpo
+            leito['lto_lto_id'] = lto_id 
             
             if 'data_nascimento' in leito:
                 leito['idade_atual'] = self._calcular_idade(leito['data_nascimento'])
             
-            # Prioridade para a nova tabela de solicitações de alta
+            # Altas
             if lto_id in altas_map:
                 leito['alta_solicitada'] = True
                 leito['alta_info'] = altas_map[lto_id].to_dict()
             else:
-                # Fallback para o booleano simples se existir no estado_provider (legado/suporte)
                 if lto_id in estados:
                     leito['alta_solicitada'] = estados[lto_id].alta_solicitada
                 else:
                     leito['alta_solicitada'] = leito.get('alta_solicitada', False)
 
-            # Reservas e Sincronização
+            # Reservas e Sincronização Inteligente
             if lto_id in estados:
                 est = estados[lto_id]
+                prontuario_reserva = str(est.prontuario_proximo or "").strip()
                 
-                prontuario_aghu = leito.get('prontuario_atual')
-                prontuario_reserva = est.prontuario_proximo
-                
-                # Se o leito foi ocupado no AGHU e havia uma reserva
-                if prontuario_aghu and prontuario_reserva:
+                # SUCESSO/CONCLUSÃO: O paciente reservado apareceu no AGHU (neste leito ou em outro)
+                if prontuario_reserva and prontuario_reserva in census_map:
                     try:
-                        if str(prontuario_aghu) == str(prontuario_reserva):
-                            # SUCESSO: O paciente reservado chegou!
-                            await self.estado_provider.limpar_reserva(lto_id)
-                            sol_id = getattr(est, 'solicitacao_id', None)
-                            if sol_id and self.solicitacao_provider:
-                                await self.solicitacao_provider.atualizar(sol_id, {"status": "Concluída"})
-                            
-                            leito['prontuario_proximo'] = None
-                        else:
-                            # Só é CONFLITO se não houver uma alta já planejada para o paciente atual
-                            is_alta = leito.get('alta_solicitada', False)
-                            
-                            if not is_alta:
-                                leito['conflito_reserva'] = True
-                            else:
-                                leito['conflito_reserva'] = False
-                                
-                            leito['prontuario_proximo'] = est.prontuario_proximo
-                            leito['idade_proximo'] = est.idade_proximo
-                            leito['especialidade_proximo'] = est.especialidade_proximo
-                            
-                            # Busca info da cirurgia para exibir no card
-                            sol_id = getattr(est, 'solicitacao_id', None)
-                            if sol_id and self.solicitacao_provider:
-                                sol = await self.solicitacao_provider.get_por_id(sol_id)
-                                if sol:
-                                    leito['data_cirurgia_proximo'] = sol.data_cirurgia
-                                    leito['turno_proximo'] = sol.turno
+                        lto_aghu_real = census_map[prontuario_reserva]
+                        # Se ele chegou, não importa o leito, limpamos a reserva deste leito (lto_id)
+                        await self.estado_provider.limpar_reserva(lto_id)
+                        
+                        sol_id = getattr(est, 'solicitacao_id', None)
+                        if sol_id and self.solicitacao_provider:
+                            await self.solicitacao_provider.atualizar(sol_id, {"status": "Concluída"})
+                        
+                        leito['prontuario_proximo'] = None
+                        leito['conflito_reserva'] = False
+                        
+                        if lto_aghu_real != lto_id:
+                            print(f"Paciente {prontuario_reserva} reservado para {lto_id} mas chegou no {lto_aghu_real}. Reserva liberada.")
                     except Exception as e:
-                        print(f"Erro na sincronização do leito {lto_id}: {e}")
-                        leito['prontuario_proximo'] = est.prontuario_proximo
+                        print(f"Erro na sincronização inteligente do leito {lto_id}: {e}")
                 else:
-                    # Sem conflito, mantém a exibição da reserva normal
-                    leito['conflito_reserva'] = False
+                    # Se não apareceu no AGHU ainda, verificamos CONFLITO (outro paciente ocupou o leito reservado)
+                    prontuario_aghu_neste_leito = leito.get('prontuario_atual')
+                    if prontuario_aghu_neste_leito:
+                        # Alguém ocupou o leito e não é quem reservamos
+                        is_alta = leito.get('alta_solicitada', False)
+                        leito['conflito_reserva'] = not is_alta
+                    else:
+                        leito['conflito_reserva'] = False
+                        
                     leito['prontuario_proximo'] = est.prontuario_proximo
                     leito['idade_proximo'] = est.idade_proximo
                     leito['especialidade_proximo'] = est.especialidade_proximo

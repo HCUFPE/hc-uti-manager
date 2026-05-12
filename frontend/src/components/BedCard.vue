@@ -46,7 +46,7 @@
         <!-- Detalhes da Cirurgia -->
         <div v-if="proximoPaciente.dataCirurgia" class="mt-2 flex flex-wrap gap-2">
           <div class="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 border border-slate-200">
-            Cirurgia: {{ new Date(proximoPaciente.dataCirurgia).toLocaleDateString('pt-BR') }}
+            Cirurgia: {{ proximoPaciente.dataCirurgia.includes('-') ? proximoPaciente.dataCirurgia.split('-').reverse().join('/') : proximoPaciente.dataCirurgia }}
           </div>
           <div v-if="proximoPaciente.turno" class="flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600 border border-blue-100 uppercase">
             Turno: {{ proximoPaciente.turno }}

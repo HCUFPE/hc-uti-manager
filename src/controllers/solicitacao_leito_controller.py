@@ -20,37 +20,42 @@ class SolicitacaoLeitoController:
         self.estado_provider = estado_provider
         self.historico_provider = historico_provider
 
-    async def _remanejar_prioridades(self, data_cirurgia: str, turno: str, prioridade_alvo: str, skip_id: int | None = None):
+    async def _sincronizar_prioridades(self, data_cirurgia: str, turno: str, sol_id_foco: int | None = None, prioridade_desejada: str | None = None):
         """
-        Lógica recursiva para empurrar prioridades: 
-        Se eu definir algo como P1, quem era P1 vira P2, quem era P2 vira P3...
+        Garante que a fila de prioridades seja contínua (P1, P2, P3...) e sem buracos.
+        Se prioridade_desejada for informada para sol_id_foco, tenta posicioná-lo ali e remaneja os outros.
         """
-        if not prioridade_alvo or prioridade_alvo not in ["P1", "P2", "P3", "P4", "P5"]:
+        if not data_cirurgia or not turno:
             return
 
-        # Busca se já existe alguém com essa mesma data, turno e prioridade
+        # 1. Busca todas as solicitações Pendentes para esse bucket
         todas = await self.leito_provider.get_todas()
-        conflito = next((s for s in todas if s.data_cirurgia == data_cirurgia 
-                         and s.turno == turno 
-                         and s.prioridade == prioridade_alvo 
-                         and s.id != skip_id), None)
+        bucket = [s for s in todas if s.data_cirurgia == data_cirurgia and s.turno == turno and s.status == "Pendente"]
+        
+        if not bucket:
+            return
 
-        if conflito:
-            # Define a próxima prioridade
-            proxima = {
-                "P1": "P2",
-                "P2": "P3",
-                "P3": "P4",
-                "P4": "P5",
-                "P5": None # P5 é o limite, ou vira nulo
-            }.get(prioridade_alvo)
-
-            # Primeiro remaneja quem está no caminho da próxima (recursão)
-            if proxima:
-                await self._remanejar_prioridades(data_cirurgia, turno, proxima, skip_id=conflito.id)
+        # 2. Define a ordem base
+        def obter_peso(s):
+            # Se for o cara que estamos editando/criando agora e ele quer uma prioridade específica
+            if s.id == sol_id_foco and prioridade_desejada:
+                # Usamos um timestamp negativo (-1) para ele ganhar o desempate na mesma prioridade
+                return (int(prioridade_desejada[1:]), -1)
             
-            # Depois atualiza o atual para a próxima
-            await self.leito_provider.atualizar(conflito.id, {"prioridade": proxima})
+            # Se já tem prioridade, usa ela. Se não, vai pro final da fila (peso 999)
+            try:
+                prio_val = int(s.prioridade[1:]) if s.prioridade and s.prioridade.startswith('P') else 999
+            except:
+                prio_val = 999
+            return (prio_val, s.criado_em.timestamp() if s.criado_em else 0)
+
+        bucket.sort(key=obter_peso)
+
+        # 3. Reatribui P1, P2, P3... sequencialmente para todos no bucket
+        for i, sol in enumerate(bucket):
+            nova_prio = f"P{i+1}"
+            if sol.prioridade != nova_prio:
+                await self.leito_provider.atualizar(sol.id, {"prioridade": nova_prio})
 
 
     async def listar_solicitacoes(self) -> List[Dict[str, Any]]:
@@ -77,26 +82,31 @@ class SolicitacaoLeitoController:
 
     async def criar_solicitacao(self, payload: dict) -> dict:
         """Registra uma nova solicitação de leito."""
-        nova_solicitacao = {
+        dt = payload.get("data_cirurgia")
+        trn = payload.get("turno")
+        prio = payload.get("prioridade")
+
+        nova_solicitacao_data = {
             "prontuario": payload.get("prontuario"),
             "idade": payload.get("idade"),
             "especialidade": payload.get("especialidade"),
             "tipo": payload.get("tipo"),
-            "turno": payload.get("turno"),
-            "data_cirurgia": payload.get("data_cirurgia"),
-            "prioridade": payload.get("prioridade"),
+            "turno": trn,
+            "data_cirurgia": dt,
+            "prioridade": prio,
             "status": "Pendente",
             "perfil_solicitante": payload.get("perfil_solicitante")
         }
 
-        if not all([nova_solicitacao["prontuario"], nova_solicitacao["idade"], nova_solicitacao["especialidade"]]):
+        if not all([nova_solicitacao_data["prontuario"], nova_solicitacao_data["idade"], nova_solicitacao_data["especialidade"]]):
              raise HTTPException(status_code=400, detail="Campos obrigatorios ausentes.")
 
-        # Remanejamento de prioridade antes de criar
-        if nova_solicitacao["prioridade"] and nova_solicitacao["data_cirurgia"] and nova_solicitacao["turno"]:
-            await self._remanejar_prioridades(nova_solicitacao["data_cirurgia"], nova_solicitacao["turno"], nova_solicitacao["prioridade"])
-
-        await self.leito_provider.criar(nova_solicitacao)
+        # Cria a solicitação
+        sol = await self.leito_provider.criar(nova_solicitacao_data)
+        
+        # Sincroniza a fila para esse dia/turno
+        await self._sincronizar_prioridades(dt, trn, sol_id_foco=sol.id, prioridade_desejada=prio)
+        
         return {"message": "Solicitação de leito registrada com sucesso."}
 
     async def atualizar_status(self, sol_id: int, payload: dict) -> dict:
@@ -114,12 +124,15 @@ class SolicitacaoLeitoController:
                 dados["status"] = "Reservado"
 
         await self.leito_provider.atualizar(sol_id, dados)
+        
+        # Se mudou status, a fila desse dia/turno pode ter buracos
+        await self._sincronizar_prioridades(alvo.data_cirurgia, alvo.turno)
+        
         return {"message": "Solicitação atualizada."}
 
     async def editar_solicitacao(self, sol_id: int, payload: dict) -> dict:
         """
-        Permite editar os dados de uma solicitação, 
-        desde que ela ainda não tenha sido reservada.
+        Permite editar os dados de uma solicitação.
         """
         alvo = await self.leito_provider.get_por_id(sol_id)
         if not alvo:
@@ -138,43 +151,50 @@ class SolicitacaoLeitoController:
         if not dados_atualizar:
             raise HTTPException(status_code=400, detail="Nenhum campo válido para atualização fornecido.")
 
-        # Validação de campos obrigatórios (não podem ser vazios se fornecidos)
-        campos_obrigatorios = ["prontuario", "idade", "especialidade", "tipo", "data_cirurgia", "turno"]
-        for campo in campos_obrigatorios:
-            valor = dados_atualizar.get(campo)
-            if campo in dados_atualizar and (valor is None or str(valor).strip() == ""):
-                raise HTTPException(status_code=400, detail=f"O campo '{campo}' é obrigatório e não pode ficar vazio.")
+        # Salva o bucket antigo para caso mude data/turno
+        old_dt = alvo.data_cirurgia
+        old_trn = alvo.turno
 
-        # Se mudou prioridade, data ou turno, precisa remanejar
-        prio = dados_atualizar.get("prioridade", alvo.prioridade)
-        dt = dados_atualizar.get("data_cirurgia", alvo.data_cirurgia)
-        trn = dados_atualizar.get("turno", alvo.turno)
-        
-        if prio and dt and trn and (prio != alvo.prioridade or dt != alvo.data_cirurgia or trn != alvo.turno):
-            await self._remanejar_prioridades(dt, trn, prio, skip_id=sol_id)
-
+        # Atualiza
         await self.leito_provider.atualizar(sol_id, dados_atualizar)
+        
+        # Sincroniza o novo bucket
+        new_dt = dados_atualizar.get("data_cirurgia", old_dt)
+        new_trn = dados_atualizar.get("turno", old_trn)
+        new_prio = dados_atualizar.get("prioridade", alvo.prioridade)
+        
+        await self._sincronizar_prioridades(new_dt, new_trn, sol_id_foco=sol_id, prioridade_desejada=new_prio)
+        
+        # Se mudou de bucket, sincroniza o antigo também para tapar o buraco
+        if new_dt != old_dt or new_trn != old_trn:
+            await self._sincronizar_prioridades(old_dt, old_trn)
+
         return {"message": "Solicitação editada com sucesso."}
 
     async def cancelar_solicitacao(self, sol_id: int) -> dict:
         """Cancela uma solicitação de leito."""
-        sucesso = await self.leito_provider.deletar(sol_id)
-        if not sucesso:
+        alvo = await self.leito_provider.get_por_id(sol_id)
+        if not alvo:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+            
+        dt, trn = alvo.data_cirurgia, alvo.turno
+        sucesso = await self.leito_provider.deletar(sol_id)
+        
+        if sucesso:
+            # Sincroniza para tapar o buraco
+            await self._sincronizar_prioridades(dt, trn)
             
         return {"message": "Solicitação cancelada."}
 
     async def reservar_leito(self, sol_id: int, leito_id: str) -> dict:
         """
-        Vincula uma solicitação pendente a um leito específico,
-        criando uma reserva no estado local do leito.
+        Vincula uma solicitação pendente a um leito específico.
         """
         solicitacao = await self.leito_provider.get_por_id(sol_id)
         if not solicitacao:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
             
-        if not self.estado_provider:
-            raise HTTPException(status_code=500, detail="Estado provider não configurado.")
+        dt, trn = solicitacao.data_cirurgia, solicitacao.turno
 
         # 1. Registrar a reserva no estado local do leito
         await self.estado_provider.salvar_reserva(
@@ -191,6 +211,9 @@ class SolicitacaoLeitoController:
             "destino": f"Leito {leito_id}"
         })
 
+        # 3. Sincroniza a fila (um saiu da fila, os outros sobem)
+        await self._sincronizar_prioridades(dt, trn)
+
         return {"message": f"Reserva do leito {leito_id} realizada com sucesso."}
 
     async def cancelar_reserva(self, sol_id: int) -> dict:
@@ -202,16 +225,18 @@ class SolicitacaoLeitoController:
         if not solicitacao:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
 
-        if not self.estado_provider:
-            raise HTTPException(status_code=500, detail="Estado provider não configurado.")
+        dt, trn = solicitacao.data_cirurgia, solicitacao.turno
 
         # 1. Limpar a reserva no leito (SQLite)
         await self.estado_provider.limpar_reserva_por_solicitacao(sol_id)
 
-        # 2. Voltar a solicitação para Pendente (Postgres/SQLite principal)
+        # 2. Voltar a solicitação para Pendente
         await self.leito_provider.atualizar(sol_id, {
             "status": "Pendente",
             "destino": None
         })
+
+        # 3. Sincroniza a fila (um voltou, pode empurrar outros)
+        await self._sincronizar_prioridades(dt, trn, sol_id_foco=sol_id, prioridade_desejada=solicitacao.prioridade)
 
         return {"message": "Reserva cancelada. Solicitação voltou para Pendente."}

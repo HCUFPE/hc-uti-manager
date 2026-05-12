@@ -206,6 +206,36 @@
         </div>
       </section>
 
+      <!-- SEÇÃO 3: SOLICITAÇÕES CONCLUÍDAS -->
+      <section v-if="solicitacoesConcluidas.length > 0">
+        <div class="mb-6 flex items-center gap-3">
+          <div class="h-8 w-1 rounded bg-blue-500"></div>
+          <h2 class="text-xl font-bold text-slate-800">Solicitações Concluídas (Paciente no Leito)</h2>
+          <span class="rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-600">
+            {{ solicitacoesConcluidas.length }}
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <article
+            v-for="sol in solicitacoesConcluidas"
+            :key="sol.id"
+            class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50 p-4 shadow-sm"
+          >
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <p class="text-lg font-bold text-slate-800">Prontuário: {{ sol.prontuario }}</p>
+                <p class="text-sm text-slate-600">{{ sol.especialidade }} • {{ sol.destino }}</p>
+              </div>
+              <div class="text-right">
+                <span class="rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase text-blue-700">Concluída</span>
+                <p class="text-[10px] text-slate-400 mt-1">Sincronizado com AGHU</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
     </div>
 
     <!-- Modais -->
@@ -420,10 +450,14 @@ const solicitacoesFiltradas = computed(() => {
     const turnoB = pesoTurno[b.turno] || 99;
     if (turnoA !== turnoB) return turnoA - turnoB;
 
-    // Nível 3: Prioridade (P1 < P2 < P3 < P4 < P5)
-    const pesoPrio: Record<string, number> = { 'P1': 1, 'P2': 2, 'P3': 3, 'P4': 4, 'P5': 5 };
-    const prioA = pesoPrio[a.prioridade || ''] || 99;
-    const prioB = pesoPrio[b.prioridade || ''] || 99;
+    // Nível 3: Prioridade (P1 < P2 < P3...)
+    const getPrioridadeValor = (p: string | undefined) => {
+      if (!p || !p.startsWith('P')) return 999;
+      const num = parseInt(p.substring(1));
+      return isNaN(num) ? 999 : num;
+    };
+    const prioA = getPrioridadeValor(a.prioridade);
+    const prioB = getPrioridadeValor(b.prioridade);
     if (prioA !== prioB) return prioA - prioB;
 
     // Nível 4: Data da Solicitação (Desempate por ordem de chegada)
@@ -433,6 +467,7 @@ const solicitacoesFiltradas = computed(() => {
 
 const solicitacoesPendentes = computed(() => solicitacoesFiltradas.value.filter(s => s.status === 'Pendente'));
 const solicitacoesReservadas = computed(() => solicitacoesFiltradas.value.filter(s => s.status === 'Reservado'));
+const solicitacoesConcluidas = computed(() => solicitacoesFiltradas.value.filter(s => s.status === 'Concluída'));
 
 async function carregarSolicitacoes() {
   loading.value = true;

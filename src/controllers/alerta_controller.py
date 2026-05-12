@@ -115,15 +115,17 @@ class AlertaController:
         try:
             vagas = await self.solicitacao_leito_provider.get_todas()
             if self.historico_provider:
+                # Janela de 24h: permite ver o que aconteceu durante a noite/ontem
                 limite_24h = datetime.utcnow() - timedelta(hours=24)
-                eventos = await self.historico_provider.listar(limit=200)
+                eventos = await self.historico_provider.listar(limit=300)
                 eventos_recentes = [e for e in eventos if e.get("criado_em") and e.get("criado_em") > limite_24h]
                 
                 for ev in eventos_recentes:
                     tipo = ev.get("tipo")
                     detalhes = ev.get("detalhes", "")
                     operador = ev.get("operador", "Sistema")
-                    vaga = None # Inicialização para evitar UnboundLocalError
+                    criado_em_evento = ev.get("criado_em")
+                    vaga = None 
                     
                     if "Alta #" in detalhes or "Teste" in detalhes:
                         continue
@@ -134,7 +136,6 @@ class AlertaController:
                     if s_match:
                         try:
                             sid = int(s_match.group(1))
-                            # Tenta achar na lista de vagas se for solicitação
                             vaga = next((v for v in vagas if v.id == sid), None)
                         except: pass
 
@@ -146,7 +147,6 @@ class AlertaController:
                     if vaga:
                         pront_alerta = str(vaga.prontuario)
                         perfil_vaga = vaga.perfil_solicitante
-                        # Verifica se é para hoje (compara apenas YYYY-MM-DD)
                         d_sol = str(vaga.data_cirurgia).strip()
                         if "/" in d_sol:
                             p = d_sol.split("/")
@@ -159,7 +159,6 @@ class AlertaController:
                         if d_sol == hoje_bsb:
                             match_hoje = True
                     else:
-                        # Fallback: tentar pegar data do texto se a vaga não foi achada (ex: excluída)
                         d_match = re.search(r'Data:\s+([\d/-]+)', detalhes)
                         if d_match:
                             d_sol = d_match.group(1).strip()
@@ -171,45 +170,41 @@ class AlertaController:
 
                     # 1. UTI <-> SOLICITANTE (Reserva e Cancelamento de Reserva)
                     if tipo in ["reserva", "cancelamento_reserva"]:
-                        # Limpa o operador e perfil para comparação (ex: 'COB-Admin' -> 'COB')
                         op_clean = operador.replace("-Admin", "").strip().upper()
                         pv_clean = str(perfil_vaga or "").replace("-Admin", "").strip().upper()
                         
-                        logger.info(f"Analisando {tipo}: operador={op_clean}, perfil_vaga={pv_clean}")
-
-                        # Para Reserva, o alvo é sempre o solicitante (já que só a UTI reserva)
-                        if tipo == "reserva":
-                            novos_alertas_data.append({
-                                "tipo": "info",
-                                "categoria": "Gargalo",
-                                "titulo": "Vaga Reservada pela UTI",
-                                "mensagem": detalhes,
-                                "prontuario": pront_alerta,
-                                "perfil_alvo": perfil_vaga # Envia para o COB/BC/HEM
-                            })
-                        # Para Cancelamento, o alvo depende de quem cancelou
-                        else:
-                            # Se quem cancelou NÃO foi o próprio dono da vaga, avisa o dono (Ação da UTI)
-                            # Se o op_clean contiver 'UTI' ou 'ADMIN' ou for diferente do dono
-                            if op_clean != pv_clean:
+                        if perfil_vaga:
+                            if tipo == "reserva":
+                                novos_alertas_data.append({
+                                    "tipo": "info",
+                                    "categoria": "Gargalo",
+                                    "titulo": "Vaga Reservada pela UTI",
+                                    "mensagem": detalhes,
+                                    "prontuario": pront_alerta,
+                                    "perfil_alvo": perfil_vaga,
+                                    "criado_em": criado_em_evento
+                                })
+                            elif tipo == "cancelamento_reserva" and op_clean != pv_clean:
                                 novos_alertas_data.append({
                                     "tipo": "info",
                                     "categoria": "Gargalo",
                                     "titulo": "Reserva Cancelada pela UTI",
                                     "mensagem": detalhes,
                                     "prontuario": pront_alerta,
-                                    "perfil_alvo": perfil_vaga # Envia para o COB/BC/HEM
+                                    "perfil_alvo": perfil_vaga,
+                                    "criado_em": criado_em_evento
                                 })
-                            else:
-                                # Se o próprio solicitante cancelou, avisa a UTI
-                                novos_alertas_data.append({
-                                    "tipo": "aviso",
-                                    "categoria": "Gargalo",
-                                    "titulo": "Solicitante cancelou a reserva",
-                                    "mensagem": detalhes,
-                                    "prontuario": pront_alerta,
-                                    "perfil_alvo": None # UTI
-                                })
+                        
+                        if tipo == "cancelamento_reserva" and perfil_vaga and op_clean == pv_clean:
+                            novos_alertas_data.append({
+                                "tipo": "aviso",
+                                "categoria": "Gargalo",
+                                "titulo": "Solicitante cancelou a reserva",
+                                "mensagem": detalhes,
+                                "prontuario": pront_alerta,
+                                "perfil_alvo": None, # UTI
+                                "criado_em": criado_em_evento
+                            })
 
                     # 2. SOLICITANTE -> ALERTA UTI (Nova Solicitação/Exclusão/Prioridade hoje)
                     elif tipo in ["nova_solicitacao", "exclusao_solicitacao", "alteracao_prioridade"]:
@@ -226,18 +221,20 @@ class AlertaController:
                                 "titulo": titulo,
                                 "mensagem": detalhes,
                                 "prontuario": pront_alerta,
-                                "perfil_alvo": None # UTI
+                                "perfil_alvo": None, # UTI
+                                "criado_em": criado_em_evento
                             })
                     
                     # 3. UTI -> NIR (Cancelamento de Alta)
-                    elif tipo == "cancelamento": # Conforme src/routers/altas.py
+                    elif tipo == "cancelamento":
                         novos_alertas_data.append({
                             "tipo": "aviso",
                             "categoria": "Gargalo",
                             "titulo": "Alta Cancelada pela UTI",
                             "mensagem": detalhes,
                             "prontuario": pront_alerta,
-                            "perfil_alvo": "NIR"
+                            "perfil_alvo": "NIR",
+                            "criado_em": criado_em_evento
                         })
         except Exception as e:
             logger.error(f"Erro ao analisar histórico: {e}")
@@ -247,7 +244,10 @@ class AlertaController:
         chaves_ja_processadas = set()
         
         for data in novos_alertas_data:
-            chave = f"{data.get('titulo')}|{data.get('prontuario')}|{data.get('perfil_alvo')}|{data.get('mensagem')}"
+            # Chave agora inclui o timestamp para evitar que eventos diferentes mas com mesma mensagem sejam mesclados
+            ts_str = data.get("criado_em").isoformat() if data.get("criado_em") else "now"
+            chave = f"{data.get('titulo')}|{data.get('prontuario')}|{data.get('perfil_alvo')}|{data.get('mensagem')}|{ts_str}"
+            
             if chave in chaves_ja_processadas:
                 continue
             
@@ -255,7 +255,8 @@ class AlertaController:
                              a.titulo == data.get("titulo") and 
                              str(a.prontuario) == str(data.get("prontuario")) and
                              a.perfil_alvo == data.get("perfil_alvo") and
-                             a.mensagem == data.get("mensagem")), None)
+                             a.mensagem == data.get("mensagem") and
+                             (a.criado_em == data.get("criado_em") if data.get("criado_em") else True)), None)
             
             if existente:
                 alertas_manter_ids.append(existente.id)
@@ -265,7 +266,7 @@ class AlertaController:
             
             chaves_ja_processadas.add(chave)
 
-        # 5. Limpeza de obsoletos
+        # 5. Limpeza de obsoletos (apenas alertas automáticos do AGHU, não os do histórico)
         for a_antigo in alertas_existentes:
             if a_antigo.id not in alertas_manter_ids:
                 if a_antigo.categoria in ["Infeccioso", "Permanencia", "Limpeza"]:
