@@ -78,12 +78,42 @@
               </UiButton>
             </template>
             <template v-else-if="alta.status === 'definida'">
-              <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" variant="outline" @click="openDestino(alta)">
-                Alterar Destino
-              </UiButton>
-              <UiButton v-if="authStore.isAdmin || authStore.isUTI" size="sm" variant="destructive" @click="cancelarAlta(alta.id)">
-                Cancelar Alta
-              </UiButton>
+              <div class="flex flex-wrap items-center gap-2">
+                <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" variant="outline" @click="openDestino(alta)">
+                  Alterar Destino
+                </UiButton>
+                
+                <UiButton 
+                  v-if="(authStore.isAdmin || authStore.isNIR) && !alta.destinoDisponivel" 
+                  size="sm" 
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold" 
+                  @click="marcarDisponivel(alta.id)"
+                >
+                  <CheckCircleIcon class="h-4 w-4 mr-1.5" />
+                  Destino Disponível
+                </UiButton>
+                
+                <div v-if="alta.destinoDisponivel" class="flex items-center gap-2">
+                  <UiBadge variant="outline" class="border-emerald-500 text-emerald-700 bg-emerald-50 font-bold py-1.5">
+                    <CheckCircleIcon class="h-4 w-4 mr-1.5" />
+                    DESTINO LIBERADO
+                  </UiBadge>
+                  
+                  <UiButton 
+                    v-if="authStore.isAdmin || authStore.isNIR" 
+                    size="sm" 
+                    variant="ghost" 
+                    class="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2"
+                    @click="cancelarDisponibilidade(alta.id)"
+                  >
+                    Remover Liberação
+                  </UiButton>
+                </div>
+                
+                <UiButton v-if="authStore.isAdmin || authStore.isUTI" size="sm" variant="destructive" @click="cancelarAlta(alta.id)">
+                  Cancelar Alta
+                </UiButton>
+              </div>
             </template>
             <template v-else-if="alta.status === 'cancelada'">
               <UiBadge variant="outline" class="border-slate-300 text-slate-500">Cancelada</UiBadge>
@@ -106,15 +136,6 @@
             class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
           />
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Necessidades Especiais</label>
-          <textarea
-            v-model="formDestino.necessidadesEspeciais"
-            rows="3"
-            placeholder="Ex: Oxigenio portatil, Isolamento de contato..."
-            class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
-        </div>
       </div>
       <template #footer>
         <UiButton variant="outline" @click="showModalDestino = false">Cancelar</UiButton>
@@ -126,7 +147,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'; // Import computed
-import { ClockIcon, ArrowRightIcon } from '@heroicons/vue/24/outline';
+import { ClockIcon, ArrowRightIcon, CheckCircleIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';
@@ -145,7 +166,8 @@ type Alta = {
   leitoDestino: string;
   dataHora: string;
   necessidadesEspeciais?: string;
-  status: AltaStatus; // Use the explicit status type
+  status: AltaStatus;
+  destinoDisponivel: boolean;
 };
 
 const altas = ref<Alta[]>([]);
@@ -153,7 +175,7 @@ const loading = ref(false);
 const erro = ref<string | null>(null);
 const showModalDestino = ref(false);
 const altaSelecionada = ref<Alta | null>(null);
-const formDestino = ref({ leitoDestino: '', necessidadesEspeciais: '' });
+const formDestino = ref({ leitoDestino: '' });
 const toast = useToast();
 const authStore = useAuthStore();
 
@@ -183,10 +205,9 @@ const activeAltasList = computed(() => altas.value);
 
 function openDestino(alta: Alta) {
   altaSelecionada.value = alta;
-  formDestino.value = {
-    leitoDestino: alta.leitoDestino.includes('Pendente') ? '' : alta.leitoDestino, // Clear if it's 'Pendente (NIR)'
-    necessidadesEspeciais: alta.necessidadesEspeciais || '',
-  };
+  // Se o destino for o placeholder de pendência, deixamos vazio para mostrar o placeholder do input
+  const valorAtual = alta.leitoDestino || '';
+  formDestino.value.leitoDestino = valorAtual.includes('Pendente') ? '' : valorAtual;
   showModalDestino.value = true;
 }
 
@@ -210,6 +231,28 @@ async function cancelarAlta(id: string) {
     await carregar(); // Re-fetch to update the list and count
   } catch (e: any) {
     toast.error('Erro ao cancelar alta.');
+    console.error(e);
+  }
+}
+
+async function marcarDisponivel(id: string) {
+  try {
+    await api.patch(`/api/altas/${id}/disponivel`, { disponivel: true });
+    toast.success('Destino marcado como disponível.');
+    await carregar();
+  } catch (e: any) {
+    toast.error('Erro ao atualizar status do destino.');
+    console.error(e);
+  }
+}
+
+async function cancelarDisponibilidade(id: string) {
+  try {
+    await api.patch(`/api/altas/${id}/disponivel`, { disponivel: false });
+    toast.warning('Liberação de destino removida.');
+    await carregar();
+  } catch (e: any) {
+    toast.error('Erro ao cancelar disponibilidade.');
     console.error(e);
   }
 }

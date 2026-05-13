@@ -71,15 +71,6 @@ def get_leito_controller(
     """
     return LeitosController(census_provider, estado_provider, alta_provider, solicitacao_provider)
 
-# --- ALTAS --------------------------------------------------------------
-
-def get_altas_controller(
-    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
-    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
-    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider)
-) -> AltasController:
-    return AltasController(alta_provider, census_provider, estado_provider)
-
 # --- HISTORICO --------------------------------------------------
 
 def get_historico_provider(
@@ -87,6 +78,16 @@ def get_historico_provider(
 ) -> HistoricoProvider:
     """Provedor para registro e consulta do histórico de ações."""
     return HistoricoProvider(session=session)
+
+# --- ALTAS --------------------------------------------------------------
+
+def get_altas_controller(
+    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
+    leitos_controller: LeitosController = Depends(get_leito_controller),
+    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
+    historico_provider: HistoricoProvider = Depends(get_historico_provider)
+) -> AltasController:
+    return AltasController(alta_provider, leitos_controller, estado_provider, historico_provider)
 
 # --- SOLICITACOES LEITO --------------------------------------------------
 
@@ -106,12 +107,12 @@ def get_alerta_provider(
 
 def get_alerta_controller(
     alerta_provider: AlertaProvider = Depends(get_alerta_provider),
-    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
+    leitos_controller: LeitosController = Depends(get_leito_controller),
     alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
     solicitacao_leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
     historico_provider: HistoricoProvider = Depends(get_historico_provider)
 ) -> AlertaController:
-    return AlertaController(alerta_provider, census_provider, alta_provider, solicitacao_leito_provider, historico_provider)
+    return AlertaController(alerta_provider, leitos_controller, alta_provider, solicitacao_leito_provider, historico_provider)
 
 # --- INDICADORES --------------------------------------------------
 
@@ -127,3 +128,28 @@ def get_indicadores_controller(
     return IndicadoresController(indicadores_provider)
 
 
+from auth.roles import Role
+from auth.auth import auth_handler
+from fastapi import HTTPException, status
+import logging
+from typing import List
+
+logger = logging.getLogger(__name__)
+
+# --- SEGURANÇA E RBAC -----------------------------------------------------------
+
+class RoleChecker:
+    def __init__(self, allowed_roles: List[Role]):
+        self.allowed_roles = allowed_roles
+
+    async def __call__(self, current_user: dict = Depends(auth_handler.decode_token)):
+        if current_user.get("perfil") not in self.allowed_roles:
+            logger.warning(f"Acesso negado: Usuário {current_user.get('username')} (Perfil: {current_user.get('perfil')}) tentou acessar recurso restrito a {self.allowed_roles}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você não tem permissão para realizar esta operação."
+            )
+        return current_user
+
+def check_role(allowed_roles: List[Role]):
+    return RoleChecker(allowed_roles)

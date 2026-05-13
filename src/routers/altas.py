@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from auth.roles import Role
 from typing import List, Dict, Any
 from controllers.altas_controller import AltasController
-from dependencies import get_altas_controller, get_historico_provider
+from dependencies import get_altas_controller, get_historico_provider, check_role
 from providers.implementations.historico_provider import HistoricoProvider
 from auth.auth import auth_handler
 
@@ -24,13 +24,9 @@ async def solicitar_alta(
     payload: dict = {},
     controller: AltasController = Depends(get_altas_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
     """Registra uma nova solicitação de alta para o leito especificado."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Apenas a UTI pode solicitar altas.")
-
     result = await controller.solicitar_alta(lto_id, payload)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -46,23 +42,21 @@ async def atualizar_destino(
     alta_id: int,
     payload: dict,
     controller: AltasController = Depends(get_altas_controller),
-    historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.NIR, Role.NIR_ADMIN])),
 ):
     """Atualiza o destino e/ou necessidades especiais de uma solicitação de alta."""
-    allowed_roles = [Role.ADMIN, Role.NIR, Role.NIR_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Você não tem permissão para definir o destino da alta.")
+    return await controller.atualizar_destino(alta_id, payload, operador=current_user.get("username", "NIR"))
 
-    result = await controller.atualizar_destino(alta_id, payload)
-    destino = payload.get("leitoDestino", "")
-    await historico.registrar(
-        operador=current_user.get("username", "Sistema"),
-        tipo="destino",
-        acao="Definiu destino de alta",
-        detalhes=f"Alta #{alta_id} → {destino}" if destino else f"Alta #{alta_id} atualizada",
-    )
-    return result
+@router.patch("/{alta_id}/disponivel")
+async def marcar_destino_disponivel(
+    alta_id: int,
+    payload: dict,
+    controller: AltasController = Depends(get_altas_controller),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.NIR, Role.NIR_ADMIN]))
+):
+    """NIR confirma que o destino já está disponível (leito vago e pronto)."""
+    disponivel = payload.get("disponivel", True)
+    return await controller.atualizar_destino_disponivel(alta_id, disponivel, operador=current_user.get("username", "NIR"))
 
 
 @router.delete("/{alta_id}", status_code=204)
@@ -70,13 +64,9 @@ async def cancelar_alta(
     alta_id: int,
     controller: AltasController = Depends(get_altas_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
     """Cancela uma solicitação de alta."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Apenas a UTI pode cancelar solicitações de alta.")
-
     await controller.cancelar_alta(alta_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),

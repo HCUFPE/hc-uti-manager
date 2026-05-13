@@ -4,6 +4,10 @@ from datetime import date, datetime
 import asyncio
 import os
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class LeitosController:
     def __init__(self, census_provider, estado_provider, alta_provider=None, solicitacao_provider=None):
         self.census_provider = census_provider
@@ -38,38 +42,45 @@ class LeitosController:
 
     async def listar_leitos(self) -> List[Dict[str, Any]]:
         # 1. Busca o censo (Realidade do Hospital)
+        leitos = []
         try:
             leitos = await self.census_provider.listar_leitos()
-            # Injeção manual de leitos de teste para desenvolvimento
-            if os.getenv("ENV") == "development":
-                leitos.extend([
-                    {"lto_lto_id": "UTI-01", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
-                    {"lto_lto_id": "UTI-02", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "999999", "nome_atual": "PACIENTE TESTE ALTA", "idade_atual": 45, "especialidade_atual": "CARDIOLOGIA"},
-                    {"lto_lto_id": "UTI-03", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "123456", "nome_atual": "PACIENTE ATUAL", "prontuario_proximo": "987654", "nome_proximo": "PACIENTE CHEGANDO"},
-                    {"lto_lto_id": "UTI-04", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
-                ])
         except Exception as e:
-            print(f"Erro ao buscar censo: {e}")
+            logger.error(f"Erro ao buscar censo: {e}")
             leitos = []
+            
+        # Injeção de leitos de teste via variável de ambiente para flexibilidade
+        if os.getenv("ENV") == "development" and os.getenv("MOCK_BEDS") == "true":
+            logger.info("Injetando leitos de teste (Mock)...")
+            mock_beds = [
+                {"lto_lto_id": "UTI-01", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+                {"lto_lto_id": "UTI-02", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "999999", "nome_atual": "PACIENTE TESTE ALTA", "idade_atual": 45, "especialidade_atual": "CARDIOLOGIA"},
+                {"lto_lto_id": "UTI-03", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "123456", "nome_atual": "PACIENTE ATUAL", "prontuario_proximo": "987654", "nome_proximo": "PACIENTE CHEGANDO"},
+                {"lto_lto_id": "UTI-04", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+            ]
+            
+            # Evita duplicados se o AGHU já retornou algum desses IDs (embora improvável com nomes tipo UTI-01)
+            ids_existentes = {str(l.get('lto_lto_id')).strip().upper() for l in leitos}
+            for mb in mock_beds:
+                if mb["lto_lto_id"] not in ids_existentes:
+                    leitos.append(mb)
             
         # 2. Busca estados locais (Reservas)
         try:
             estados = await self.estado_provider.obter_estados()
         except Exception as e:
-            print(f"Erro ao buscar estados: {e}")
+            logger.error(f"Erro ao buscar estados locais: {e}")
             estados = {}
 
-        # MESCLA LEITOS DE TESTE (Apenas em ambiente de desenvolvimento)
-        if os.getenv("ENV") == "development":
-            pass
-            
         # 3. Busca solicitações de alta
         altas_map = {}
         if self.alta_provider:
             try:
-                altas_map = await self.alta_provider.obter_altas_map()
+                raw_altas = await self.alta_provider.obter_altas_map()
+                # Normaliza chaves para garantir merge (ex: 'uti-01' -> 'UTI-01')
+                altas_map = {str(k).strip().upper(): v for k, v in raw_altas.items()}
             except Exception as e:
-                print(f"Erro ao buscar altas: {e}")
+                logger.error(f"Erro ao buscar mapa de altas: {e}")
         
         # 3b. Mapeia onde cada prontuário está no AGHU para detecção de "paciente chegou em outro leito"
         census_map = {} # prontuario -> lto_id
@@ -89,9 +100,15 @@ class LeitosController:
             
             # Altas
             if lto_id in altas_map:
+                alta_obj = altas_map[lto_id]
                 leito['alta_solicitada'] = True
-                leito['alta_info'] = altas_map[lto_id].to_dict()
+                leito['alta_info'] = alta_obj.to_dict()
+                leito['leito_destino'] = alta_obj.leito_destino
+                leito['destino_disponivel'] = bool(alta_obj.destino_disponivel)
             else:
+                leito['leito_destino'] = None
+                leito['destino_disponivel'] = False
+                
                 if lto_id in estados:
                     leito['alta_solicitada'] = estados[lto_id].alta_solicitada
                 else:
@@ -117,9 +134,9 @@ class LeitosController:
                         leito['conflito_reserva'] = False
                         
                         if lto_aghu_real != lto_id:
-                            print(f"Paciente {prontuario_reserva} reservado para {lto_id} mas chegou no {lto_aghu_real}. Reserva liberada.")
+                            logger.info(f"Paciente {prontuario_reserva} reservado para {lto_id} mas chegou no {lto_aghu_real}. Reserva liberada.")
                     except Exception as e:
-                        print(f"Erro na sincronização inteligente do leito {lto_id}: {e}")
+                        logger.error(f"Erro na sincronização inteligente do leito {lto_id}: {e}")
                 else:
                     # Se não apareceu no AGHU ainda, verificamos CONFLITO (outro paciente ocupou o leito reservado)
                     prontuario_aghu_neste_leito = leito.get('prontuario_atual')

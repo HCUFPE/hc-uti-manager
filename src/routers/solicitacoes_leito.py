@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from auth.roles import Role
 from typing import List, Dict, Any
 from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
-from dependencies import get_solicitacao_leito_controller, get_historico_provider, get_app_db_session
+from dependencies import get_solicitacao_leito_controller, get_historico_provider, get_app_db_session, check_role
 from providers.implementations.historico_provider import HistoricoProvider
 from models.usuario_perfil import UsuarioPerfil
 from sqlalchemy import select
@@ -23,25 +23,12 @@ async def criar_solicitacao(
     payload: dict,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
-    db: AsyncSession = Depends(get_app_db_session)
+    current_user: dict = Depends(check_role([
+        Role.ADMIN, Role.COB, Role.COB_ADMIN, Role.BC, Role.BC_ADMIN, Role.HEM, Role.HEM_ADMIN
+    ])),
 ):
     """Cria uma nova solicitação de leito."""
-    allowed_roles = [
-        Role.ADMIN,
-        Role.COB, Role.COB_ADMIN, Role.BC, Role.BC_ADMIN, Role.HEM, Role.HEM_ADMIN
-    ]
-    if current_user.get("perfil") not in allowed_roles:
-        # Se não estiver no token, vamos dar uma última chance buscando no banco
-        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
-        result = await db.execute(stmt)
-        perfil_obj = result.scalar_one_or_none()
-        if not perfil_obj or perfil_obj.perfil not in allowed_roles:
-            raise HTTPException(status_code=403, detail="Você não tem permissão para criar solicitações.")
-        user_perfil = perfil_obj.perfil
-    else:
-        user_perfil = current_user.get("perfil")
-
+    user_perfil = current_user.get("perfil", "Comum")
     # Remove o sufixo -Admin para gravar apenas o grupo base
     grupo_solicitante = user_perfil.replace("-Admin", "")
     payload["perfil_solicitante"] = grupo_solicitante
@@ -79,12 +66,9 @@ async def atualizar_status(
     payload: dict,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
     """Atualiza o status ou o destino de uma solicitação."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Apenas a UTI pode gerenciar o status das solicitações.")
 
     result = await controller.atualizar_status(sol_id, payload)
     novo_status = payload.get("status", "")
@@ -112,25 +96,17 @@ async def editar_solicitacao(
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
-    db: AsyncSession = Depends(get_app_db_session)
 ):
     """Atualiza dados de uma solicitação (apenas para UTI/NIR ou o próprio dono)."""
     solicitacao = await controller.leito_provider.get_por_id(sol_id)
     if not solicitacao:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
 
-    # Identifica o perfil (token ou banco)
-    user_perfil = current_user.get("perfil")
-    if not user_perfil:
-        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
-        db_result = await db.execute(stmt)
-        perfil_obj = db_result.scalar_one_or_none()
-        user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
-
+    # Identifica o perfil (token)
+    user_perfil = current_user.get("perfil", "Comum")
     user_grupo = user_perfil.replace("-Admin", "")
-    super_usuarios = [Role.ADMIN]
     
-    if user_perfil not in super_usuarios:
+    if user_perfil != Role.ADMIN:
         if solicitacao.perfil_solicitante != user_grupo:
             raise HTTPException(status_code=403, detail="Você não tem permissão para editar esta solicitação.")
 
@@ -164,24 +140,16 @@ async def cancelar_solicitacao(
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
-    db: AsyncSession = Depends(get_app_db_session)
 ):
     """Cancela uma solicitação de leito."""
     solicitacao = await controller.leito_provider.get_por_id(sol_id)
     if not solicitacao:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
 
-    user_perfil = current_user.get("perfil")
-    if not user_perfil:
-        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
-        db_result = await db.execute(stmt)
-        perfil_obj = db_result.scalar_one_or_none()
-        user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
-
+    user_perfil = current_user.get("perfil", "Comum")
     user_grupo = user_perfil.replace("-Admin", "")
-    super_usuarios = [Role.ADMIN]
     
-    if user_perfil not in super_usuarios:
+    if user_perfil != Role.ADMIN:
         if solicitacao.perfil_solicitante != user_grupo:
             raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar esta solicitação.")
 
@@ -207,12 +175,9 @@ async def reservar_leito(
     payload: dict,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
     """Reserva um leito para uma solicitação pendente."""
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Apenas a UTI pode reservar leitos.")
         
     leito_id = payload.get("leito_id")
     result = await controller.reservar_leito(sol_id, leito_id)
@@ -235,20 +200,13 @@ async def cancelar_reserva(
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
-    db: AsyncSession = Depends(get_app_db_session)
 ):
     """Cancela a reserva de um leito, voltando a solicitação para Pendente."""
     solicitacao = await controller.leito_provider.get_por_id(sol_id)
     if not solicitacao:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
 
-    user_perfil = current_user.get("perfil")
-    if not user_perfil:
-        stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == current_user.get("username"))
-        db_result = await db.execute(stmt)
-        perfil_obj = db_result.scalar_one_or_none()
-        user_perfil = perfil_obj.perfil if perfil_obj else "Comum"
-
+    user_perfil = current_user.get("perfil", "Comum")
     user_grupo = user_perfil.replace("-Admin", "")
     super_usuarios = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
     

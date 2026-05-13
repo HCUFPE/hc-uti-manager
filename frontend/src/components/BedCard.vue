@@ -1,9 +1,9 @@
 <template>
   <article
-    class="relative rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+    class="relative rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl backdrop-blur-sm bg-white/90"
     :class="[
-      temConflito ? 'border-red-500 ring-2 ring-red-500/20' : 
-      (sinalizacaoTransferencia ? 'border-rose-200 ring-2 ring-rose-100' : 'border-slate-200')
+      temConflito ? 'border-red-500 ring-4 ring-red-500/10 shadow-red-100' : 
+      (sinalizacaoTransferencia ? 'border-rose-200 ring-4 ring-rose-500/5 shadow-rose-100' : 'border-slate-200 shadow-slate-100/50')
     ]"
   >
     <!-- Icone de Alerta (Conflito ou Transferencia) -->
@@ -28,19 +28,33 @@
         </UiBadge>
       </div>
 
-      <StatusBadge :status="status" />
+      <div class="flex flex-col items-end gap-1.5">
+        <StatusBadge :status="status" />
+        
+        <!-- Tag de Destino Definido (NIR) -->
+        <div 
+          v-if="destinoDefinido"
+          class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold leading-none border shadow-sm transition-all duration-500 whitespace-nowrap"
+          :class="destinoDisponivel 
+            ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+            : 'bg-amber-100 text-amber-700 border-amber-200'"
+        >
+          <MapPinIcon class="h-3 w-3" :class="destinoDisponivel ? 'text-emerald-600' : 'text-amber-600'" />
+          <span>Destino Definido: {{ destinoDefinido }}{{ destinoDisponivel ? ' Disponível' : '' }}</span>
+        </div>
+      </div>
     </div>
 
     <div class="mt-4 space-y-4 text-sm text-slate-700">
-      <div v-if="pacienteAtual" class="space-y-1 border-l-4 border-blue-500 pl-4">
+      <div v-if="pacienteAtual" class="space-y-1 border-l-4 border-blue-500 pl-4 bg-blue-50/30 py-1 rounded-r-lg">
         <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Paciente Atual</p>
-        <p class="text-base font-bold text-slate-900">Prontuario: {{ pacienteAtual.prontuario }}</p>
+        <p class="text-base font-bold text-slate-900">Prontuário: {{ pacienteAtual.prontuario }}</p>
         <p class="text-slate-600">{{ pacienteAtual.idade }} anos - {{ pacienteAtual.especialidade }}</p>
       </div>
 
-      <div v-if="proximoPaciente" class="space-y-1 border-l-4 border-emerald-500 pl-4">
-        <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Proximo Paciente</p>
-        <p class="text-base font-bold text-slate-900">Prontuario: {{ proximoPaciente.prontuario }}</p>
+      <div v-if="proximoPaciente" class="space-y-1 border-l-4 border-emerald-500 pl-4 bg-emerald-50/30 py-1 rounded-r-lg">
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Próximo Paciente</p>
+        <p class="text-base font-bold text-slate-900">Prontuário: {{ proximoPaciente.prontuario }}</p>
         <p class="text-slate-600">{{ proximoPaciente.idade }} anos - {{ proximoPaciente.especialidade }}</p>
         
         <!-- Detalhes da Cirurgia -->
@@ -106,7 +120,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import { ExclamationTriangleIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { ExclamationTriangleIcon, ClockIcon, MapPinIcon } from '@heroicons/vue/24/outline';
 import StatusBadge from './StatusBadge.vue';
 import UiBadge from './ui/Badge.vue';
 
@@ -130,6 +144,8 @@ const props = defineProps<{
   tipoReserva?: string;
   sinalizacaoTransferencia?: boolean;
   temConflito?: boolean;
+  destinoDefinido?: string;
+  destinoDisponivel?: boolean;
   showActions?: boolean;
 }>();
 

@@ -29,6 +29,10 @@ AUTH_ENABLED = os.getenv("AUTH_ENABLED", "true").lower() == "true"
 # Torna o scheme opcional se AUTH_ENABLED=false
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login", auto_error=AUTH_ENABLED)
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # --- Interface e Implementações de Provedor de Autenticação ---
 
 class AuthProviderInterface(ABC):
@@ -40,7 +44,7 @@ class AuthProviderInterface(ABC):
 class MockAuthProvider(AuthProviderInterface):
     """Provedor de autenticação mock para desenvolvimento offline."""
     def authenticate_user(self, username, password) -> dict:
-        print(f"SECURITY ALERT: Attempting MOCK authentication for user: {username}")
+        logger.warning(f"SECURITY ALERT: Attempting MOCK authentication for user: {username}")
         
         # Credenciais de teste
         mock_users = {
@@ -63,7 +67,7 @@ class MockAuthProvider(AuthProviderInterface):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
         if username in mock_users and password == mock_users[username]:
-            print(f"SECURITY: Mock Authentication SUCCESSFUL for user: {username}")
+            logger.info(f"SECURITY: Mock Authentication SUCCESSFUL for user: {username}")
             return {
                 "username": username,
                 "displayName": [f"Mock {username.upper()}"],
@@ -71,7 +75,7 @@ class MockAuthProvider(AuthProviderInterface):
                 "email": f"{username}@mock.com"
             }
         else:
-            print(f"SECURITY: Mock Authentication FAILED for user: {username}")
+            logger.warning(f"SECURITY: Mock Authentication FAILED for user: {username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
                 detail="Invalid credentials (MOCK)"
@@ -85,13 +89,13 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
         self.ad_bind_user = os.getenv("AD_BIND_USER")
         self.ad_bind_password = os.getenv("AD_BIND_PASSWORD")
         if not self.ad_url or not self.ad_basedn:
-            print("CRITICAL: AD_URL or AD_BASEDN not found in environment!")
+            logger.critical("AD_URL or AD_BASEDN not found in environment!")
             raise RuntimeError("Active Directory is not configured.")
 
     def _bind(self, user, password) -> Connection:
-        print(f"DEBUG: LDAP Bind attempt: {user}")
+        logger.debug(f"LDAP Bind attempt: {user}")
         if not password:
-            print(f"DEBUG: LDAP Bind FAILED: Empty password for {user}")
+            logger.debug(f"LDAP Bind FAILED: Empty password for {user}")
             raise LDAPBindError("Empty password not allowed")
             
         server = Server(self.ad_url, get_info=ALL)
@@ -102,14 +106,14 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
             receive_timeout=10,
         )
         if not conn.bind():
-            print(f"DEBUG: LDAP Bind FAILED for {user}. Result: {conn.result}")
+            logger.debug(f"LDAP Bind FAILED for {user}. Result: {conn.result}")
             raise LDAPBindError(f"Invalid credentials")
         
-        print(f"DEBUG: LDAP Bind SUCCESS for {user}")
+        logger.debug(f"LDAP Bind SUCCESS for {user}")
         return conn
 
     def authenticate_user(self, username, password) -> dict:
-        print(f"--- Starting AD Authentication Process for: {username} ---")
+        logger.info(f"--- Starting AD Authentication Process for: {username} ---")
         user_conn = None
         search_conn = None
         try:
@@ -136,7 +140,7 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
             )
 
             if not search_conn.entries:
-                print(f"SECURITY: User {username} not found in AD search after successful bind.")
+                logger.warning(f"SECURITY: User {username} not found in AD search after successful bind.")
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in directory")
 
             entry = search_conn.entries[0]
@@ -164,23 +168,19 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
                 elif isinstance(value, (str, int, float, bool)):
                     user_info[key] = value
                 else:
-                    # Log ignored field for debugging but don't break the flow
-                    # print(f"DEBUG: Ignoring non-serializable field {key} of type {type(value)}")
                     pass
 
-            print(f"SECURITY: AD Authentication SUCCESSFUL for user: {username}")
+            logger.info(f"SECURITY: AD Authentication SUCCESSFUL for user: {username}")
             return user_info
 
         except LDAPBindError:
-            print(f"SECURITY: AD Authentication FAILED (Invalid Credentials) for: {username}")
+            logger.warning(f"SECURITY: AD Authentication FAILED (Invalid Credentials) for: {username}")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         except (LDAPSocketOpenError, LDAPException) as e:
-            print(f"ERROR: AD System Error for user {username}: {e}")
+            logger.error(f"AD System Error for user {username}: {e}")
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication server error")
         except Exception as e:
-            import traceback
-            print(f"CRITICAL: Unexpected error in authentication flow for user {username}:")
-            traceback.print_exc()
+            logger.exception(f"Unexpected error in authentication flow for user {username}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal error: {str(e)}")
         finally:
             if search_conn and search_conn is not user_conn:
@@ -201,10 +201,10 @@ class AuthHandler:
             load_dotenv()
             ad_url = os.getenv("AD_URL")
             if ad_url and ad_url.strip():
-                print(f"INFO: Initializing Active Directory Auth Provider (URL: {ad_url}).")
+                logger.info(f"Initializing Active Directory Auth Provider (URL: {ad_url}).")
                 self._provider = ActiveDirectoryAuthProvider()
             else:
-                print("WARNING: AD_URL not found or empty. Initializing Mock Auth Provider.")
+                logger.warning("AD_URL not found or empty. Initializing Mock Auth Provider.")
                 self._provider = MockAuthProvider()
         return self._provider
 

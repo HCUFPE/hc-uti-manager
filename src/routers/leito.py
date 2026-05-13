@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from auth.roles import Role
 from controllers.leitos_controller import LeitosController
 from models.reserva_leito import ReservaLeitoInput
-from dependencies import get_leito_controller, get_solicitacao_leito_provider, get_historico_provider
+from dependencies import get_leito_controller, get_solicitacao_leito_provider, get_historico_provider, check_role
 from typing import List, Dict, Any, Optional
 from providers.implementations.solicitacao_leito_provider import SolicitacaoLeitoProvider
 from providers.implementations.historico_provider import HistoricoProvider
@@ -16,12 +16,8 @@ async def reservar_leito(
     payload: ReservaLeitoInput,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Acesso restrito à UTI.")
-    
     result = await controller.reservar(lto_lto_id, payload)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -38,12 +34,8 @@ async def cancelar_reserva(
     controller: LeitosController = Depends(get_leito_controller),
     solicitacao_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar reservas.")
-
     result = await controller.cancelar_reserva(leito_id, solicitacao_provider)
     solicitacao = result.get("solicitacao")
     prontuario_reserva = result.get("prontuario")
@@ -75,12 +67,8 @@ async def solicitar_alta(
     leito_id: str,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Apenas a UTI pode solicitar alta.")
-
     await controller.solicitar_alta(leito_id)
     # Busca o prontuário para o histórico (similar ao que o controller faz)
     leitos_censo = await controller.census_provider.listar_leitos()
@@ -103,12 +91,8 @@ async def cancelar_alta(
     leito_id: str,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(auth_handler.decode_token),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
-    allowed_roles = [Role.ADMIN, Role.UTI, Role.UTI_ADMIN]
-    if current_user.get("perfil") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar alta.")
-
     await controller.cancelar_alta(leito_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -128,11 +112,4 @@ async def listar_leitos(
 async def listar_leitos_disponiveis_para_reserva(
     controller: LeitosController = Depends(get_leito_controller)
 ):
-    try:
-        return await controller.listar_leitos_disponiveis_para_reserva()
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print("ERROR in listar_leitos_disponiveis_para_reserva:\n", tb)
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail={"error": str(e), "trace": tb})
+    return await controller.listar_leitos_disponiveis_para_reserva()

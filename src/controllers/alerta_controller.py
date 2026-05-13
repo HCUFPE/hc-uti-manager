@@ -16,16 +16,9 @@ class AlertaController:
     Controller para gerenciar a lógica de negócio dos alertas do sistema.
     """
 
-    def __init__(
-        self, 
-        alerta_provider: AlertaProvider,
-        census_provider: LeitoProviderInterface,
-        alta_provider: SolicitacaoAltaProvider,
-        solicitacao_leito_provider: SolicitacaoLeitoProvider,
-        historico_provider: Any = None
-    ):
+    def __init__(self, alerta_provider: AlertaProvider, leitos_controller: Any, alta_provider: SolicitacaoAltaProvider, solicitacao_leito_provider: SolicitacaoLeitoProvider, historico_provider: Any = None):
         self.alerta_provider = alerta_provider
-        self.census_provider = census_provider
+        self.leitos_controller = leitos_controller
         self.alta_provider = alta_provider
         self.solicitacao_leito_provider = solicitacao_leito_provider
         self.historico_provider = historico_provider
@@ -68,183 +61,203 @@ class AlertaController:
         """
         Analisa o estado atual do sistema e gera novos alertas.
         """
-        alertas_existentes = await self.alerta_provider.get_todos()
-        novos_alertas_data = []
-        hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
-        
-        # 1. Analisar Leitos (Desativado conforme solicitado: Infeccioso, Permanência, Limpeza)
-        # O loop foi mantido vazio caso queira adicionar novas lógicas de leitos no futuro
         try:
-            leitos_aghu = await self.census_provider.listar_leitos()
-            for leito in leitos_aghu:
-                pass
-        except Exception as e:
-            logger.error(f"Erro ao analisar leitos: {e}")
-        except Exception as e:
-            logger.error(f"Erro ao analisar leitos: {e}")
+            novos_alertas_data = []
+            hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
+            
+            # 1. Analisar Leitos
+            leitos = await self.leitos_controller.listar_leitos()
+            
+            # 2. Analisar Solicitações de Alta
+            await self._analisar_altas(novos_alertas_data)
 
-        # 2. Analisar Solicitações de Alta
+            # 3. Analisar Histórico (Notificações Bidirecionais)
+            await self._analisar_historico(novos_alertas_data, hoje_bsb)
+
+            # 4. Sincronização e Limpeza
+            return await self._sincronizar_alertas(novos_alertas_data)
+
+        except Exception as e:
+            logger.exception("Erro crítico na geração de alertas")
+            return {"message": "Erro ao processar alertas.", "error": str(e)}
+
+    async def _analisar_altas(self, novos_alertas: List[Dict[str, Any]]):
         try:
+            leitos = await self.leitos_controller.listar_leitos()
+            leitos_map = {l["lto_lto_id"]: l for l in leitos}
             altas = await self.alta_provider.get_todas()
+            
             for alta in altas:
                 if alta.status == "pendente":
-                    novos_alertas_data.append({
+                    leito_info = leitos_map.get(alta.lto_id, {})
+                    prontuario = alta.prontuario
+                    
+                    # Tenta recuperar prontuário de leitos mockados se estiver N/D
+                    if (prontuario == "N/D" or not prontuario) and leito_info.get("prontuario_atual"):
+                        prontuario = str(leito_info["prontuario_atual"])
+
+                    novos_alertas.append({
                         "tipo": "aviso",
                         "categoria": "Gargalo",
                         "titulo": "Solicitação de Alta",
-                        "mensagem": f"Aguardando destino para leito {alta.lto_id} (Prontuário {alta.prontuario}).",
+                        "mensagem": f"Aguardando destino para leito {alta.lto_id} (Prontuário {prontuario}).",
                         "lto_id": alta.lto_id,
-                        "prontuario": str(alta.prontuario),
+                        "prontuario": str(prontuario),
                         "perfil_alvo": "NIR"
                     })
                     
                     if alta.leito_destino and len(str(alta.leito_destino).strip()) > 1:
-                        novos_alertas_data.append({
+                        novos_alertas.append({
                             "tipo": "info",
                             "categoria": "Gargalo",
                             "titulo": "Acomodação Definida",
-                            "mensagem": f"Destino definido para paciente {alta.prontuario}: {alta.leito_destino}.",
+                            "mensagem": f"Destino definido para paciente {prontuario}: {alta.leito_destino}.",
                             "lto_id": alta.lto_id,
-                            "prontuario": str(alta.prontuario),
+                            "prontuario": str(prontuario),
                             "perfil_alvo": None 
                         })
         except Exception as e:
             logger.error(f"Erro ao analisar altas: {e}")
 
-        # 3. Analisar Histórico (Notificações Bidirecionais)
+    async def _analisar_historico(self, novos_alertas: List[Dict[str, Any]], hoje_bsb: str):
+        if not self.historico_provider:
+            return
+
         try:
             vagas = await self.solicitacao_leito_provider.get_todas()
-            if self.historico_provider:
-                # Janela de 24h: permite ver o que aconteceu durante a noite/ontem
-                limite_24h = datetime.utcnow() - timedelta(hours=24)
-                eventos = await self.historico_provider.listar(limit=300)
-                eventos_recentes = [e for e in eventos if e.get("criado_em") and e.get("criado_em") > limite_24h]
-                
-                for ev in eventos_recentes:
-                    tipo = ev.get("tipo")
-                    detalhes = ev.get("detalhes", "")
-                    operador = ev.get("operador", "Sistema")
-                    criado_em_evento = ev.get("criado_em")
-                    vaga = None 
-                    
-                    if "Alta #" in detalhes or "Teste" in detalhes:
-                        continue
-
-                    # Tentar pegar ID da solicitação/alta do texto (#ID)
-                    sid = None
-                    s_match = re.search(r'#(\d+)', detalhes)
-                    if s_match:
-                        try:
-                            sid = int(s_match.group(1))
-                            vaga = next((v for v in vagas if v.id == sid), None)
-                        except: pass
-
-                    p_match = re.search(r'Prontu[^\s]*\s+(\w+)', detalhes, re.IGNORECASE)
-                    pront_alerta = p_match.group(1) if p_match else "Desconhecido"
-                    perfil_vaga = None
-                    match_hoje = False
-
-                    if vaga:
-                        pront_alerta = str(vaga.prontuario)
-                        perfil_vaga = vaga.perfil_solicitante
-                        d_sol = str(vaga.data_cirurgia).strip()
-                        if "/" in d_sol:
-                            p = d_sol.split("/")
-                            if len(p) == 3: d_sol = f"{p[2]}-{p[1]}-{p[0]}"
-                        elif " " in d_sol:
-                            d_sol = d_sol.split(" ")[0]
-                        elif "T" in d_sol:
-                            d_sol = d_sol.split("T")[0]
-                        
-                        if d_sol == hoje_bsb:
-                            match_hoje = True
-                    else:
-                        d_match = re.search(r'Data:\s+([\d/-]+)', detalhes)
-                        if d_match:
-                            d_sol = d_match.group(1).strip()
-                            if "/" in d_sol:
-                                p = d_sol.split("/")
-                                if len(p) == 3: d_sol = f"{p[2]}-{p[1]}-{p[0]}"
-                            if d_sol == hoje_bsb:
-                                match_hoje = True
-
-                    # 1. UTI <-> SOLICITANTE (Reserva e Cancelamento de Reserva)
-                    if tipo in ["reserva", "cancelamento_reserva"]:
-                        op_clean = operador.replace("-Admin", "").strip().upper()
-                        pv_clean = str(perfil_vaga or "").replace("-Admin", "").strip().upper()
-                        
-                        if perfil_vaga:
-                            if tipo == "reserva":
-                                novos_alertas_data.append({
-                                    "tipo": "info",
-                                    "categoria": "Gargalo",
-                                    "titulo": "Vaga Reservada pela UTI",
-                                    "mensagem": detalhes,
-                                    "prontuario": pront_alerta,
-                                    "perfil_alvo": perfil_vaga,
-                                    "criado_em": criado_em_evento
-                                })
-                            elif tipo == "cancelamento_reserva" and op_clean != pv_clean:
-                                novos_alertas_data.append({
-                                    "tipo": "info",
-                                    "categoria": "Gargalo",
-                                    "titulo": "Reserva Cancelada pela UTI",
-                                    "mensagem": detalhes,
-                                    "prontuario": pront_alerta,
-                                    "perfil_alvo": perfil_vaga,
-                                    "criado_em": criado_em_evento
-                                })
-                        
-                        if tipo == "cancelamento_reserva" and perfil_vaga and op_clean == pv_clean:
-                            novos_alertas_data.append({
-                                "tipo": "aviso",
-                                "categoria": "Gargalo",
-                                "titulo": "Solicitante cancelou a reserva",
-                                "mensagem": detalhes,
-                                "prontuario": pront_alerta,
-                                "perfil_alvo": None, # UTI
-                                "criado_em": criado_em_evento
-                            })
-
-                    # 2. SOLICITANTE -> ALERTA UTI (Nova Solicitação/Exclusão/Prioridade hoje)
-                    elif tipo in ["nova_solicitacao", "exclusao_solicitacao", "alteracao_prioridade"]:
-                        if match_hoje:
-                            titulo = "Nova solicitação para hoje"
-                            if tipo == "exclusao_solicitacao": 
-                                titulo = "Solicitação para hoje removida"
-                            elif tipo == "alteracao_prioridade": 
-                                titulo = "Prioridade alterada (Paciente hoje)"
-                            
-                            novos_alertas_data.append({
-                                "tipo": "info",
-                                "categoria": "Gargalo",
-                                "titulo": titulo,
-                                "mensagem": detalhes,
-                                "prontuario": pront_alerta,
-                                "perfil_alvo": None, # UTI
-                                "criado_em": criado_em_evento
-                            })
-                    
-                    # 3. UTI -> NIR (Cancelamento de Alta)
-                    elif tipo == "cancelamento":
-                        novos_alertas_data.append({
-                            "tipo": "aviso",
-                            "categoria": "Gargalo",
-                            "titulo": "Alta Cancelada pela UTI",
-                            "mensagem": detalhes,
-                            "prontuario": pront_alerta,
-                            "perfil_alvo": "NIR",
-                            "criado_em": criado_em_evento
-                        })
+            limite_24h = datetime.utcnow() - timedelta(hours=24)
+            eventos = await self.historico_provider.listar(limit=300)
+            eventos_recentes = [e for e in eventos if e.get("criado_em") and e.get("criado_em") > limite_24h]
+            
+            for ev in eventos_recentes:
+                self._processar_evento_historico(ev, vagas, novos_alertas, hoje_bsb)
         except Exception as e:
             logger.error(f"Erro ao analisar histórico: {e}")
 
-        # 4. Sincronização Final com Deduplicação Dinâmica
+    def _processar_evento_historico(self, ev, vagas, novos_alertas, hoje_bsb):
+        tipo = ev.get("tipo")
+        detalhes = ev.get("detalhes", "")
+        operador = ev.get("operador", "Sistema")
+        criado_em_evento = ev.get("criado_em")
+        
+        if "Alta #" in detalhes or "Teste" in detalhes:
+            return
+
+        # Parsing de ID e Prontuário
+        sid = None
+        s_match = re.search(r'#(\d+)', detalhes)
+        vaga = None
+        if s_match:
+            try:
+                sid = int(s_match.group(1))
+                vaga = next((v for v in vagas if v.id == sid), None)
+            except: pass
+
+        p_match = re.search(r'Prontu[^\s]*\s+(\w+)', detalhes, re.IGNORECASE)
+        pront_alerta = p_match.group(1) if p_match else "Desconhecido"
+        
+        match_hoje = self._validar_data_hoje(detalhes, vaga, hoje_bsb)
+
+        if vaga:
+            pront_alerta = str(vaga.prontuario)
+            perfil_vaga = vaga.perfil_solicitante
+        else:
+            perfil_vaga = None
+
+        # Lógica de Alertas por Tipo
+        self._gerar_alerta_por_tipo(tipo, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas)
+
+    def _validar_data_hoje(self, detalhes, vaga, hoje_bsb) -> bool:
+        d_sol = None
+        if vaga:
+            d_sol = str(vaga.data_cirurgia).strip()
+            if "/" in d_sol:
+                p = d_sol.split("/")
+                if len(p) == 3: d_sol = f"{p[2]}-{p[1]}-{p[0]}"
+            elif " " in d_sol: d_sol = d_sol.split(" ")[0]
+            elif "T" in d_sol: d_sol = d_sol.split("T")[0]
+        else:
+            d_match = re.search(r'Data:\s+([\d/-]+)', detalhes)
+            if d_match:
+                d_sol = d_match.group(1).strip()
+                if "/" in d_sol:
+                    p = d_sol.split("/")
+                    if len(p) == 3: d_sol = f"{p[2]}-{p[1]}-{p[0]}"
+        
+        return d_sol == hoje_bsb
+
+    def _gerar_alerta_por_tipo(self, tipo, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas):
+        # 1. UTI <-> SOLICITANTE
+        if tipo in ["reserva", "cancelamento_reserva"]:
+            op_clean = operador.replace("-Admin", "").strip().upper()
+            pv_clean = str(perfil_vaga or "").replace("-Admin", "").strip().upper()
+            
+            if perfil_vaga:
+                if tipo == "reserva":
+                    novos_alertas.append({
+                        "tipo": "info", "categoria": "Gargalo", "titulo": "Vaga Reservada pela UTI",
+                        "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": perfil_vaga, "criado_em": criado_em_evento
+                    })
+                elif tipo == "cancelamento_reserva" and op_clean != pv_clean:
+                    novos_alertas.append({
+                        "tipo": "info", "categoria": "Gargalo", "titulo": "Reserva Cancelada pela UTI",
+                        "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": perfil_vaga, "criado_em": criado_em_evento
+                    })
+            
+            if tipo == "cancelamento_reserva" and perfil_vaga and op_clean == pv_clean:
+                novos_alertas.append({
+                    "tipo": "aviso", "categoria": "Gargalo", "titulo": "Solicitante cancelou a reserva",
+                    "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": None, "criado_em": criado_em_evento
+                })
+
+        # 2. SOLICITANTE -> UTI
+        elif tipo in ["nova_solicitacao", "exclusao_solicitacao", "alteracao_prioridade"]:
+            if match_hoje:
+                titulos = {
+                    "nova_solicitacao": "Nova solicitação para hoje",
+                    "exclusao_solicitacao": "Solicitação para hoje removida",
+                    "alteracao_prioridade": "Prioridade alterada (Paciente hoje)"
+                }
+                novos_alertas.append({
+                    "tipo": "info", "categoria": "Gargalo", "titulo": titulos.get(tipo),
+                    "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": None, "criado_em": criado_em_evento
+                })
+        
+        # 3. UTI -> NIR
+        elif tipo == "cancelamento":
+            novos_alertas.append({
+                "tipo": "aviso", "categoria": "Gargalo", "titulo": "Alta Cancelada pela UTI",
+                "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": "NIR", "criado_em": criado_em_evento
+            })
+
+        # 4. NIR -> UTI (Destino)
+        elif tipo in ["alteracao_destino", "destino_disponivel", "destino_pendente"]:
+            titulos = {
+                "alteracao_destino": "Destino de Alta Definido",
+                "destino_disponivel": "Leito de Destino LIBERADO",
+                "destino_pendente": "Liberação de Destino CANCELADA"
+            }
+            tipos_alerta = {
+                "alteracao_destino": "info",
+                "destino_disponivel": "aviso",
+                "destino_pendente": "critico"
+            }
+            novos_alertas.append({
+                "tipo": tipos_alerta.get(tipo, "info"), 
+                "categoria": "Gargalo", 
+                "titulo": titulos.get(tipo),
+                "mensagem": detalhes, 
+                "prontuario": pront_alerta, 
+                "perfil_alvo": None, # Alvo: UTI
+                "criado_em": criado_em_evento
+            })
+
+    async def _sincronizar_alertas(self, novos_alertas_data: List[Dict[str, Any]]) -> dict:
+        alertas_existentes = await self.alerta_provider.get_todos()
         alertas_manter_ids = []
         chaves_ja_processadas = set()
         
         for data in novos_alertas_data:
-            # Chave agora inclui o timestamp para evitar que eventos diferentes mas com mesma mensagem sejam mesclados
             ts_str = data.get("criado_em").isoformat() if data.get("criado_em") else "now"
             chave = f"{data.get('titulo')}|{data.get('prontuario')}|{data.get('perfil_alvo')}|{data.get('mensagem')}|{ts_str}"
             
@@ -266,10 +279,10 @@ class AlertaController:
             
             chaves_ja_processadas.add(chave)
 
-        # 5. Limpeza de obsoletos (apenas alertas automáticos do AGHU, não os do histórico)
+        # Limpeza de obsoletos
         for a_antigo in alertas_existentes:
             if a_antigo.id not in alertas_manter_ids:
-                if a_antigo.categoria in ["Infeccioso", "Permanencia", "Limpeza"]:
+                if a_antigo.categoria in ["Infeccioso", "Permanencia", "Limpeza", "Gargalo"]:
                     await self.alerta_provider.deletar(a_antigo.id)
 
         return {"message": f"{len(novos_alertas_data)} alertas processados."}

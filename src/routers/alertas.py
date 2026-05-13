@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any
 from controllers.alerta_controller import AlertaController
-from dependencies import get_alerta_controller
+from dependencies import get_alerta_controller, check_role
 from auth.auth import auth_handler
+from auth.roles import Role
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/alertas", tags=["Alertas"])
@@ -49,7 +50,10 @@ async def marcar_todos_como_lidos(
 
 @router.post("/gerar", status_code=status.HTTP_201_CREATED)
 async def gerar_alertas(
-    controller: AlertaController = Depends(get_alerta_controller)
+    controller: AlertaController = Depends(get_alerta_controller),
+    current_user: dict = Depends(check_role([
+        Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN
+    ]))
 ):
     """
     Aciona a rotina de análise do sistema para gerar novos alertas.

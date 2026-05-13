@@ -14,6 +14,7 @@ class SolicitacaoAlta(Base):
     leito_destino = Column(String(100), nullable=True)
     necessidades_especiais = Column(String(255), nullable=True)
     status = Column(String(50), default="pendente")
+    destino_disponivel = Column(Integer, default=0) # 0=False, 1=True
     
     criado_em = Column(DateTime, server_default=func.now())
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -26,6 +27,7 @@ class SolicitacaoAlta(Base):
             "leito_destino": self.leito_destino,
             "necessidades_especiais": self.necessidades_especiais,
             "status": self.status,
+            "destino_disponivel": bool(self.destino_disponivel),
             "criado_em": self.criado_em.isoformat() if self.criado_em else None,
             "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
         }
