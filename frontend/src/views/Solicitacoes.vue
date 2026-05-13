@@ -371,7 +371,7 @@ import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();
 
-type SolicitacaoStatus = 'Pendente' | 'Reservado' | 'Cancelada';
+type SolicitacaoStatus = 'Pendente' | 'Reservado' | 'Cancelada' | 'Concluída';
 
 type Solicitacao = {
   id: string;
