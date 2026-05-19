@@ -117,7 +117,7 @@
                 <UiButton 
                   v-if="podeGerenciar(sol)" 
                   size="sm" 
-                  @click="cancelarSolicitacao(sol.id)" 
+                  @click="abrirModalCancelamento(sol.id, false)" 
                   class="bg-red-600 text-white hover:bg-red-700 border-none shadow-sm px-4"
                 >
                   <TrashIcon class="h-4 w-4 mr-1" />
@@ -176,7 +176,7 @@
             </div>
             <!-- Ações para Reservados -->
             <div v-if="authStore.isAdmin || authStore.isUTI || podeGerenciar(sol)" class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
-              <template v-if="authStore.isAdmin">
+              <template v-if="authStore.isSolicitante && podeGerenciar(sol)">
                 <UiButton
                   size="sm"
                   variant="outline"
@@ -186,10 +186,19 @@
                   <PencilSquareIcon class="h-4 w-4 mr-1" />
                   Editar
                 </UiButton>
+                <UiButton 
+                  size="sm" 
+                  @click="abrirModalCancelamento(sol.id, false)" 
+                  class="bg-red-600 text-white hover:bg-red-700 border-none shadow-sm px-4"
+                >
+                  <TrashIcon class="h-4 w-4 mr-1" />
+                  Cancelar Solicitação
+                </UiButton>
               </template>
               <UiButton 
+                v-if="authStore.isAdmin || authStore.isUTI"
                 size="sm" 
-                @click="cancelarReserva(sol.id)" 
+                @click="abrirModalCancelamento(sol.id, true)" 
                 class="bg-rose-600 text-white hover:bg-rose-700 border-none shadow-sm px-4"
               >
                 <TrashIcon class="h-4 w-4 mr-1" />
@@ -357,6 +366,25 @@
         </UiButton>
       </template>
     </Modal>
+    <Modal :show="showModalCancelamento" @close="showModalCancelamento = false">
+      <template #header>{{ isCancelamentoReserva ? 'Cancelar Reserva' : 'Cancelar Solicitação' }}</template>
+      <div class="space-y-4">
+        <p class="text-sm text-slate-600">Por favor, selecione o motivo do cancelamento:</p>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Motivo <span class="text-red-500">*</span></label>
+          <select v-model="motivoCancelamento" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <option value="" disabled selected>Selecione um motivo</option>
+            <option v-for="m in motivosAtuais" :key="m" :value="m">{{ m }}</option>
+          </select>
+        </div>
+      </div>
+      <template #footer>
+        <UiButton variant="outline" @click="showModalCancelamento = false">Voltar</UiButton>
+        <UiButton :disabled="!motivoCancelamento || submetendo" @click="confirmarAcaoCancelamento" class="bg-red-600 text-white hover:bg-red-700 border-none">
+          {{ submetendo ? 'Cancelando...' : 'Confirmar Cancelamento' }}
+        </UiButton>
+      </template>
+    </Modal>
   </section>
 </template>
 
@@ -402,6 +430,27 @@ const filtroData = ref('');
 const showModalNova = ref(false);
 const submetendoNova = ref(false);
 const isEditing = ref(false);
+
+const MOTIVOS_CANCELAMENTO = [
+  'Cancelamento pelo Solicitante por Motivo A', 
+  'Cancelamento pelo Solicitante por Motivo B', 
+  'Cancelamento pelo Solicitante por Motivo C'
+];
+const MOTIVOS_CANCELAMENTO_RESERVA = [
+  'Motivo UTI A', 
+  'Motivo UTI B', 
+  'Motivo UTI C'
+];
+
+const motivosAtuais = computed(() => {
+  return isCancelamentoReserva.value ? MOTIVOS_CANCELAMENTO_RESERVA : MOTIVOS_CANCELAMENTO;
+});
+
+const showModalCancelamento = ref(false);
+const motivoCancelamento = ref('');
+const idCancelamento = ref('');
+const isCancelamentoReserva = ref(false);
+
 const formNova = ref({
   prontuario: '',
   idade: null as number | null,
@@ -519,25 +568,48 @@ async function confirmarReserva() {
   }
 }
 
-async function cancelarReserva(id: string) {
-  if (!confirm('Deseja realmente cancelar esta reserva?')) return;
-  try {
-    await api.post(`/api/solicitacoes/${id}/cancelar-reserva`);
-    toast.success('Reserva cancelada!');
-    carregarSolicitacoes();
-  } catch (error: any) {
-    toast.error(error.response?.data?.detail || 'Erro ao cancelar reserva.');
+function abrirModalCancelamento(id: string, isReserva: boolean = false) {
+  idCancelamento.value = id;
+  motivoCancelamento.value = '';
+  isCancelamentoReserva.value = isReserva;
+  showModalCancelamento.value = true;
+}
+
+async function confirmarAcaoCancelamento() {
+  if (isCancelamentoReserva.value) {
+    await confirmarCancelamentoReserva();
+  } else {
+    await confirmarCancelamentoSolicitacao();
   }
 }
 
-async function cancelarSolicitacao(id: string) {
-  if (!confirm('Deseja realmente cancelar esta solicitação?')) return;
+async function confirmarCancelamentoSolicitacao() {
+  if (!idCancelamento.value || !motivoCancelamento.value) return;
+  submetendo.value = true;
   try {
-    await api.delete(`/api/solicitacoes/${id}`);
+    await api.delete(`/api/solicitacoes/${idCancelamento.value}?motivo=${encodeURIComponent(motivoCancelamento.value)}`);
     toast.success('Solicitação cancelada!');
+    showModalCancelamento.value = false;
     carregarSolicitacoes();
   } catch (error: any) {
     toast.error(error.response?.data?.detail || 'Erro ao cancelar solicitação.');
+  } finally {
+    submetendo.value = false;
+  }
+}
+
+async function confirmarCancelamentoReserva() {
+  if (!idCancelamento.value || !motivoCancelamento.value) return;
+  submetendo.value = true;
+  try {
+    await api.post(`/api/solicitacoes/${idCancelamento.value}/cancelar-reserva?motivo=${encodeURIComponent(motivoCancelamento.value)}`);
+    toast.success('Reserva cancelada!');
+    showModalCancelamento.value = false;
+    carregarSolicitacoes();
+  } catch (error: any) {
+    toast.error(error.response?.data?.detail || 'Erro ao cancelar reserva.');
+  } finally {
+    submetendo.value = false;
   }
 }
 

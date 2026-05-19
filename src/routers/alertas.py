@@ -51,9 +51,7 @@ async def marcar_todos_como_lidos(
 @router.post("/gerar", status_code=status.HTTP_201_CREATED)
 async def gerar_alertas(
     controller: AlertaController = Depends(get_alerta_controller),
-    current_user: dict = Depends(check_role([
-        Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN
-    ]))
+    current_user: dict = Depends(auth_handler.decode_token)
 ):
     """
     Aciona a rotina de análise do sistema para gerar novos alertas.

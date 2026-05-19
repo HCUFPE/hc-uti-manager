@@ -1,0 +1,12 @@
+## MODIFIED Requirements
+
+### Requirement: Gestão de Leitos
+O sistema MUST gerenciar o censo de internação, mostrando a disponibilidade e ocupação dos leitos. O sistema MUST considerar como leitos disponíveis para reserva aqueles com status "Livre", "Alta", "Limpeza" ou "Higienização".
+
+#### Scenario: Ocupação de Leito
+- **WHEN** um paciente é admitido na unidade e associado ao leito
+- **THEN** o sistema atualiza o status do leito para ocupado e exibe no mapa de leitos
+
+#### Scenario: Reserva de Leito em Higienização
+- **WHEN** um usuário busca leitos disponíveis para reserva de uma solicitação
+- **THEN** os leitos com status "Limpeza" e "Higienização" também são listados como opções válidas

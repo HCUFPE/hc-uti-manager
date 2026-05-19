@@ -62,15 +62,25 @@ async def marcar_destino_disponivel(
 @router.delete("/{alta_id}", status_code=204)
 async def cancelar_alta(
     alta_id: int,
+    motivo: str = None,
     controller: AltasController = Depends(get_altas_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
     """Cancela uma solicitação de alta."""
+    alvo = await controller.alta_provider.get_por_id(alta_id)
+    prontuario = alvo.prontuario if alvo else "Desconhecido"
+    
     await controller.cancelar_alta(alta_id)
+    
+    detalhes_hist = f"Alta #{alta_id} (Prontuário {prontuario})"
+    if motivo:
+        detalhes_hist += f" cancelada. Motivo: {motivo}"
+        
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="cancelamento",
         acao="Cancelou solicitação de alta",
-        detalhes=f"Alta #{alta_id}",
+        detalhes=detalhes_hist,
+        prontuario=str(prontuario)
     )

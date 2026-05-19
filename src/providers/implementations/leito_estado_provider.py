@@ -86,3 +86,19 @@ class LeitoEstadoProvider:
             await self.session.commit()
             return True
         return False
+
+    async def atualizar_dados_reserva_por_solicitacao(self, sol_id: int, prontuario: int, idade: int, especialidade: str) -> bool:
+        """Atualiza os dados da reserva de um leito baseado na edição da solicitação."""
+        result = await self.session.execute(
+            select(LeitoEstado).where(LeitoEstado.solicitacao_id == sol_id)
+        )
+        estado = result.scalar_one_or_none()
+        
+        if estado:
+            if prontuario is not None:
+                estado.prontuario_proximo = prontuario
+            estado.idade_proximo = idade
+            estado.especialidade_proximo = especialidade
+            await self.session.commit()
+            return True
+        return False

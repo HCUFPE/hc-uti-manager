@@ -103,6 +103,27 @@
         </UiButton>
       </template>
     </Modal>
+
+    <!-- Modal Cancelar Alta (UTI) -->
+    <Modal :show="showModalCancelAlta" @close="fecharModalCancelAlta">
+      <template #header>Cancelar Alta</template>
+      <div class="space-y-4 py-2">
+        <p class="text-sm text-slate-600">Selecione o motivo para cancelar a solicitação de alta:</p>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Motivo <span class="text-red-500">*</span></label>
+          <select v-model="motivoCancelAlta" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <option value="" disabled selected>Selecione um motivo</option>
+            <option v-for="m in MOTIVOS_CANCELAMENTO_ALTA" :key="m" :value="m">{{ m }}</option>
+          </select>
+        </div>
+      </div>
+      <template #footer>
+        <UiButton variant="outline" @click="fecharModalCancelAlta">Voltar</UiButton>
+        <UiButton :disabled="!motivoCancelAlta" class="bg-red-600 text-white hover:bg-red-700 border-none" @click="confirmarCancelarAlta">
+          Confirmar Cancelamento
+        </UiButton>
+      </template>
+    </Modal>
   </section>
 </template>
 
@@ -252,6 +273,10 @@ const showModalAlta = ref(false);
 const leitoSelecionado = ref<Leito | null>(null);
 const formAlta = ref({ necessidadesEspeciais: '' });
 
+const showModalCancelAlta = ref(false);
+const motivoCancelAlta = ref('');
+const MOTIVOS_CANCELAMENTO_ALTA = ['Cancelamento de Alta Tipo A', 'Cancelamento de Alta Tipo B', 'Cancelamento de Alta Tipo C'];
+
 const handleSolicitarAlta = (leito: Leito) => {
   leitoSelecionado.value = leito;
   formAlta.value.necessidadesEspeciais = '';
@@ -273,16 +298,30 @@ const confirmarSolicitacaoAlta = async () => {
 };
 
 const handleCancelarAlta = async (leito: Leito) => {
+  leitoSelecionado.value = leito;
+  motivoCancelAlta.value = '';
+  showModalCancelAlta.value = true;
+};
+
+const fecharModalCancelAlta = () => {
+  showModalCancelAlta.value = false;
+  leitoSelecionado.value = null;
+  motivoCancelAlta.value = '';
+};
+
+const confirmarCancelarAlta = async () => {
+  if (!leitoSelecionado.value || !motivoCancelAlta.value) return;
+  
   try {
-    // Busca a solicitação pendente para este leito
     const resp = await api.get('/api/altas');
-    const solicitacao = resp.data.find((a: any) => a.leitoAtual === leito.leitoNumero && a.status !== 'cancelada');
+    const solicitacao = resp.data.find((a: any) => a.leitoAtual === leitoSelecionado.value!.leitoNumero && a.status !== 'cancelada');
     
     if (solicitacao) {
-      await api.delete(`/api/altas/${solicitacao.id}`);
-      toast.warning(`Alta cancelada para o leito ${leito.leitoNumero}.`);
+      await api.delete(`/api/altas/${solicitacao.id}?motivo=${encodeURIComponent(motivoCancelAlta.value)}`);
+      toast.warning(`Alta cancelada para o leito ${leitoSelecionado.value!.leitoNumero}.`);
       await loadLeitos();
     }
+    fecharModalCancelAlta();
   } catch (e: any) {
     console.error(e);
     toast.error('Erro ao cancelar alta.');

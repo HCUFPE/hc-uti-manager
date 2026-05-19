@@ -139,22 +139,25 @@ class AlertaController:
         detalhes = ev.get("detalhes", "")
         operador = ev.get("operador", "Sistema")
         criado_em_evento = ev.get("criado_em")
+        prontuario_evento = ev.get("prontuario")
         
-        if "Alta #" in detalhes or "Teste" in detalhes:
+        if "Teste" in detalhes:
             return
 
-        # Parsing de ID e Prontuário
+        is_alta_event = "Alta #" in detalhes or tipo in ["alta", "cancelamento", "alteracao_destino", "destino_disponivel", "destino_pendente"]
+
+        # Parsing de ID
         sid = None
         s_match = re.search(r'#(\d+)', detalhes)
         vaga = None
-        if s_match:
+        if s_match and not is_alta_event:
             try:
                 sid = int(s_match.group(1))
                 vaga = next((v for v in vagas if v.id == sid), None)
             except: pass
 
         p_match = re.search(r'Prontu[^\s]*\s+(\w+)', detalhes, re.IGNORECASE)
-        pront_alerta = p_match.group(1) if p_match else "Desconhecido"
+        pront_alerta = p_match.group(1) if p_match else (prontuario_evento or "Desconhecido")
         
         match_hoje = self._validar_data_hoje(detalhes, vaga, hoje_bsb)
 
@@ -282,7 +285,7 @@ class AlertaController:
         # Limpeza de obsoletos
         for a_antigo in alertas_existentes:
             if a_antigo.id not in alertas_manter_ids:
-                if a_antigo.categoria in ["Infeccioso", "Permanencia", "Limpeza", "Gargalo"]:
+                if a_antigo.categoria in ["Infeccioso", "Permanencia", "Limpeza"]:
                     await self.alerta_provider.deletar(a_antigo.id)
 
         return {"message": f"{len(novos_alertas_data)} alertas processados."}

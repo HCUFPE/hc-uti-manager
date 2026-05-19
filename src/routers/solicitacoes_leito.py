@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from auth.roles import Role
 from typing import List, Dict, Any
 from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
@@ -110,12 +110,12 @@ async def editar_solicitacao(
         if solicitacao.perfil_solicitante != user_grupo:
             raise HTTPException(status_code=403, detail="Você não tem permissão para editar esta solicitação.")
 
-    await controller.editar_solicitacao(sol_id, payload)
+    await controller.editar_solicitacao(sol_id, payload, user_perfil)
     prontuario = payload.get("prontuario", "N/D")
     
     # Se mudou a prioridade, usamos um tipo específico para o alerta
     tipo_hist = "edicao"
-    if "prioridade" in payload:
+    if "prioridade" in payload and payload.get("prioridade") != solicitacao.prioridade:
         tipo_hist = "alteracao_prioridade"
 
     # Tenta pegar a data nova (payload) ou a antiga (solicitacao)
@@ -137,6 +137,7 @@ async def editar_solicitacao(
 @router.delete("/{sol_id}")
 async def cancelar_solicitacao(
     sol_id: int,
+    motivo: str = Query(None, description="Motivo do cancelamento"),
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
@@ -153,18 +154,22 @@ async def cancelar_solicitacao(
         if solicitacao.perfil_solicitante != user_grupo:
             raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar esta solicitação.")
 
-    await controller.cancelar_solicitacao(sol_id)
+    await controller.cancelar_solicitacao(sol_id, user_perfil)
     # Formata data para o histórico (BR)
     data_formatada = solicitacao.data_cirurgia
     if data_formatada and "-" in data_formatada:
         p = data_formatada.split("-")
         if len(p) == 3: data_formatada = f"{p[2]}/{p[1]}/{p[0]}"
 
+    detalhes_historico = f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Data: {data_formatada}"
+    if motivo:
+        detalhes_historico += f" - Motivo: {motivo}"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="exclusao_solicitacao",
         acao="Cancelou solicitação de vaga",
-        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Data: {data_formatada}",
+        detalhes=detalhes_historico,
         prontuario=str(solicitacao.prontuario)
     )
     return {"message": "Solicitação cancelada com sucesso"}
@@ -197,6 +202,7 @@ async def reservar_leito(
 @router.post("/{sol_id}/cancelar-reserva")
 async def cancelar_reserva(
     sol_id: int,
+    motivo: str = Query(..., description="Motivo do cancelamento da reserva"),
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
@@ -215,11 +221,16 @@ async def cancelar_reserva(
             raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar a reserva deste paciente.")
 
     result = await controller.cancelar_reserva(sol_id)
+    
+    detalhes_hist = f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) voltou para Pendente"
+    if motivo:
+        detalhes_hist += f" - Motivo: {motivo}"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="cancelamento_reserva",
         acao="Cancelou reserva de leito",
-        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) voltou para Pendente",
+        detalhes=detalhes_hist,
         prontuario=str(solicitacao.prontuario)
     )
     return result

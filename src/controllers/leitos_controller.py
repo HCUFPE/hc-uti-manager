@@ -140,7 +140,7 @@ class LeitosController:
                 else:
                     # Se não apareceu no AGHU ainda, verificamos CONFLITO (outro paciente ocupou o leito reservado)
                     prontuario_aghu_neste_leito = leito.get('prontuario_atual')
-                    if prontuario_aghu_neste_leito:
+                    if prontuario_aghu_neste_leito and prontuario_reserva:
                         # Alguém ocupou o leito e não é quem reservamos
                         is_alta = leito.get('alta_solicitada', False)
                         leito['conflito_reserva'] = not is_alta
@@ -233,7 +233,7 @@ class LeitosController:
         leitos = await self.listar_leitos()
         
         # Termos que o AGHU usa para leitos vazios
-        status_vazios = ['DESOCUPADO', 'DISPONIVEL', 'DISPONÍVEL', 'VAGO', 'LIBERADO', 'LIMPEZA', 'VAGO/LIMPO']
+        status_vazios = ['DESOCUPADO', 'DISPONIVEL', 'DISPONÍVEL', 'VAGO', 'LIBERADO', 'LIMPEZA', 'VAGO/LIMPO', 'HIGIENIZACAO', 'HIGIENIZAÇÃO']
         
         disponiveis = []
         for l in leitos:

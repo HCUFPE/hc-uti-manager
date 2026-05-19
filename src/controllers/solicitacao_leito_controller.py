@@ -130,7 +130,7 @@ class SolicitacaoLeitoController:
         
         return {"message": "Solicitação atualizada."}
 
-    async def editar_solicitacao(self, sol_id: int, payload: dict) -> dict:
+    async def editar_solicitacao(self, sol_id: int, payload: dict, user_perfil: str = "") -> dict:
         """
         Permite editar os dados de uma solicitação.
         """
@@ -139,10 +139,14 @@ class SolicitacaoLeitoController:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
             
         if alvo.status != "Pendente":
-            raise HTTPException(
-                status_code=403, 
-                detail=f"Não é possível editar uma solicitação com status '{alvo.status}'. Cancele a reserva primeiro."
-            )
+            perfis_permitidos = ["BC", "BC-Admin", "COB", "COB-Admin", "HEM", "HEM-Admin", "Administrador"]
+            if alvo.status == "Reservado" and user_perfil in perfis_permitidos:
+                pass # Permite a edição
+            else:
+                raise HTTPException(
+                    status_code=403, 
+                    detail=f"Não é possível editar uma solicitação com status '{alvo.status}'. Cancele a reserva primeiro."
+                )
 
         # Campos que podem ser editados
         campos_validos = ["prontuario", "idade", "especialidade", "tipo", "turno", "data_cirurgia", "prioridade"]
@@ -158,6 +162,23 @@ class SolicitacaoLeitoController:
         # Atualiza
         await self.leito_provider.atualizar(sol_id, dados_atualizar)
         
+        if alvo.status == "Reservado" and self.estado_provider:
+            new_prontuario = dados_atualizar.get("prontuario", alvo.prontuario)
+            try:
+                new_prontuario_int = int(new_prontuario) if new_prontuario else None
+            except (ValueError, TypeError):
+                new_prontuario_int = None
+                
+            new_idade = dados_atualizar.get("idade", alvo.idade)
+            new_especialidade = dados_atualizar.get("especialidade", alvo.especialidade)
+            
+            await self.estado_provider.atualizar_dados_reserva_por_solicitacao(
+                sol_id=sol_id,
+                prontuario=new_prontuario_int,
+                idade=new_idade,
+                especialidade=new_especialidade
+            )
+        
         # Sincroniza o novo bucket
         new_dt = dados_atualizar.get("data_cirurgia", old_dt)
         new_trn = dados_atualizar.get("turno", old_trn)
@@ -171,11 +192,22 @@ class SolicitacaoLeitoController:
 
         return {"message": "Solicitação editada com sucesso."}
 
-    async def cancelar_solicitacao(self, sol_id: int) -> dict:
+    async def cancelar_solicitacao(self, sol_id: int, user_perfil: str = "") -> dict:
         """Cancela uma solicitação de leito."""
         alvo = await self.leito_provider.get_por_id(sol_id)
         if not alvo:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+            
+        if alvo.status != "Pendente":
+            perfis_permitidos = ["BC", "BC-Admin", "COB", "COB-Admin", "HEM", "HEM-Admin", "Administrador"]
+            if alvo.status == "Reservado" and user_perfil in perfis_permitidos:
+                if self.estado_provider:
+                    await self.estado_provider.limpar_reserva_por_solicitacao(sol_id)
+            else:
+                raise HTTPException(
+                    status_code=403, 
+                    detail=f"Não é possível cancelar uma solicitação com status '{alvo.status}'. Cancele a reserva primeiro."
+                )
             
         dt, trn = alvo.data_cirurgia, alvo.turno
         sucesso = await self.leito_provider.deletar(sol_id)
