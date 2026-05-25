@@ -234,3 +234,71 @@ async def cancelar_reserva(
         prontuario=str(solicitacao.prontuario)
     )
     return result
+
+@router.post("/{sol_id}/cirurgia-finalizada")
+async def marcar_cirurgia_finalizada(
+    sol_id: int,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    historico: HistoricoProvider = Depends(get_historico_provider),
+    current_user: dict = Depends(check_role([
+        Role.ADMIN, Role.BC, Role.BC_ADMIN, Role.COB, Role.COB_ADMIN, Role.HEM, Role.HEM_ADMIN
+    ])),
+):
+    """Sinaliza que a cirurgia correspondente à solicitação foi concluída."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+    
+    result = await controller.marcar_cirurgia_finalizada(sol_id)
+    await historico.registrar(
+        operador=current_user.get("username", "Sistema"),
+        tipo="cirurgia_finalizada",
+        acao="Cirurgia Finalizada",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) com cirurgia concluída.",
+        prontuario=str(solicitacao.prontuario)
+    )
+    return result
+
+@router.post("/{sol_id}/liberar-encaminhamento")
+async def liberar_encaminhamento(
+    sol_id: int,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    historico: HistoricoProvider = Depends(get_historico_provider),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
+):
+    """Autoriza a transferência do paciente para o leito reservado na UTI."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+    
+    result = await controller.liberar_encaminhamento(sol_id)
+    await historico.registrar(
+        operador=current_user.get("username", "Sistema"),
+        tipo="encaminhamento_liberado",
+        acao="Liberou encaminhamento",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Encaminhamento liberado para {solicitacao.destino or 'UTI'}.",
+        prontuario=str(solicitacao.prontuario)
+    )
+    return result
+
+@router.post("/{sol_id}/cancelar-liberacao")
+async def cancelar_liberacao(
+    sol_id: int,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    historico: HistoricoProvider = Depends(get_historico_provider),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
+):
+    """Revoga a autorização de transferência do paciente para a UTI."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+    
+    result = await controller.cancelar_liberacao(sol_id)
+    await historico.registrar(
+        operador=current_user.get("username", "Sistema"),
+        tipo="encaminhamento_cancelado",
+        acao="Cancelou liberação de encaminhamento",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Liberação de encaminhamento cancelada pela UTI.",
+        prontuario=str(solicitacao.prontuario)
+    )
+    return result

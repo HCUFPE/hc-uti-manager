@@ -1,9 +1,12 @@
 <template>
   <article
-    class="relative rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl backdrop-blur-sm bg-white/90"
+    class="relative rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl backdrop-blur-sm"
     :class="[
-      temConflito ? 'border-red-500 ring-4 ring-red-500/10 shadow-red-100' : 
-      (sinalizacaoTransferencia ? 'border-rose-200 ring-4 ring-rose-500/5 shadow-rose-100' : 'border-slate-200 shadow-slate-100/50')
+      temConflito ? 'border-red-500 ring-4 ring-red-500/10 shadow-red-100 bg-white/90' : 
+      (sinalizacaoTransferencia ? 'border-rose-200 ring-4 ring-rose-500/5 shadow-rose-100 bg-white/90' : 
+      (proximoPaciente && cirurgiaFinalizada && !encaminhamentoLiberado) ? 'border-amber-300 bg-amber-50/60 ring-4 ring-amber-400/10 shadow-amber-100' :
+      (proximoPaciente && encaminhamentoLiberado) ? 'border-emerald-300 bg-emerald-50/60 ring-4 ring-emerald-400/10 shadow-emerald-100' :
+      'border-slate-200 shadow-slate-100/50 bg-white/90')
     ]"
   >
     <!-- Icone de Alerta (Conflito ou Transferencia) -->
@@ -66,6 +69,10 @@
             Turno: {{ proximoPaciente.turno }}
           </div>
         </div>
+        <div v-if="cirurgiaFinalizada" class="mt-2 flex items-center gap-1 text-[11px] font-bold text-amber-700">
+          <span class="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+          Cirurgia Concluída
+        </div>
         <UiBadge
           v-if="tipoReserva"
           variant="outline"
@@ -91,7 +98,7 @@
       </div>
     </div>
 
-    <div v-if="authStore.isAdmin || authStore.isUTI" class="mt-5 flex gap-2">
+    <div v-if="authStore.isAdmin || authStore.isUTI" class="mt-5 flex flex-wrap gap-2">
       <button
         v-if="status === 'ocupado'"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -105,6 +112,20 @@
         @click="$emit('cancelar-alta')"
       >
         Cancelar Alta
+      </button>
+      <button
+        v-if="proximoPaciente && cirurgiaFinalizada && !encaminhamentoLiberado"
+        class="inline-flex flex-1 items-center justify-center rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-600 shadow-sm"
+        @click="emit('liberar-encaminhamento', solicitacaoId!)"
+      >
+        Liberar Encaminhamento
+      </button>
+      <button
+        v-if="proximoPaciente && encaminhamentoLiberado"
+        class="inline-flex flex-1 items-center justify-center rounded-lg border border-red-200 bg-red-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-700 shadow-sm"
+        @click="emit('cancelar-liberacao', solicitacaoId!)"
+      >
+        Cancelar Liberação
       </button>
       <button
         v-if="proximoPaciente"
@@ -147,14 +168,19 @@ const props = defineProps<{
   destinoDefinido?: string;
   destinoDisponivel?: boolean;
   showActions?: boolean;
+  cirurgiaFinalizada?: boolean;
+  encaminhamentoLiberado?: boolean;
+  solicitacaoId?: number;
 }>();
 
 const authStore = useAuthStore();
 
-defineEmits<{
+const emit = defineEmits<{
   'solicitar-alta': [];
   'cancelar-alta': [];
   'cancelar-reserva': [];
+  'liberar-encaminhamento': [solicitacaoId: number];
+  'cancelar-liberacao': [solicitacaoId: number];
 }>();
 
 const tipoPalette: Record<BedType, { label: string; className: string }> = {

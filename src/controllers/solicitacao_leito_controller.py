@@ -75,6 +75,8 @@ class SolicitacaoLeitoController:
                 "prioridade": s.prioridade,
                 "perfil_solicitante": s.perfil_solicitante,
                 "destino": s.destino,
+                "cirurgia_finalizada": bool(s.cirurgia_finalizada),
+                "encaminhamento_liberado": bool(s.encaminhamento_liberado),
                 "dataHora": (s.criado_em - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
             }
             for s in solicitacoes
@@ -272,3 +274,27 @@ class SolicitacaoLeitoController:
         await self._sincronizar_prioridades(dt, trn, sol_id_foco=sol_id, prioridade_desejada=solicitacao.prioridade)
 
         return {"message": "Reserva cancelada. Solicitação voltou para Pendente."}
+
+    async def marcar_cirurgia_finalizada(self, sol_id: int) -> dict:
+        """Marca que a cirurgia do paciente foi finalizada."""
+        sol = await self.leito_provider.get_por_id(sol_id)
+        if not sol:
+            raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+        await self.leito_provider.atualizar(sol_id, {"cirurgia_finalizada": True})
+        return {"message": "Cirurgia finalizada com sucesso."}
+
+    async def liberar_encaminhamento(self, sol_id: int) -> dict:
+        """Autoriza o encaminhamento do paciente para a UTI."""
+        sol = await self.leito_provider.get_por_id(sol_id)
+        if not sol:
+            raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+        await self.leito_provider.atualizar(sol_id, {"encaminhamento_liberado": True})
+        return {"message": "Encaminhamento liberado com sucesso."}
+
+    async def cancelar_liberacao(self, sol_id: int) -> dict:
+        """Revoga a liberação de encaminhamento do paciente para a UTI."""
+        sol = await self.leito_provider.get_por_id(sol_id)
+        if not sol:
+            raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+        await self.leito_provider.atualizar(sol_id, {"encaminhamento_liberado": False})
+        return {"message": "Liberação de encaminhamento cancelada."}

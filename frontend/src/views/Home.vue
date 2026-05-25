@@ -69,6 +69,8 @@
         @solicitar-alta="handleSolicitarAlta(leito)"
         @cancelar-alta="handleCancelarAlta(leito)"
         @cancelar-reserva="handleCancelarReserva(leito)"
+        @liberar-encaminhamento="handleLiberarEncaminhamento"
+        @cancelar-liberacao="handleCancelarLiberacao"
       />
     </TransitionGroup>
 
@@ -181,6 +183,9 @@ type Leito = {
   temConflito?: boolean;
   destinoDefinido?: string;
   destinoDisponivel?: boolean;
+  cirurgiaFinalizada?: boolean;
+  encaminhamentoLiberado?: boolean;
+  solicitacaoId?: number;
 };
 
 const leitos = ref<Leito[]>([]);
@@ -214,6 +219,9 @@ const loadLeitos = async () => {
       temConflito: l.conflito_reserva || false,
       destinoDefinido: l.leito_destino,
       destinoDisponivel: l.destino_disponivel || false,
+      cirurgiaFinalizada: l.cirurgia_finalizada || false,
+      encaminhamentoLiberado: l.encaminhamento_liberado || false,
+      solicitacaoId: l.solicitacao_id,
     }));
   } catch (error) {
     console.error('Erro ao buscar leitos:', error);
@@ -384,6 +392,28 @@ const confirmarCancelarReserva = async () => {
   } catch (e: any) {
     console.error(e);
     toast.error('Erro ao cancelar reserva.');
+  }
+};
+
+const handleLiberarEncaminhamento = async (solicitacaoId: number) => {
+  try {
+    await api.post(`/api/solicitacoes/${solicitacaoId}/liberar-encaminhamento`);
+    toast.success('Encaminhamento do paciente liberado com sucesso.');
+    await loadLeitos();
+  } catch (error: any) {
+    console.error(error);
+    toast.error('Erro ao liberar encaminhamento.');
+  }
+};
+
+const handleCancelarLiberacao = async (solicitacaoId: number) => {
+  try {
+    await api.post(`/api/solicitacoes/${solicitacaoId}/cancelar-liberacao`);
+    toast.warning('Liberação do encaminhamento cancelada. Alerta enviado ao solicitante.');
+    await loadLeitos();
+  } catch (error: any) {
+    console.error(error);
+    toast.error('Erro ao cancelar liberação.');
   }
 };
 </script>

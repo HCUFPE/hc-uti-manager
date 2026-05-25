@@ -40,3 +40,10 @@ O sistema MUST restringir a edição e cancelamento das solicitações apenas ao
 - **WHEN** a cirurgia é suspensa ou a vaga não é mais necessária e o usuário cancela o pedido pendente
 - **THEN** o sistema exibe a lista atualizada de motivos pré-definidos, exige a seleção de um deles, remove da fila ativa da UTI e registra no histórico com o motivo correspondente
 
+### Requirement: Sinalização de Cirurgia Finalizada pelos Solicitantes
+O sistema MUST permitir que usuários com os perfis solicitantes (BC, COB, HEM, seus respectivos administradores, ou administradores do sistema) marquem uma solicitação de leito com status "reservada" como "Cirurgia Finalizada".
+
+#### Scenario: Solicitante sinaliza fim da cirurgia
+- **WHEN** o usuário de um setor solicitante clica no botão "Cirurgia Finalizada" em sua fila de solicitações reservadas
+- **THEN** o sistema atualiza o status de encaminhamento da solicitação para "Cirurgia Finalizada" e notifica a UTI
+

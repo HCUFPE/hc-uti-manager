@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime
+from sqlalchemy import Column, String, Integer, DateTime, Boolean
 from sqlalchemy.sql import func
 from datetime import timedelta
 from resources.database import Base
@@ -21,6 +21,9 @@ class SolicitacaoLeito(Base):
     prioridade = Column(String(10), nullable=True) # P1, P2, P3, P4, P5
     perfil_solicitante = Column(String(50), nullable=True) # COB, BC, HEM, UTI, etc.
     
+    cirurgia_finalizada = Column(Boolean, default=False)
+    encaminhamento_liberado = Column(Boolean, default=False)
+    
     criado_em = Column(DateTime, server_default=func.now())
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -41,6 +44,8 @@ class SolicitacaoLeito(Base):
             "prioridade": self.prioridade,
             "destino": self.destino,
             "perfil_solicitante": self.perfil_solicitante,
+            "cirurgia_finalizada": bool(self.cirurgia_finalizada),
+            "encaminhamento_liberado": bool(self.encaminhamento_liberado),
             "criado_em": criado_local.isoformat() if criado_local else None,
             "atualizado_em": atualizado_local.isoformat() if atualizado_local else None,
         }

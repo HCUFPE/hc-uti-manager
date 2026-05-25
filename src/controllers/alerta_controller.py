@@ -273,6 +273,39 @@ class AlertaController:
                 "criado_em": criado_em_evento
             })
 
+        # 5. Fluxo de Encaminhamento Cirúrgico (Solicitante <-> UTI)
+        elif tipo in ["cirurgia_finalizada", "encaminhamento_liberado", "encaminhamento_cancelado"]:
+            if tipo == "cirurgia_finalizada":
+                novos_alertas.append({
+                    "tipo": "aviso",
+                    "categoria": "Gargalo",
+                    "titulo": "Cirurgia Finalizada",
+                    "mensagem": f"Prontuário {pront_alerta} pronto para ser encaminhado para UTI (Cirurgia Finalizada)",
+                    "prontuario": pront_alerta,
+                    "perfil_alvo": None, # Alvo: UTI
+                    "criado_em": criado_em_evento
+                })
+            elif tipo == "encaminhamento_liberado":
+                novos_alertas.append({
+                    "tipo": "info",
+                    "categoria": "Gargalo",
+                    "titulo": "Encaminhamento Autorizado",
+                    "mensagem": f"Paciente do prontuário {pront_alerta} pode ser encaminhado para a UTI.",
+                    "prontuario": pront_alerta,
+                    "perfil_alvo": perfil_vaga, # Alvo: Solicitante (COB, BC, HEM)
+                    "criado_em": criado_em_evento
+                })
+            elif tipo == "encaminhamento_cancelado":
+                novos_alertas.append({
+                    "tipo": "critico",
+                    "categoria": "Gargalo",
+                    "titulo": "Liberação de Encaminhamento Cancelada",
+                    "mensagem": f"A liberação de encaminhamento para o prontuário {pront_alerta} foi cancelada pela UTI.",
+                    "prontuario": pront_alerta,
+                    "perfil_alvo": perfil_vaga, # Alvo: Solicitante (COB, BC, HEM)
+                    "criado_em": criado_em_evento
+                })
+
     async def _sincronizar_alertas(self, novos_alertas_data: List[Dict[str, Any]]) -> dict:
         alertas_existentes = await self.alerta_provider.get_todos()
         alertas_manter_ids = []

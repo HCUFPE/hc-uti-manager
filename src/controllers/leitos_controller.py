@@ -158,6 +158,9 @@ class LeitosController:
                         if sol:
                             leito['data_cirurgia_proximo'] = sol.data_cirurgia
                             leito['turno_proximo'] = sol.turno
+                            leito['cirurgia_finalizada'] = getattr(sol, 'cirurgia_finalizada', False)
+                            leito['encaminhamento_liberado'] = getattr(sol, 'encaminhamento_liberado', False)
+                            leito['solicitacao_id'] = sol.id
             else:
                 leito['conflito_reserva'] = False
                 leito['prontuario_proximo'] = None

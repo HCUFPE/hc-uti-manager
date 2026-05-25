@@ -179,6 +179,19 @@
               <template v-if="authStore.isSolicitante && podeGerenciar(sol)">
                 <UiButton
                   size="sm"
+                  :disabled="sol.cirurgia_finalizada"
+                  :class="[
+                    sol.cirurgia_finalizada 
+                      ? 'bg-emerald-600 border-none text-white font-bold px-4 shadow-sm opacity-100 cursor-not-allowed'
+                      : 'bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 border-none shadow-sm flex items-center gap-1'
+                  ]"
+                  @click="confirmarCirurgiaFinalizada(sol.id)"
+                >
+                  <CheckIcon class="h-4 w-4 mr-1 text-white" />
+                  {{ sol.cirurgia_finalizada ? 'Cirurgia Concluída' : 'Cirurgia Finalizada' }}
+                </UiButton>
+                <UiButton
+                  size="sm"
                   variant="outline"
                   @click="abrirModalEdicao(sol)"
                   class="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
@@ -195,6 +208,22 @@
                   Cancelar Solicitação
                 </UiButton>
               </template>
+              <div class="ml-auto flex items-center gap-2">
+                <span 
+                  v-if="sol.cirurgia_finalizada && !sol.encaminhamento_liberado"
+                  class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 border border-amber-200"
+                >
+                  <ClockIcon class="h-3.5 w-3.5 mr-1 text-amber-600 animate-pulse" />
+                  Aguardando Liberação da UTI
+                </span>
+                <span 
+                  v-else-if="sol.encaminhamento_liberado"
+                  class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200"
+                >
+                  <CheckCircleIcon class="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                  Transporte Autorizado para UTI!
+                </span>
+              </div>
               <UiButton 
                 v-if="authStore.isAdmin || authStore.isUTI"
                 size="sm" 
@@ -390,7 +419,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon, CheckIcon, ClockIcon, CheckCircleIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiButton from '../components/ui/Button.vue';
 import Modal from '../components/Modal.vue';
@@ -414,6 +443,8 @@ type Solicitacao = {
   destino?: string;
   dataHora: string;
   perfil_solicitante?: string;
+  cirurgia_finalizada?: boolean;
+  encaminhamento_liberado?: boolean;
 };
 
 const solicitacoes = ref<Solicitacao[]>([]);
@@ -692,6 +723,17 @@ function podeGerenciar(sol: any) {
   if (!solPerfil) return false;
   
   return solPerfil === userGrupo;
+}
+
+async function confirmarCirurgiaFinalizada(id: string) {
+  try {
+    await api.post(`/api/solicitacoes/${id}/cirurgia-finalizada`);
+    toast.success('Cirurgia sinalizada como finalizada.');
+    await carregarSolicitacoes();
+  } catch (error) {
+    console.error('Erro ao marcar cirurgia finalizada:', error);
+    toast.error('Não foi possível marcar cirurgia como finalizada.');
+  }
 }
 
 onMounted(() => {
