@@ -228,12 +228,28 @@ class AlertaController:
                     "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": None, "criado_em": criado_em_evento
                 })
         
-        # 3. UTI -> NIR
+        # 3. UTI -> NIR ou NIR -> UTI
         elif tipo == "cancelamento":
-            novos_alertas.append({
-                "tipo": "aviso", "categoria": "Gargalo", "titulo": "Alta Cancelada pela UTI",
-                "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": "NIR", "criado_em": criado_em_evento
-            })
+            if "pelo NIR" in detalhes:
+                novos_alertas.append({
+                    "tipo": "aviso",
+                    "categoria": "Gargalo",
+                    "titulo": "Cancelamento de Alta pelo NIR",
+                    "mensagem": detalhes,
+                    "prontuario": pront_alerta,
+                    "perfil_alvo": None,  # Alvo: UTI
+                    "criado_em": criado_em_evento
+                })
+            else:
+                novos_alertas.append({
+                    "tipo": "aviso",
+                    "categoria": "Gargalo",
+                    "titulo": "Alta Cancelada pela UTI",
+                    "mensagem": detalhes,
+                    "prontuario": pront_alerta,
+                    "perfil_alvo": "NIR",
+                    "criado_em": criado_em_evento
+                })
 
         # 4. NIR -> UTI (Destino)
         elif tipo in ["alteracao_destino", "destino_disponivel", "destino_pendente"]:

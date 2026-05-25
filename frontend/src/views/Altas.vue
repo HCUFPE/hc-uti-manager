@@ -73,6 +73,9 @@
               <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" @click="openDestino(alta)">
                 Indicar Destino
               </UiButton>
+              <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" variant="destructive" @click="openCancelarAlta(alta.id)">
+                Cancelar Solicitação
+              </UiButton>
               <UiButton v-if="authStore.isAdmin || authStore.isUTI" size="sm" variant="destructive" @click="cancelarAlta(alta.id)">
                 Cancelar Alta
               </UiButton>
@@ -81,6 +84,9 @@
               <div class="flex flex-wrap items-center gap-2">
                 <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" variant="outline" @click="openDestino(alta)">
                   Alterar Destino
+                </UiButton>
+                <UiButton v-if="authStore.isAdmin || authStore.isNIR" size="sm" variant="destructive" @click="openCancelarAlta(alta.id)">
+                  Cancelar Solicitação
                 </UiButton>
                 
                 <UiButton 
@@ -142,6 +148,26 @@
         <UiButton @click="salvarDestino">Salvar</UiButton>
       </template>
     </Modal>
+
+    <!-- Modal para cancelar alta pelo NIR -->
+    <Modal :show="showModalCancelAlta" @close="showModalCancelAlta = false">
+      <template #header>Cancelar Solicitação de Alta</template>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Motivo do Cancelamento</label>
+          <select
+            v-model="motivoCancelAlta"
+            class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white"
+          >
+            <option value="Leito de Enfermaria Indisponível">Leito de Enfermaria Indisponível</option>
+          </select>
+        </div>
+      </div>
+      <template #footer>
+        <UiButton variant="outline" @click="showModalCancelAlta = false">Cancelar</UiButton>
+        <UiButton variant="destructive" @click="confirmarCancelarAlta">Confirmar Cancelamento</UiButton>
+      </template>
+    </Modal>
   </section>
 </template>
 
@@ -178,6 +204,29 @@ const altaSelecionada = ref<Alta | null>(null);
 const formDestino = ref({ leitoDestino: '' });
 const toast = useToast();
 const authStore = useAuthStore();
+
+const showModalCancelAlta = ref(false);
+const motivoCancelAlta = ref('Leito de Enfermaria Indisponível');
+const altaIdParaCancelar = ref<string | null>(null);
+
+function openCancelarAlta(id: string) {
+  altaIdParaCancelar.value = id;
+  motivoCancelAlta.value = 'Leito de Enfermaria Indisponível';
+  showModalCancelAlta.value = true;
+}
+
+async function confirmarCancelarAlta() {
+  if (!altaIdParaCancelar.value) return;
+  try {
+    await api.delete(`/api/altas/${altaIdParaCancelar.value}?motivo=${encodeURIComponent(motivoCancelAlta.value)}`);
+    toast.success('Solicitação de alta cancelada com sucesso.');
+    showModalCancelAlta.value = false;
+    await carregar(); // Re-fetch to update the list
+  } catch (e: any) {
+    toast.error('Erro ao cancelar solicitação de alta.');
+    console.error(e);
+  }
+}
 
 async function carregar() {
   loading.value = true;

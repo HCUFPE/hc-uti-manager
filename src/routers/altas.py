@@ -65,7 +65,7 @@ async def cancelar_alta(
     motivo: str = None,
     controller: AltasController = Depends(get_altas_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
-    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN, Role.NIR, Role.NIR_ADMIN])),
 ):
     """Cancela uma solicitação de alta."""
     alvo = await controller.alta_provider.get_por_id(alta_id)
@@ -73,9 +73,17 @@ async def cancelar_alta(
     
     await controller.cancelar_alta(alta_id)
     
+    perfil = current_user.get("perfil")
+    is_nir = perfil in [Role.NIR, Role.NIR_ADMIN]
+    
     detalhes_hist = f"Alta #{alta_id} (Prontuário {prontuario})"
+    if is_nir:
+        detalhes_hist += " cancelada pelo NIR"
+    else:
+        detalhes_hist += " cancelada"
+        
     if motivo:
-        detalhes_hist += f" cancelada. Motivo: {motivo}"
+        detalhes_hist += f". Motivo: {motivo}"
         
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
