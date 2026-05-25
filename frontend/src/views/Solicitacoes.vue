@@ -432,14 +432,17 @@ const submetendoNova = ref(false);
 const isEditing = ref(false);
 
 const MOTIVOS_CANCELAMENTO = [
-  'Cancelamento pelo Solicitante por Motivo A', 
-  'Cancelamento pelo Solicitante por Motivo B', 
-  'Cancelamento pelo Solicitante por Motivo C'
+  'Cirurgia suspensa por outros motivos',
+  'Paciente encaminhado para enfermaria de origem após a cirurgia',
+  'Alteração do mapa cirúrgico'
 ];
 const MOTIVOS_CANCELAMENTO_RESERVA = [
-  'Motivo UTI A', 
-  'Motivo UTI B', 
-  'Motivo UTI C'
+  'Pedido de vaga clínica (emergência)',
+  'Pedido de vaga pela hemodinâmica',
+  'Pedido de vaga pelo COB (emergência)',
+  'Problemas relacionados a equipamentos',
+  'Falta de vaga na enfermaria para paciente de alta',
+  'Cancelamento de alta da UTI'
 ];
 
 const motivosAtuais = computed(() => {

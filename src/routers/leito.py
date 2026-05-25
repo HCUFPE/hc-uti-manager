@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Query
 from auth.roles import Role
 from controllers.leitos_controller import LeitosController
 from models.reserva_leito import ReservaLeitoInput
@@ -31,6 +31,7 @@ async def reservar_leito(
 @router.delete("/{leito_id}/reserva", status_code=status.HTTP_200_OK)
 async def cancelar_reserva(
     leito_id: str,
+    motivo: str = Query(..., description="Motivo do cancelamento da reserva"),
     controller: LeitosController = Depends(get_leito_controller),
     solicitacao_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -49,6 +50,9 @@ async def cancelar_reserva(
     elif prontuario_reserva:
         prontuario_log = str(prontuario_reserva)
         detalhes = f"Reserva manual do Prontuário {prontuario_log} cancelada (Leito {leito_id} liberado)"
+
+    if motivo:
+        detalhes += f" - Motivo: {motivo}"
 
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),

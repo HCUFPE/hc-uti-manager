@@ -1,15 +1,4 @@
-# solicitacao-leitos Specification
-
-## Purpose
-TBD - created by archiving change setup-openspec-docs. Update Purpose after archive.
-## Requirements
-### Requirement: Criação de Solicitação de Leito
-O sistema MUST permitir que usuários dos setores solicitantes (Bloco Cirúrgico, Centro Obstétrico e Hemodinâmica) criem requisições de leito de UTI.
-
-#### Scenario: Solicitação de vaga bem sucedida
-- **WHEN** o usuário de um setor solicitante preenche o prontuário, data da cirurgia e especialidade
-- **THEN** o sistema salva a requisição com o status inicial adequado
-- **THEN** a solicitação passa a aparecer na fila de avaliação da UTI
+## MODIFIED Requirements
 
 ### Requirement: Gestão da Fila e Reserva pela UTI
 O sistema MUST permitir que a equipe da UTI visualize a fila de solicitações e atribua leitos físicos aos pacientes aprovados, bem como cancele reservas informando obrigatoriamente um motivo pré-definido da lista de cancelamento de reserva (tipo 2). Os motivos permitidos para o cancelamento de reserva pela UTI MUST ser:
@@ -39,4 +28,3 @@ O sistema MUST restringir a edição e cancelamento das solicitações apenas ao
 #### Scenario: Cancelamento de solicitação pendente
 - **WHEN** a cirurgia é suspensa ou a vaga não é mais necessária e o usuário cancela o pedido pendente
 - **THEN** o sistema exibe a lista atualizada de motivos pré-definidos, exige a seleção de um deles, remove da fila ativa da UTI e registra no histórico com o motivo correspondente
-

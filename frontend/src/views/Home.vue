@@ -124,6 +124,27 @@
         </UiButton>
       </template>
     </Modal>
+
+    <!-- Modal Cancelar Reserva (UTI) -->
+    <Modal :show="showModalCancelReserva" @close="showModalCancelReserva = false">
+      <template #header>Cancelar Reserva - Leito {{ leitoCancelReserva?.leitoNumero }}</template>
+      <div class="space-y-4 py-2">
+        <p class="text-sm text-slate-600">Selecione o motivo para cancelar a reserva do leito:</p>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Motivo <span class="text-red-500">*</span></label>
+          <select v-model="motivoCancelReserva" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <option value="" disabled selected>Selecione um motivo</option>
+            <option v-for="m in MOTIVOS_CANCELAMENTO_RESERVA" :key="m" :value="m">{{ m }}</option>
+          </select>
+        </div>
+      </div>
+      <template #footer>
+        <UiButton variant="outline" @click="showModalCancelReserva = false">Voltar</UiButton>
+        <UiButton :disabled="!motivoCancelReserva" class="bg-red-600 text-white hover:bg-red-700 border-none" @click="confirmarCancelarReserva">
+          Confirmar Cancelamento
+        </UiButton>
+      </template>
+    </Modal>
   </section>
 </template>
 
@@ -275,7 +296,23 @@ const formAlta = ref({ necessidadesEspeciais: '' });
 
 const showModalCancelAlta = ref(false);
 const motivoCancelAlta = ref('');
-const MOTIVOS_CANCELAMENTO_ALTA = ['Cancelamento de Alta Tipo A', 'Cancelamento de Alta Tipo B', 'Cancelamento de Alta Tipo C'];
+const MOTIVOS_CANCELAMENTO_ALTA = [
+  'Piora Clínica',
+  'Leito de Enfermaria Indisponível'
+];
+
+const showModalCancelReserva = ref(false);
+const motivoCancelReserva = ref('');
+const leitoCancelReserva = ref<Leito | null>(null);
+
+const MOTIVOS_CANCELAMENTO_RESERVA = [
+  'Pedido de vaga clínica (emergência)',
+  'Pedido de vaga pela hemodinâmica',
+  'Pedido de vaga pelo COB (emergência)',
+  'Problemas relacionados a equipamentos',
+  'Falta de vaga na enfermaria para paciente de alta',
+  'Cancelamento de alta da UTI'
+];
 
 const handleSolicitarAlta = (leito: Leito) => {
   leitoSelecionado.value = leito;
@@ -328,11 +365,22 @@ const confirmarCancelarAlta = async () => {
   }
 };
 
-const handleCancelarReserva = async (leito: Leito) => {
+const handleCancelarReserva = (leito: Leito) => {
+  leitoCancelReserva.value = leito;
+  motivoCancelReserva.value = '';
+  showModalCancelReserva.value = true;
+};
+
+const confirmarCancelarReserva = async () => {
+  if (!leitoCancelReserva.value || !motivoCancelReserva.value) return;
+  
   try {
-    await api.delete(`/api/leitos/${leito.leitoNumero}/reserva`);
-    toast.warning(`Reserva cancelada para o leito ${leito.leitoNumero}.`);
+    await api.delete(`/api/leitos/${leitoCancelReserva.value.leitoNumero}/reserva?motivo=${encodeURIComponent(motivoCancelReserva.value)}`);
+    toast.warning(`Reserva cancelada para o leito ${leitoCancelReserva.value.leitoNumero}.`);
     await loadLeitos();
+    showModalCancelReserva.value = false;
+    leitoCancelReserva.value = null;
+    motivoCancelReserva.value = '';
   } catch (e: any) {
     console.error(e);
     toast.error('Erro ao cancelar reserva.');
