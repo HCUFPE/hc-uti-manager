@@ -103,7 +103,8 @@ class AlertaController:
                         "mensagem": f"Aguardando destino para leito {alta.lto_id} (Prontuário {prontuario}).",
                         "lto_id": alta.lto_id,
                         "prontuario": str(prontuario),
-                        "perfil_alvo": "NIR"
+                        "perfil_alvo": "NIR",
+                        "criado_em": alta.criado_em
                     })
                     
                     if alta.leito_destino and len(str(alta.leito_destino).strip()) > 1:
@@ -114,7 +115,8 @@ class AlertaController:
                             "mensagem": f"Destino definido para paciente {prontuario}: {alta.leito_destino}.",
                             "lto_id": alta.lto_id,
                             "prontuario": str(prontuario),
-                            "perfil_alvo": None 
+                            "perfil_alvo": None,
+                            "criado_em": alta.atualizado_em
                         })
         except Exception as e:
             logger.error(f"Erro ao analisar altas: {e}")
@@ -267,12 +269,21 @@ class AlertaController:
             if chave in chaves_ja_processadas:
                 continue
             
-            existente = next((a for a in alertas_existentes if 
-                             a.titulo == data.get("titulo") and 
-                             str(a.prontuario) == str(data.get("prontuario")) and
-                             a.perfil_alvo == data.get("perfil_alvo") and
-                             a.mensagem == data.get("mensagem") and
-                             (a.criado_em == data.get("criado_em") if data.get("criado_em") else True)), None)
+            existente = None
+            for a in alertas_existentes:
+                if (a.titulo == data.get("titulo") and 
+                    str(a.prontuario) == str(data.get("prontuario")) and
+                    a.perfil_alvo == data.get("perfil_alvo") and
+                    a.mensagem == data.get("mensagem")):
+                    
+                    req_criado_em = data.get("criado_em")
+                    if req_criado_em:
+                        if a.criado_em and abs((a.criado_em - req_criado_em).total_seconds()) < 2:
+                            existente = a
+                            break
+                    else:
+                        existente = a
+                        break
             
             if existente:
                 alertas_manter_ids.append(existente.id)
@@ -282,10 +293,10 @@ class AlertaController:
             
             chaves_ja_processadas.add(chave)
 
-        # Limpeza de obsoletos
-        for a_antigo in alertas_existentes:
-            if a_antigo.id not in alertas_manter_ids:
-                if a_antigo.categoria in ["Infeccioso", "Permanencia", "Limpeza"]:
-                    await self.alerta_provider.deletar(a_antigo.id)
+        # Limpeza de obsoletos desativada para manter histórico completo de alertas
+        # for a_antigo in alertas_existentes:
+        #     if a_antigo.id not in alertas_manter_ids:
+        #         if a_antigo.categoria in ["Infeccioso", "Permanencia", "Limpeza"]:
+        #             await self.alerta_provider.deletar(a_antigo.id)
 
         return {"message": f"{len(novos_alertas_data)} alertas processados."}

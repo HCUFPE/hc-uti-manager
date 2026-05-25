@@ -140,17 +140,17 @@ const typeConfig: Record<
   }
 > = {
   alert: {
-    icon: AlertTriangle,
-    bg: 'bg-red-50',
-    color: 'text-red-600',
+    icon: Bell,
+    bg: 'bg-blue-50',
+    color: 'text-blue-600',
   },
   admission: {
-    icon: UserPlus,
-    bg: 'bg-emerald-50',
-    color: 'text-emerald-600',
+    icon: Bell,
+    bg: 'bg-blue-50',
+    color: 'text-blue-600',
   },
   discharge: {
-    icon: LogOut,
+    icon: Bell,
     bg: 'bg-blue-50',
     color: 'text-blue-600',
   },

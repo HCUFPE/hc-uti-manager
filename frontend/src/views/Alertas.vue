@@ -202,20 +202,20 @@ const alertConfig: Record<
   }
 > = {
   critico: {
-    icon: ExclamationTriangleIcon,
-    iconColor: 'text-red-600',
-    badgeClass: 'border border-red-200 bg-red-100 text-red-800',
-    cardClass: 'border-red-200 bg-red-100',
+    icon: InformationCircleIcon,
+    iconColor: 'text-blue-600',
+    badgeClass: 'border border-blue-200 bg-blue-100 text-blue-800',
+    cardClass: 'border-blue-200 bg-blue-100',
     readClass: 'border-slate-200 bg-slate-50',
-    iconBg: 'bg-red-100',
+    iconBg: 'bg-blue-100',
   },
   aviso: {
-    icon: ExclamationCircleIcon,
-    iconColor: 'text-amber-600',
-    badgeClass: 'border border-amber-200 bg-amber-100 text-amber-800',
-    cardClass: 'border-amber-200 bg-amber-100',
+    icon: InformationCircleIcon,
+    iconColor: 'text-blue-600',
+    badgeClass: 'border border-blue-200 bg-blue-100 text-blue-800',
+    cardClass: 'border-blue-200 bg-blue-100',
     readClass: 'border-slate-200 bg-slate-50',
-    iconBg: 'bg-amber-100',
+    iconBg: 'bg-blue-100',
   },
   info: {
     icon: InformationCircleIcon,
@@ -227,7 +227,7 @@ const alertConfig: Record<
   },
 };
 
-const formatTipo = (tipo: AlertType) => tipo.charAt(0).toUpperCase() + tipo.slice(1);
+const formatTipo = (tipo: AlertType) => 'Alerta';
 
 const openModal = (alerta: Alert) => {
   selectedAlert.value = alerta;
