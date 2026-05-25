@@ -78,11 +78,8 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import {
-  AlertTriangle,
   Bell,
   Clock3,
-  LogOut,
-  UserPlus,
 } from 'lucide-vue-next';
 import api from '../services/api';
 

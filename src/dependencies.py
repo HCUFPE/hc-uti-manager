@@ -15,6 +15,7 @@ from providers.implementations.solicitacao_leito_provider import SolicitacaoLeit
 from providers.implementations.alerta_provider import AlertaProvider
 from providers.implementations.historico_provider import HistoricoProvider
 from providers.implementations.indicadores_provider import IndicadoresProvider
+from providers.implementations.aghu_cirurgia_provider import AghuCirurgiaProvider
 
 # Controllers
 from controllers.leitos_controller import LeitosController
@@ -89,14 +90,24 @@ def get_altas_controller(
 ) -> AltasController:
     return AltasController(alta_provider, leitos_controller, estado_provider, historico_provider)
 
-# --- SOLICITACOES LEITO --------------------------------------------------
+def get_aghu_cirurgia_provider(
+    session: AsyncSession = Depends(get_aghu_db_session)
+) -> AghuCirurgiaProvider:
+    """Provedor para cirurgias do AGHU via PostgreSQL."""
+    return AghuCirurgiaProvider(session=session)
 
 def get_solicitacao_leito_controller(
     leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
     estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
-    historico_provider: HistoricoProvider = Depends(get_historico_provider)
+    historico_provider: HistoricoProvider = Depends(get_historico_provider),
+    aghu_cirurgia_provider: AghuCirurgiaProvider = Depends(get_aghu_cirurgia_provider)
 ) -> SolicitacaoLeitoController:
-    return SolicitacaoLeitoController(leito_provider, estado_provider, historico_provider)
+    return SolicitacaoLeitoController(
+        leito_provider=leito_provider,
+        estado_provider=estado_provider,
+        historico_provider=historico_provider,
+        aghu_cirurgia_provider=aghu_cirurgia_provider
+    )
 
 # --- ALERTAS --------------------------------------------------
 

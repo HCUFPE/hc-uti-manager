@@ -141,8 +141,6 @@
 
 <script setup lang="ts">
 import {
-  ExclamationTriangleIcon,
-  ExclamationCircleIcon,
   InformationCircleIcon,
   ClockIcon,
 } from '@heroicons/vue/24/outline';
@@ -227,7 +225,7 @@ const alertConfig: Record<
   },
 };
 
-const formatTipo = (tipo: AlertType) => 'Alerta';
+const formatTipo = (_tipo: AlertType) => 'Alerta';
 
 const openModal = (alerta: Alert) => {
   selectedAlert.value = alerta;

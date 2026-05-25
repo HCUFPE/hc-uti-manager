@@ -71,6 +71,7 @@
         @cancelar-reserva="handleCancelarReserva(leito)"
         @liberar-encaminhamento="handleLiberarEncaminhamento"
         @cancelar-liberacao="handleCancelarLiberacao"
+        @mudar-leito="handleMudarLeito"
       />
     </TransitionGroup>
 
@@ -144,6 +145,38 @@
         <UiButton variant="outline" @click="showModalCancelReserva = false">Voltar</UiButton>
         <UiButton :disabled="!motivoCancelReserva" class="bg-red-600 text-white hover:bg-red-700 border-none" @click="confirmarCancelarReserva">
           Confirmar Cancelamento
+        </UiButton>
+      </template>
+    </Modal>
+
+    <!-- Modal Mudar Leito (UTI) -->
+    <Modal :show="showModalMudarLeito" @close="showModalMudarLeito = false">
+      <template #header>Mudar Leito Reservado</template>
+      <div class="space-y-4 py-2">
+        <p class="text-sm text-slate-600">Selecione o novo leito disponível para transferir a reserva:</p>
+        <div v-if="loadingLeitos" class="flex justify-center py-4">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+        </div>
+        <div v-else-if="leitosDisponiveis.length === 0" class="text-center py-4 text-slate-500 italic">
+          Nenhum leito disponível no momento.
+        </div>
+        <div v-else class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
+          <button
+            v-for="leito in leitosDisponiveis"
+            :key="leito.lto_lto_id"
+            class="flex flex-col items-start rounded-lg border p-3 text-left transition"
+            :class="leitoEscolhido === leito.lto_lto_id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:bg-slate-50'"
+            @click="leitoEscolhido = leito.lto_lto_id"
+          >
+            <span class="font-bold text-slate-900">Leito {{ leito.lto_lto_id }}</span>
+            <span class="text-xs text-slate-500 capitalize">{{ leito.status }} {{ leito.alta_solicitada ? '(Alta solicitada)' : '' }}</span>
+          </button>
+        </div>
+      </div>
+      <template #footer>
+        <UiButton variant="outline" @click="showModalMudarLeito = false">Cancelar</UiButton>
+        <UiButton :disabled="!leitoEscolhido || submetendo" @click="confirmarMudarLeito">
+          {{ submetendo ? 'Mudando...' : 'Confirmar Mudança' }}
         </UiButton>
       </template>
     </Modal>
@@ -414,6 +447,50 @@ const handleCancelarLiberacao = async (solicitacaoId: number) => {
   } catch (error: any) {
     console.error(error);
     toast.error('Erro ao cancelar liberação.');
+  }
+};
+
+const showModalMudarLeito = ref(false);
+const solIdParaMudarLeito = ref<number | null>(null);
+const leitoEscolhido = ref<string | null>(null);
+const leitosDisponiveis = ref<any[]>([]);
+const loadingLeitos = ref(false);
+const submetendo = ref(false);
+
+const carregarLeitosDisponiveis = async () => {
+  loadingLeitos.value = true;
+  try {
+    const { data } = await api.get('/api/leitos/disponiveis');
+    leitosDisponiveis.value = data;
+  } catch (error) {
+    console.error('Erro ao buscar leitos disponíveis:', error);
+  } finally {
+    loadingLeitos.value = false;
+  }
+};
+
+const handleMudarLeito = (solicitacaoId: number) => {
+  solIdParaMudarLeito.value = solicitacaoId;
+  leitoEscolhido.value = null;
+  showModalMudarLeito.value = true;
+  carregarLeitosDisponiveis();
+};
+
+const confirmarMudarLeito = async () => {
+  if (!solIdParaMudarLeito.value || !leitoEscolhido.value) return;
+  submetendo.value = true;
+  try {
+    await api.post(`/api/solicitacoes/${solIdParaMudarLeito.value}/remanejar-reserva`, {
+      leito_id: leitoEscolhido.value
+    });
+    toast.success('Reserva remanejada com sucesso!');
+    showModalMudarLeito.value = false;
+    await loadLeitos();
+  } catch (error: any) {
+    console.error(error);
+    toast.error(error.response?.data?.detail || 'Erro ao remanejar reserva.');
+  } finally {
+    submetendo.value = false;
   }
 };
 </script>

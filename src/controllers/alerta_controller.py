@@ -164,7 +164,8 @@ class AlertaController:
         match_hoje = self._validar_data_hoje(detalhes, vaga, hoje_bsb)
 
         if vaga:
-            pront_alerta = str(vaga.prontuario)
+            if pront_alerta == "Desconhecido":
+                pront_alerta = str(vaga.prontuario)
             perfil_vaga = vaga.perfil_solicitante
         else:
             perfil_vaga = None

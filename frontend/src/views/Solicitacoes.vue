@@ -59,15 +59,23 @@
             class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
           >
             <div class="p-4">
-              <!-- Top Row: ID and Status -->
               <div class="flex items-start justify-between mb-4">
-                <div class="space-y-0.5 text-left">
-                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Prontuário</p>
-                  <p class="text-xl font-semibold text-slate-800 leading-tight">{{ sol.prontuario }}</p>
-                  <p class="text-sm font-normal text-slate-500">{{ sol.idade }} anos • {{ sol.especialidade }}</p>
-                  <p class="text-[10px] font-normal text-slate-400">{{ formatarDataHoraBR(sol.dataHora) }}</p>
+                <div class="space-y-1 text-left">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-200">
+                      Prontuário {{ sol.prontuario }}
+                    </span>
+                    <span class="text-[10px] font-normal text-slate-400">{{ formatarDataHoraBR(sol.dataHora) }}</span>
+                  </div>
+                  <h4 class="text-lg font-bold text-slate-800 leading-tight mt-1">{{ sol.nome || 'Paciente AGHU' }}</h4>
+                  <p class="text-xs font-normal text-slate-500">
+                    {{ sol.idade }} anos • {{ sol.especialidade }}
+                  </p>
+                  <p v-if="sol.procedimento" class="text-xs font-medium text-slate-600 italic">
+                    Procedimento: {{ sol.procedimento }}
+                  </p>
                 </div>
-                <span class="rounded-full bg-rose-500 px-3 py-1 text-[10px] font-bold text-white shadow-sm">
+                <span class="rounded-full bg-rose-500 px-3 py-1 text-[10px] font-bold text-white shadow-sm shrink-0">
                   Aguardando Reserva de Leito
                 </span>
               </div>
@@ -149,11 +157,20 @@
             class="overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-sm transition hover:shadow-md opacity-90"
           >
             <div class="flex items-start justify-between p-6">
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-6 w-full text-left">
-                <div class="space-y-1">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Prontuário</p>
-                  <p class="text-xl font-black text-slate-800">{{ sol.prontuario }}</p>
-                  <p class="text-sm text-slate-600">{{ sol.idade }} anos</p>
+              <div class="grid grid-cols-1 md:grid-cols-6 gap-6 w-full text-left">
+                <div class="space-y-1 md:col-span-2 text-left">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-200">
+                      Prontuário {{ sol.prontuario }}
+                    </span>
+                  </div>
+                  <h4 class="text-lg font-bold text-slate-800 leading-tight mt-1">{{ sol.nome || 'Paciente AGHU' }}</h4>
+                  <p class="text-xs text-slate-500">
+                    {{ sol.idade }} anos • {{ sol.especialidade }}
+                  </p>
+                  <p v-if="sol.procedimento" class="text-xs font-medium text-slate-600 italic truncate" :title="sol.procedimento">
+                    Procedimento: {{ sol.procedimento }}
+                  </p>
                 </div>
                 <div class="space-y-1">
                   <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Leito Reservado</p>
@@ -227,6 +244,15 @@
               <UiButton 
                 v-if="authStore.isAdmin || authStore.isUTI"
                 size="sm" 
+                @click="abrirModalMudarLeito(sol)" 
+                class="bg-blue-600 text-white hover:bg-blue-700 border-none shadow-sm px-4 flex items-center gap-1"
+              >
+                <PencilSquareIcon class="h-4 w-4 mr-1" />
+                Mudar Leito
+              </UiButton>
+              <UiButton 
+                v-if="authStore.isAdmin || authStore.isUTI"
+                size="sm" 
                 @click="abrirModalCancelamento(sol.id, true)" 
                 class="bg-rose-600 text-white hover:bg-rose-700 border-none shadow-sm px-4"
               >
@@ -261,9 +287,14 @@
             class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50 p-4 shadow-sm"
           >
             <div class="flex items-center justify-between">
-              <div class="space-y-1">
-                <p class="text-lg font-bold text-slate-800">Prontuário: {{ sol.prontuario }}</p>
-                <p class="text-sm text-slate-600">{{ sol.especialidade }} • {{ sol.destino }}</p>
+              <div class="space-y-1 text-left">
+                <div class="flex items-center gap-2">
+                  <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold text-slate-700 border border-slate-300">
+                    Prontuário {{ sol.prontuario }}
+                  </span>
+                </div>
+                <h4 class="text-base font-bold text-slate-800 leading-tight mt-0.5">{{ sol.nome || 'Paciente AGHU' }}</h4>
+                <p class="text-xs text-slate-600">{{ sol.especialidade }} • {{ sol.destino }}</p>
               </div>
               <div class="text-right">
                 <span class="rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase text-blue-700">Concluída</span>
@@ -278,7 +309,7 @@
 
     <!-- Modais -->
     <Modal :show="showModalReserva" @close="showModalReserva = false">
-      <template #header>Reservar Leito para Prontuário {{ solSelecionada?.prontuario }}</template>
+      <template #header>{{ isRemanejamento ? 'Mudar Leito' : 'Reservar Leito' }} para Prontuário {{ solSelecionada?.prontuario }}</template>
       <div class="space-y-4">
         <p class="text-sm text-slate-600">Selecione um leito disponível ou em processo de alta:</p>
         <div v-if="loadingLeitos" class="flex justify-center py-4">
@@ -303,7 +334,7 @@
       <template #footer>
         <UiButton variant="outline" @click="showModalReserva = false">Cancelar</UiButton>
         <UiButton :disabled="!leitoEscolhido || submetendo" @click="confirmarReserva">
-          {{ submetendo ? 'Reservando...' : 'Confirmar Reserva' }}
+          {{ submetendo ? (isRemanejamento ? 'Mudando...' : 'Reservando...') : (isRemanejamento ? 'Confirmar Mudança' : 'Confirmar Reserva') }}
         </UiButton>
       </template>
     </Modal>
@@ -311,15 +342,36 @@
     <Modal :show="showModalNova" @close="fecharModalNova">
       <template #header>{{ isEditing ? 'Editar Solicitação' : 'Nova Solicitação' }}</template>
       <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Prontuário <span class="text-red-500">*</span></label>
-          <input v-model="formNova.prontuario" type="text" placeholder="Digite o prontuário" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Idade <span class="text-red-500">*</span></label>
-            <input v-model="formNova.idade" type="number" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+        <!-- Input de Prontuário com botão de Buscar -->
+        <div class="flex items-end gap-2 text-left">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-slate-700">Prontuário <span class="text-red-500">*</span></label>
+            <input 
+              v-model="formNova.prontuario" 
+              type="text" 
+              placeholder="Digite o prontuário" 
+              class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-500" 
+              :disabled="isEditing || buscandoAghu"
+              @blur="buscarPacienteAghu"
+              @keyup.enter="buscarPacienteAghu"
+            />
           </div>
+          <UiButton 
+            v-if="!isEditing"
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            class="h-[38px] px-3 flex items-center justify-center gap-1 shadow-sm shrink-0" 
+            :disabled="!formNova.prontuario || buscandoAghu"
+            @click="buscarPacienteAghu"
+          >
+            <MagnifyingGlassIcon class="h-4 w-4 text-slate-500" />
+            Buscar
+          </UiButton>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-left">
+          <!-- Campo Tipo -->
           <div>
             <label class="block text-sm font-medium text-slate-700">Tipo <span class="text-red-500">*</span></label>
             <select 
@@ -331,47 +383,8 @@
               <option v-for="t in tiposDisponiveis" :key="t" :value="t">{{ t }}</option>
             </select>
           </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Especialidade <span class="text-red-500">*</span></label>
-          <select v-model="formNova.especialidade" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
-            <option value="" disabled selected>Selecione a Especialidade</option>
-            <option value="BUCO (BUCOMAXILOFACIAL)">BUCO (BUCOMAXILOFACIAL)</option>
-            <option value="CARDÍACA">CARDÍACA</option>
-            <option value="CCP (CABEÇA E PESCOÇO)">CCP (CABEÇA E PESCOÇO)</option>
-            <option value="CIPE (PEDIÁTRICA)">CIPE (PEDIÁTRICA)</option>
-            <option value="ENDOSCOPIA">ENDOSCOPIA</option>
-            <option value="GERAL">GERAL</option>
-            <option value="GINECOLOGIA">GINECOLOGIA</option>
-            <option value="HISTEROSCOPIA">HISTEROSCOPIA</option>
-            <option value="NEUROLOGIA">NEUROLOGIA</option>
-            <option value="OFTALMOLOGIA">OFTALMOLOGIA</option>
-            <option value="ONCOLOGIA">ONCOLOGIA</option>
-            <option value="ONCOMASTO (MASTOLOGIA)">ONCOMASTO (MASTOLOGIA)</option>
-            <option value="ORL (OTORRINOLARINGOLOGIA)">ORL (OTORRINOLARINGOLOGIA)</option>
-            <option value="ORTOPEDIA">ORTOPEDIA</option>
-            <option value="PLÁSTICA">PLÁSTICA</option>
-            <option value="PROCTOLOGIA">PROCTOLOGIA</option>
-            <option value="TORÁCICA">TORÁCICA</option>
-            <option value="TRANS">TRANS</option>
-            <option value="UROLOGIA">UROLOGIA</option>
-            <option value="VASCULAR">VASCULAR</option>
-          </select>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Data Cirurgia <span class="text-red-500">*</span></label>
-            <input v-model="formNova.data_cirurgia" type="date" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Turno <span class="text-red-500">*</span></label>
-            <select v-model="formNova.turno" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
-              <option value="" disabled selected>Selecione o Turno</option>
-              <option value="Manhã">Manhã</option>
-              <option value="Tarde">Tarde</option>
-              <option value="Noite">Noite</option>
-            </select>
-          </div>
+
+          <!-- Campo Prioridade -->
           <div>
             <label class="block text-sm font-medium text-slate-700">Prioridade</label>
             <select v-model="formNova.prioridade" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
@@ -384,11 +397,54 @@
             </select>
           </div>
         </div>
+
+        <!-- Card de dados do paciente (AGHU) - Somente Leitura -->
+        <div v-if="buscandoAghu" class="rounded-xl border border-slate-100 bg-slate-50/50 p-6 flex flex-col items-center justify-center space-y-2">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+          <span class="text-xs text-slate-500 font-medium">Buscando paciente no AGHU...</span>
+        </div>
+
+        <div v-else-if="erroAghu" class="rounded-xl border border-rose-100 bg-rose-50/50 p-4 text-sm text-rose-600 flex items-start gap-2.5 text-left">
+          <ExclamationTriangleIcon class="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+          <div class="space-y-1">
+            <p class="font-semibold text-rose-700">Atenção</p>
+            <p class="text-xs text-rose-600/90">{{ erroAghu }}</p>
+          </div>
+        </div>
+
+        <div v-else-if="dadosAghu" class="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-3.5 text-left transition duration-300">
+          <div class="border-b border-slate-200/60 pb-2.5">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Paciente localizado</span>
+            <h4 class="text-base font-bold text-slate-800 leading-snug">{{ dadosAghu.nome }}</h4>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">{{ dadosAghu.idade }} anos • Prontuário {{ dadosAghu.prontuario }}</p>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+            <div class="space-y-0.5">
+              <span class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Especialidade</span>
+              <p class="font-semibold text-slate-700">{{ dadosAghu.especialidade }}</p>
+            </div>
+            <div class="space-y-0.5">
+              <span class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Procedimento Principal</span>
+              <p class="font-semibold text-slate-700 truncate" :title="dadosAghu.procedimento">{{ dadosAghu.procedimento || 'Não especificado' }}</p>
+            </div>
+            <div class="space-y-0.5">
+              <span class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Data e Hora da Cirurgia</span>
+              <p class="font-semibold text-slate-700">
+                {{ formatarDataBR(dadosAghu.data_cirurgia) }} às {{ dadosAghu.hora_cirurgia || '--:--' }}
+              </p>
+            </div>
+            <div class="space-y-0.5">
+              <span class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Turno Mapeado</span>
+              <p class="font-semibold text-slate-700">{{ dadosAghu.turno }}</p>
+            </div>
+          </div>
+        </div>
       </div>
       <template #footer>
         <UiButton variant="outline" @click="fecharModalNova">Cancelar</UiButton>
         <UiButton 
-          :disabled="submetendoNova || !formNova.prontuario || !formNova.especialidade || !formNova.tipo || !formNova.idade || !formNova.data_cirurgia || !formNova.turno" 
+          :disabled="submetendoNova || !formNova.prontuario || !formNova.tipo || buscandoAghu || (!isEditing && !dadosAghu)" 
           @click="salvarNova"
         >
           {{ submetendoNova ? 'Salvando...' : 'Salvar' }}
@@ -419,7 +475,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon, CheckIcon, ClockIcon, CheckCircleIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon, CheckIcon, ClockIcon, CheckCircleIcon, MagnifyingGlassIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiButton from '../components/ui/Button.vue';
 import Modal from '../components/Modal.vue';
@@ -433,12 +489,15 @@ type SolicitacaoStatus = 'Pendente' | 'Reservado' | 'Cancelada' | 'Concluída';
 type Solicitacao = {
   id: string;
   prontuario: string;
+  nome?: string;
   idade: number;
   especialidade: string;
+  procedimento?: string;
   tipo: string;
   status: SolicitacaoStatus;
   turno: string;
   data_cirurgia?: string;
+  hora_cirurgia?: string;
   prioridade?: string;
   destino?: string;
   dataHora: string;
@@ -453,6 +512,7 @@ const loading = ref(false);
 const loadingLeitos = ref(false);
 const submetendo = ref(false);
 const showModalReserva = ref(false);
+const isRemanejamento = ref(false);
 const solSelecionada = ref<Solicitacao | null>(null);
 const leitoEscolhido = ref<string | null>(null);
 const toast = useToast();
@@ -495,6 +555,19 @@ const formNova = ref({
   prioridade: ''
 });
 
+const dadosAghu = ref<{
+  prontuario: string;
+  nome: string;
+  idade: number;
+  especialidade: string;
+  procedimento: string;
+  data_cirurgia: string;
+  hora_cirurgia: string;
+  turno: string;
+} | null>(null);
+const buscandoAghu = ref(false);
+const erroAghu = ref('');
+
 const tiposDisponiveis = computed(() => {
   const perfil = authStore.user?.perfil || '';
   if (perfil.includes('COB')) return ['Obstetrico'];
@@ -533,7 +606,12 @@ const solicitacoesFiltradas = computed(() => {
     const turnoB = pesoTurno[b.turno] || 99;
     if (turnoA !== turnoB) return turnoA - turnoB;
 
-    // Nível 3: Prioridade (P1 < P2 < P3...)
+    // Nível 3: Horário de Início da Cirurgia (crescente)
+    const horaA = a.hora_cirurgia || '99:99';
+    const horaB = b.hora_cirurgia || '99:99';
+    if (horaA !== horaB) return horaA.localeCompare(horaB);
+
+    // Nível 4: Prioridade (P1 < P2 < P3...)
     const getPrioridadeValor = (p: string | undefined) => {
       if (!p || !p.startsWith('P')) return 999;
       const num = parseInt(p.substring(1));
@@ -543,7 +621,7 @@ const solicitacoesFiltradas = computed(() => {
     const prioB = getPrioridadeValor(b.prioridade);
     if (prioA !== prioB) return prioA - prioB;
 
-    // Nível 4: Data da Solicitação (Desempate por ordem de chegada)
+    // Nível 5: Data da Solicitação (Desempate por ordem de chegada)
     return a.dataHora.localeCompare(b.dataHora);
   });
 });
@@ -580,6 +658,15 @@ async function carregarLeitosDisponiveis() {
 function abrirModalReserva(sol: Solicitacao) {
   solSelecionada.value = sol;
   leitoEscolhido.value = null;
+  isRemanejamento.value = false;
+  showModalReserva.value = true;
+  carregarLeitosDisponiveis();
+}
+
+function abrirModalMudarLeito(sol: Solicitacao) {
+  solSelecionada.value = sol;
+  leitoEscolhido.value = null;
+  isRemanejamento.value = true;
   showModalReserva.value = true;
   carregarLeitosDisponiveis();
 }
@@ -588,15 +675,22 @@ async function confirmarReserva() {
   if (!solSelecionada.value || !leitoEscolhido.value) return;
   submetendo.value = true;
   try {
-    await api.post(`/api/solicitacoes/${solSelecionada.value.id}/reservar`, {
-      leito_id: leitoEscolhido.value
-    });
-    toast.success('Leito reservado com sucesso!');
+    if (isRemanejamento.value) {
+      await api.post(`/api/solicitacoes/${solSelecionada.value.id}/remanejar-reserva`, {
+        leito_id: leitoEscolhido.value
+      });
+      toast.success('Reserva remanejada com sucesso!');
+    } else {
+      await api.post(`/api/solicitacoes/${solSelecionada.value.id}/reservar`, {
+        leito_id: leitoEscolhido.value
+      });
+      toast.success('Leito reservado com sucesso!');
+    }
     showModalReserva.value = false;
     carregarSolicitacoes();
-  } catch (error) {
-    console.error('Erro ao reservar leito:', error);
-    toast.error('Erro ao reservar leito.');
+  } catch (error: any) {
+    console.error('Erro ao salvar reserva:', error);
+    toast.error(error.response?.data?.detail || 'Erro ao salvar reserva.');
   } finally {
     submetendo.value = false;
   }
@@ -647,6 +741,34 @@ async function confirmarCancelamentoReserva() {
   }
 }
 
+async function buscarPacienteAghu() {
+  const pront = formNova.value.prontuario.trim();
+  if (!pront) {
+    dadosAghu.value = null;
+    erroAghu.value = '';
+    return;
+  }
+  
+  buscandoAghu.value = true;
+  erroAghu.value = '';
+  try {
+    const { data } = await api.get(`/api/solicitacoes/consultar-aghu/${pront}`);
+    dadosAghu.value = data;
+    // Preenche no formNova para que a validação/envio ocorra corretamente
+    formNova.value.idade = data.idade;
+    formNova.value.especialidade = data.especialidade;
+    formNova.value.data_cirurgia = data.data_cirurgia;
+    formNova.value.turno = data.turno;
+  } catch (error: any) {
+    console.error('Erro ao buscar no AGHU:', error);
+    dadosAghu.value = null;
+    erroAghu.value = error.response?.data?.detail || 'Paciente ou cirurgia não encontrada no AGHU.';
+    toast.error(erroAghu.value);
+  } finally {
+    buscandoAghu.value = false;
+  }
+}
+
 function fecharModalNova() {
   showModalNova.value = false;
   isEditing.value = false;
@@ -659,6 +781,9 @@ function fecharModalNova() {
     turno: '',
     prioridade: ''
   };
+  dadosAghu.value = null;
+  erroAghu.value = '';
+  buscandoAghu.value = false;
 }
 
 function abrirModalEdicao(sol: Solicitacao) {
@@ -672,6 +797,16 @@ function abrirModalEdicao(sol: Solicitacao) {
     data_cirurgia: sol.data_cirurgia || '',
     turno: sol.turno,
     prioridade: sol.prioridade || ''
+  };
+  dadosAghu.value = {
+    prontuario: sol.prontuario,
+    nome: sol.nome || '',
+    idade: sol.idade,
+    especialidade: sol.especialidade,
+    procedimento: sol.procedimento || '',
+    data_cirurgia: sol.data_cirurgia || '',
+    hora_cirurgia: sol.hora_cirurgia || '',
+    turno: sol.turno
   };
   showModalNova.value = true;
 }

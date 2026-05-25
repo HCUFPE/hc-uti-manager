@@ -18,6 +18,15 @@ async def listar_solicitacoes(
     """Retorna todas as solicitações de leito ativas."""
     return await controller.listar_solicitacoes()
 
+@router.get("/consultar-aghu/{prontuario}", response_model=Dict[str, Any])
+async def consultar_aghu(
+    prontuario: str,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    current_user: dict = Depends(auth_handler.decode_token),
+):
+    """Consulta dados de cirurgia agendada no AGHU para o prontuário informado."""
+    return await controller.consultar_dados_aghu(prontuario)
+
 @router.post("")
 async def criar_solicitacao(
     payload: dict,
@@ -302,3 +311,32 @@ async def cancelar_liberacao(
         prontuario=str(solicitacao.prontuario)
     )
     return result
+
+@router.post("/{sol_id}/remanejar-reserva")
+async def remanejar_reserva(
+    sol_id: int,
+    payload: dict,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    historico: HistoricoProvider = Depends(get_historico_provider),
+    current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
+):
+    """Remaneja a reserva de uma solicitação para um novo leito."""
+    novo_leito_id = payload.get("leito_id")
+    if not novo_leito_id:
+        raise HTTPException(status_code=400, detail="O campo 'leito_id' é obrigatório.")
+        
+    result = await controller.remanejar_reserva(sol_id, novo_leito_id)
+    
+    prontuario = result.get("prontuario", "?")
+    leito_origem = result.get("leito_origem")
+    leito_destino = result.get("leito_destino")
+    
+    await historico.registrar(
+        operador=current_user.get("username", "Sistema"),
+        tipo="remanejamento_reserva",
+        acao="Remanejou reserva de leito",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) transferida do Leito {leito_origem} para o Leito {leito_destino}",
+        prontuario=str(prontuario)
+    )
+    return result
+

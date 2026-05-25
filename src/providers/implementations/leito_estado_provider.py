@@ -102,3 +102,49 @@ class LeitoEstadoProvider:
             await self.session.commit()
             return True
         return False
+
+    async def transferir_reserva(self, sol_id: int, novo_lto_id: str) -> Optional[str]:
+        """
+        Transfere a reserva associada a uma solicitação para um novo leito.
+        Retorna o ID do leito de origem (antigo) se a transferência ocorreu, ou None.
+        """
+        result_origem = await self.session.execute(
+            select(LeitoEstado).where(LeitoEstado.solicitacao_id == sol_id)
+        )
+        estado_origem = result_origem.scalar_one_or_none()
+        
+        if not estado_origem:
+            return None
+            
+        old_lto_id = estado_origem.lto_id
+        
+        # Obter os dados da reserva
+        prontuario = estado_origem.prontuario_proximo
+        idade = estado_origem.idade_proximo
+        especialidade = estado_origem.especialidade_proximo
+        
+        # Limpar leito original
+        estado_origem.prontuario_proximo = None
+        estado_origem.idade_proximo = None
+        estado_origem.especialidade_proximo = None
+        estado_origem.solicitacao_id = None
+        
+        # Buscar ou criar leito destino
+        result_destino = await self.session.execute(
+            select(LeitoEstado).where(LeitoEstado.lto_id == novo_lto_id)
+        )
+        estado_destino = result_destino.scalar_one_or_none()
+        
+        if not estado_destino:
+            estado_destino = LeitoEstado(lto_id=novo_lto_id)
+            self.session.add(estado_destino)
+            
+        # Atribuir dados ao leito destino
+        estado_destino.prontuario_proximo = prontuario
+        estado_destino.idade_proximo = idade
+        estado_destino.especialidade_proximo = especialidade
+        estado_destino.solicitacao_id = sol_id
+        
+        await self.session.commit()
+        return old_lto_id
+

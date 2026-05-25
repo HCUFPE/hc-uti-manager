@@ -11,12 +11,15 @@ class SolicitacaoLeito(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     prontuario = Column(String(50), nullable=False)
+    nome = Column(String(150), nullable=True) # Nome completo do paciente
     idade = Column(Integer, nullable=False)
     especialidade = Column(String(100), nullable=False)
+    procedimento = Column(String(250), nullable=True) # Descrição do procedimento principal
     tipo = Column(String(50), nullable=False) # Ex: Cirurgico, HEM, Obstetrico, UTI
     status = Column(String(50), default="Pendente") # Pendente, Reservado, Cancelada
     turno = Column(String(50), nullable=False) # Manha, Tarde, Noite
-    data_cirurgia = Column(String(20), nullable=True) # Data prevista
+    data_cirurgia = Column(String(20), nullable=True) # Data prevista (DD-MM-YYYY)
+    hora_cirurgia = Column(String(5), nullable=True) # Hora prevista de início (HH:MM)
     destino = Column(String(100), nullable=True) # Ex: Leito 05
     prioridade = Column(String(10), nullable=True) # P1, P2, P3, P4, P5
     perfil_solicitante = Column(String(50), nullable=True) # COB, BC, HEM, UTI, etc.
@@ -35,12 +38,15 @@ class SolicitacaoLeito(Base):
         return {
             "id": self.id,
             "prontuario": self.prontuario,
+            "nome": self.nome,
             "idade": self.idade,
             "especialidade": self.especialidade,
+            "procedimento": self.procedimento,
             "tipo": self.tipo,
             "status": self.status,
             "turno": self.turno,
             "data_cirurgia": self.data_cirurgia,
+            "hora_cirurgia": self.hora_cirurgia,
             "prioridade": self.prioridade,
             "destino": self.destino,
             "perfil_solicitante": self.perfil_solicitante,
