@@ -416,7 +416,16 @@
           <div class="border-b border-slate-200/60 pb-2.5">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Paciente localizado</span>
             <h4 class="text-base font-bold text-slate-800 leading-snug">{{ dadosAghu.nome }}</h4>
-            <p class="text-xs text-slate-500 font-medium mt-0.5">{{ dadosAghu.idade }} anos • Prontuário {{ dadosAghu.prontuario }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">
+              <template v-if="dadosAghu.data_nascimento">
+                Dt Nasc.: {{ dadosAghu.data_nascimento }} ({{ dadosAghu.idade }} ANOS)
+              </template>
+              <template v-else>
+                {{ dadosAghu.idade }} anos
+              </template>
+              • Prontuário {{ dadosAghu.prontuario }}
+            </p>
+
           </div>
           
           <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
@@ -570,6 +579,7 @@ const dadosAghu = ref<{
   prontuario: string;
   nome: string;
   idade: number;
+  data_nascimento?: string;
   especialidade: string;
   procedimento: string;
   data_cirurgia: string;

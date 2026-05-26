@@ -563,10 +563,12 @@ class SolicitacaoLeitoController:
             "prontuario": str(prontuario),
             "nome": nome,
             "idade": idade,
+            "data_nascimento": dt_nascimento_str.replace("-", "/") if dt_nascimento_str else None,
             "especialidade": especialidade,
             "procedimento": procedimento,
             "data_cirurgia": data_cirurgia_db,
             "hora_cirurgia": hora_inicio,
             "turno": turno
         }
+
 
