@@ -108,8 +108,8 @@ const activeItems = computed(() => {
     },
   ];
 
-  // Apenas coordenação e admin vêem indicadores e histórico
-  if (authStore.isCoordination) {
+  // Apenas coordenação e admins vêem indicadores e histórico
+  if (authStore.isCoordination || authStore.isAnyAdmin) {
     items.push(
       {
         label: 'Indicadores',

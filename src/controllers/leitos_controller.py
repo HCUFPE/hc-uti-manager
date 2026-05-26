@@ -9,11 +9,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 class LeitosController:
-    def __init__(self, census_provider, estado_provider, alta_provider=None, solicitacao_provider=None):
+    def __init__(self, census_provider, estado_provider, alta_provider=None, solicitacao_provider=None, historico_provider=None):
         self.census_provider = census_provider
         self.estado_provider = estado_provider
         self.alta_provider = alta_provider
         self.solicitacao_provider = solicitacao_provider
+        self.historico_provider = historico_provider
 
     def _calcular_idade(self, data_nasc) -> int | None:
         if not data_nasc:
@@ -101,10 +102,37 @@ class LeitosController:
             # Altas
             if lto_id in altas_map:
                 alta_obj = altas_map[lto_id]
-                leito['alta_solicitada'] = True
-                leito['alta_info'] = alta_obj.to_dict()
-                leito['leito_destino'] = alta_obj.leito_destino
-                leito['destino_disponivel'] = bool(alta_obj.destino_disponivel)
+                prontuario_censo = leito.get('prontuario_atual')
+                # Normaliza prontuários para comparação robusta
+                p_censo_norm = str(prontuario_censo).strip() if prontuario_censo else ""
+                p_alta_norm = str(alta_obj.prontuario).strip() if alta_obj.prontuario else ""
+                
+                # Se o prontuário no censo não for o mesmo da alta solicitada, ela foi concluída!
+                if p_censo_norm != p_alta_norm:
+                    try:
+                        await self.alta_provider.atualizar(alta_obj.id, {"status": "concluida"})
+                        await self.estado_provider.salvar_alta(lto_id, False)
+                        
+                        if self.historico_provider:
+                            await self.historico_provider.registrar(
+                                operador="Sistema (Censo)",
+                                tipo="conclusao_alta",
+                                acao=f"Alta concluída no leito {lto_id}",
+                                detalhes=f"Paciente desocupou o leito {lto_id}. Alta #{alta_obj.id} concluída automaticamente via censo.",
+                                prontuario=alta_obj.prontuario
+                            )
+                        # Remove do leito na resposta atual
+                        leito['alta_solicitada'] = False
+                        leito['alta_info'] = None
+                        leito['leito_destino'] = None
+                        leito['destino_disponivel'] = False
+                    except Exception as e:
+                        logger.error(f"Erro ao concluir alta de forma automática no leito {lto_id}: {e}")
+                else:
+                    leito['alta_solicitada'] = True
+                    leito['alta_info'] = alta_obj.to_dict()
+                    leito['leito_destino'] = alta_obj.leito_destino
+                    leito['destino_disponivel'] = bool(alta_obj.destino_disponivel)
             else:
                 leito['leito_destino'] = None
                 leito['destino_disponivel'] = False
@@ -128,7 +156,17 @@ class LeitosController:
                         
                         sol_id = getattr(est, 'solicitacao_id', None)
                         if sol_id and self.solicitacao_provider:
-                            await self.solicitacao_provider.atualizar(sol_id, {"status": "Concluída"})
+                            sol = await self.solicitacao_provider.get_por_id(sol_id)
+                            if sol and sol.status != "Concluída":
+                                await self.solicitacao_provider.atualizar(sol_id, {"status": "Concluída"})
+                                if self.historico_provider:
+                                    await self.historico_provider.registrar(
+                                        operador="Sistema (Censo)",
+                                        tipo="conclusao",
+                                        acao=f"Admissão concluída no leito {lto_aghu_real}",
+                                        detalhes=f"Paciente ocupou o leito {lto_aghu_real}. Solicitação #{sol_id} concluída automaticamente via censo.",
+                                        prontuario=prontuario_reserva
+                                    )
                         
                         leito['prontuario_proximo'] = None
                         leito['conflito_reserva'] = False

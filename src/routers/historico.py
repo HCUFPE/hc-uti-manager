@@ -4,13 +4,17 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, Query
 
 from auth.auth import auth_handler
-from dependencies import get_historico_provider
+from auth.roles import Role
+from dependencies import get_historico_provider, check_role
 from providers.implementations.historico_provider import HistoricoProvider
 
 router = APIRouter(
     prefix="/api/historico",
     tags=["Histórico"],
-    dependencies=[Depends(auth_handler.decode_token)],
+    dependencies=[
+        Depends(auth_handler.decode_token),
+        Depends(check_role([Role.ADMIN, Role.UTI_ADMIN, Role.NIR_ADMIN, Role.COB_ADMIN, Role.BC_ADMIN, Role.HEM_ADMIN]))
+    ],
 )
 
 

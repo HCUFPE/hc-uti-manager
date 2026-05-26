@@ -1,24 +1,57 @@
 <template>
   <section class="space-y-6">
-    <div class="flex items-center justify-between">
+    <!-- Título e Filtro de Período -->
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <h2 class="text-3xl font-bold text-slate-900">Indicadores Operacionais</h2>
+      
+      <!-- Painel de Filtros -->
+      <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div class="flex items-center gap-2">
+          <label for="data-inicio" class="text-xs font-semibold text-slate-500">De:</label>
+          <input
+            id="data-inicio"
+            type="date"
+            v-model="dataInicio"
+            class="rounded-lg border border-slate-300 px-2 py-1 text-sm text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="data-fim" class="text-xs font-semibold text-slate-500">Até:</label>
+          <input
+            id="data-fim"
+            type="date"
+            v-model="dataFim"
+            class="rounded-lg border border-slate-300 px-2 py-1 text-sm text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none"
+          />
+        </div>
+        <div class="flex gap-2">
+          <UiButton size="sm" class="h-8 text-xs" @click="fetchResumo">Filtrar</UiButton>
+          <UiButton size="sm" variant="outline" class="h-8 text-xs" @click="limparFiltros">Limpar</UiButton>
+        </div>
+      </div>
     </div>
 
+    <!-- Indicador de Carregamento -->
     <div v-if="loading" class="flex justify-center py-16">
       <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
     </div>
+
+    <!-- Mensagem de Erro -->
     <div v-else-if="erro" class="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-red-700">
       {{ erro }}
     </div>
+
+    <!-- Dashboard Principal -->
     <div v-else class="space-y-6">
+      <!-- 4 Cards Principais de Visão Geral -->
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <article
           v-for="ind in indicadoresCalculados"
           :key="ind.titulo"
-          class="rounded-xl border border-slate-200 bg-white shadow-sm"
+          class="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow transition-shadow"
         >
           <header class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <p class="text-sm font-medium text-slate-600">{{ ind.titulo }}</p>
+            <p class="text-sm font-semibold text-slate-600">{{ ind.titulo }}</p>
             <div class="rounded-lg bg-blue-50 p-2">
               <component :is="ind.icone" class="h-5 w-5 text-blue-600" />
             </div>
@@ -37,19 +70,155 @@
         </article>
       </div>
 
+      <!-- Nova Seção: Tempos Médios de Processo e Fluxo (Gargalos) -->
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Solicitação a Ocupação</p>
+          <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_solicitacao_ocupacao_horas ?? 0 }}h</p>
+          <p class="mt-1 text-xs text-slate-500">Espera média da criação da vaga até a entrada física no leito.</p>
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Recepção Pós-Cirúrgico (BC)</p>
+          <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_recepcao_bc_minutos ?? 0 }} min</p>
+          <p class="mt-1 text-xs text-slate-500">Intervalo médio entre o fim cirúrgico e a entrada na UTI.</p>
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Acomodação de Alta (NIR)</p>
+          <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_acomodacao_alta_horas ?? 0 }}h</p>
+          <p class="mt-1 text-xs text-slate-500">Tempo desde a solicitação de alta até indicação de destino pós-UTI.</p>
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Liberação de Leito de Acomodação</p>
+          <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_liberacao_leito_horas ?? 0 }}h</p>
+          <p class="mt-1 text-xs text-slate-500">Tempo desde a indicação do destino até a efetiva saída da UTI.</p>
+        </article>
+      </div>
+
+      <!-- Nova Seção: Taxas Operacionais, Horários e Relações de Volumes -->
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Taxas de Fluxo e Horário de Reserva -->
+        <div class="space-y-6">
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-slate-900 border-b pb-2">Métricas de Sucesso e Horários</h3>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs font-semibold text-slate-400">Taxa de Atendimento</p>
+                <p class="text-2xl font-bold text-emerald-600">{{ detalhado.taxas?.atendimento ?? 0 }}%</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-slate-400">Taxa de Cancelamento</p>
+                <p class="text-2xl font-bold text-rose-600">{{ detalhado.taxas?.cancelamento ?? 0 }}%</p>
+              </div>
+            </div>
+
+            <div class="border-t pt-3 space-y-2">
+              <p class="text-xs font-semibold text-slate-500">Horário Médio de Reserva de Leito:</p>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-600 font-medium">Turno Manhã:</span>
+                <span class="font-bold text-slate-800">{{ detalhado.horario_reserva_turno?.manha ?? 'N/D' }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-600 font-medium">Turno Tarde:</span>
+                <span class="font-bold text-slate-800">{{ detalhado.horario_reserva_turno?.tarde ?? 'N/D' }}</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Tabela Comparativa de Demandantes (Admissões vs Ocupação) -->
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Métricas por Demandante (Setor)</h3>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-slate-400 border-b text-left">
+                  <th class="pb-2 font-semibold">Demandante</th>
+                  <th class="pb-2 font-semibold text-center">Int. Semanal</th>
+                  <th class="pb-2 font-semibold text-right">Ocupação Média</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="dem in ['BC', 'HEM', 'COB', 'CLI']" :key="dem" class="text-slate-700">
+                  <td class="py-2 font-medium">{{ dem === 'BC' ? 'Bloco Cirúrgico (BC)' : dem === 'HEM' ? 'Hemodinâmica (HEM)' : dem === 'COB' ? 'Obstetrícia (COB)' : 'Clínico / Outros (CLI)' }}</td>
+                  <td class="py-2 text-center font-semibold">{{ detalhado.admissoes_semanais?.demandantes?.[dem] ?? 0 }}</td>
+                  <td class="py-2 text-right font-semibold text-blue-600">{{ detalhado.tempo_ocupacao?.demandantes_horas?.[dem] ?? 0 }}h</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>
+
+        <!-- Tabela Detalhada de Volumes no Período -->
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+          <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Resumo Volumétrico do Período</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-700">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 font-semibold border-b">
+                  <th class="px-4 py-3">Métrica / Ação Operacional</th>
+                  <th class="px-4 py-3 text-center">Volume Total</th>
+                  <th class="px-4 py-3 text-right">Proporção / Relação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr>
+                  <td class="px-4 py-3 font-medium">Solicitações Criadas</td>
+                  <td class="px-4 py-3 text-center font-bold">{{ detalhado.volumes?.solicitacoes ?? 0 }}</td>
+                  <td class="px-4 py-3 text-right text-slate-500">-</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-medium">Solicitações Reservadas pela UTI</td>
+                  <td class="px-4 py-3 text-center font-bold text-blue-600">{{ detalhado.volumes?.reservadas ?? 0 }}</td>
+                  <td class="px-4 py-3 text-right text-slate-500">-</td>
+                </tr>
+                <tr class="bg-emerald-50/20">
+                  <td class="px-4 py-3 font-medium text-emerald-900">Solicitações Concluídas (Pacientes Admitidos)</td>
+                  <td class="px-4 py-3 text-center font-bold text-emerald-700">{{ detalhado.volumes?.concluidas ?? 0 }}</td>
+                  <td class="px-4 py-3 text-right font-bold text-emerald-600">{{ detalhado.volumes?.percentual_concluidas_por_solicitadas ?? 0 }}% das solicitadas</td>
+                </tr>
+                <tr class="bg-rose-50/20">
+                  <td class="px-4 py-3 font-medium text-rose-900">Solicitações Canceladas (Fila / Pendentes)</td>
+                  <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_solicitacoes ?? 0 }}</td>
+                  <td class="px-4 py-3 text-right font-bold text-rose-600">{{ detalhado.volumes?.percentual_canceladas_por_solicitadas ?? 0 }}% das solicitadas</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-medium">Reservas Canceladas pela UTI (Desfeitas)</td>
+                  <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_reservas ?? 0 }}</td>
+                  <td class="px-4 py-3 text-right text-slate-500">-</td>
+                </tr>
+                <tr class="border-t-2">
+                  <td class="px-4 py-3 font-medium">Altas Solicitadas pela UTI</td>
+                  <td class="px-4 py-3 text-center font-bold text-indigo-700">{{ detalhado.volumes?.altas ?? 0 }}</td>
+                  <td class="px-4 py-3 text-right text-slate-500">-</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-medium">Altas Concluídas (Transferências Físicas)</td>
+                  <td class="px-4 py-3 text-center font-bold text-indigo-900">{{ detalhado.volumes?.altas_concluidas ?? 0 }}</td>
+                  <td class="px-4 py-3 text-right text-slate-500">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+
+      <!-- Gráfico de Ocupação Semanal -->
       <article class="rounded-xl border border-slate-200 bg-white shadow-sm">
         <header class="border-b border-slate-100 px-5 py-4">
-          <h3 class="text-lg font-semibold text-slate-900">Grafico de Ocupacao Semanal</h3>
+          <h3 class="text-lg font-semibold text-slate-900">Gráfico de Ocupação Semanal</h3>
         </header>
         <div class="p-5 h-80">
           <Line v-if="graficosData.ocupacao" :data="graficosData.ocupacao" :options="lineOptions" />
         </div>
       </article>
 
+      <!-- Gráficos de Especialidades e Tipos de Solicitação -->
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <article class="rounded-xl border border-slate-200 bg-white shadow-sm">
           <header class="border-b border-slate-100 px-5 py-4">
-            <h3 class="text-lg font-semibold text-slate-900">Distribuicao por Especialidade</h3>
+            <h3 class="text-lg font-semibold text-slate-900">Distribuição por Especialidade (Pacientes Internados)</h3>
           </header>
           <div class="p-5 h-80 flex justify-center">
             <Pie v-if="graficosData.especialidade" :data="graficosData.especialidade" :options="pieOptions" />
@@ -58,7 +227,7 @@
 
         <article class="rounded-xl border border-slate-200 bg-white shadow-sm">
           <header class="border-b border-slate-100 px-5 py-4">
-            <h3 class="text-lg font-semibold text-slate-900">Solicitacoes de Vaga por Tipo</h3>
+            <h3 class="text-lg font-semibold text-slate-900">Solicitações de Vaga por Tipo</h3>
           </header>
           <div class="p-5 h-80">
             <Bar v-if="graficosData.espera" :data="graficosData.espera" :options="barOptions" />
@@ -78,6 +247,7 @@ import {
   ArrowRightOnRectangleIcon,
 } from '@heroicons/vue/24/outline';
 import api from '../services/api';
+import UiButton from '../components/ui/Button.vue';
 
 import {
   Chart as ChartJS,
@@ -109,14 +279,43 @@ ChartJS.register(
 
 const resumo = ref<Record<string, any>>({});
 const graficosRaw = ref<Record<string, any>>({});
+const detalhado = ref<Record<string, any>>({});
 const loading = ref(true);
 const erro = ref<string | null>(null);
 
+// Filtros de data
+const dataInicio = ref('');
+const dataFim = ref('');
+
+const initDates = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  
+  // Primeiro dia do mês atual
+  const firstDay = new Date(y, m, 1);
+  const offset1 = firstDay.getTimezoneOffset();
+  const localFirstDay = new Date(firstDay.getTime() - (offset1 * 60 * 1000));
+  dataInicio.value = localFirstDay.toISOString().split('T')[0];
+
+  // Hoje
+  const offset2 = now.getTimezoneOffset();
+  const localNow = new Date(now.getTime() - (offset2 * 60 * 1000));
+  dataFim.value = localNow.toISOString().split('T')[0];
+};
+
 const fetchResumo = async () => {
+  loading.value = true;
+  erro.value = null;
   try {
-    const { data } = await api.get('/api/indicadores/resumo');
+    const params: Record<string, string> = {};
+    if (dataInicio.value) params.data_inicio = dataInicio.value;
+    if (dataFim.value) params.data_fim = dataFim.value;
+
+    const { data } = await api.get('/api/indicadores/resumo', { params });
     resumo.value = data.resumo;
     graficosRaw.value = data.graficos;
+    detalhado.value = data.detalhado || {};
   } catch (err) {
     erro.value = 'Falha ao carregar os indicadores operacionais.';
     console.error(err);
@@ -125,7 +324,15 @@ const fetchResumo = async () => {
   }
 };
 
-onMounted(fetchResumo);
+const limparFiltros = () => {
+  initDates();
+  fetchResumo();
+};
+
+onMounted(() => {
+  initDates();
+  fetchResumo();
+});
 
 const iconMap: Record<string, any> = {
   ocupacao_atual: UsersIcon,
@@ -135,10 +342,10 @@ const iconMap: Record<string, any> = {
 };
 
 const titleMap: Record<string, string> = {
-  ocupacao_atual: 'Taxa de Ocupacao',
-  tempo_permanencia: 'Tempo Medio de Permanencia',
-  solicitacoes_vaga: 'Solicitacoes de Vaga',
-  altas_realizadas: 'Altas Direcionadas',
+  ocupacao_atual: 'Taxa de Ocupação',
+  tempo_permanencia: 'Tempo de Permanência',
+  solicitacoes_vaga: 'Solicitações de Vaga',
+  altas_realizadas: 'Altas Solicitadas',
 };
 
 const indicadoresCalculados = computed(() => {
@@ -162,34 +369,34 @@ const graficosData = computed(() => {
 
   return {
     ocupacao: {
-      labels: graficosRaw.value.ocupacao_semanal.labels,
+      labels: graficosRaw.value.ocupacao_semanal?.labels || [],
       datasets: [
         {
           label: 'Taxa de Ocupação (%)',
           backgroundColor: '#eff6ff',
           borderColor: '#3b82f6',
-          data: graficosRaw.value.ocupacao_semanal.data,
+          data: graficosRaw.value.ocupacao_semanal?.data || [],
           fill: true,
           tension: 0.3
         }
       ]
     },
     especialidade: {
-      labels: graficosRaw.value.distribuicao_especialidade.labels,
+      labels: graficosRaw.value.distribuicao_especialidade?.labels || [],
       datasets: [
         {
           backgroundColor: bgColors,
-          data: graficosRaw.value.distribuicao_especialidade.data
+          data: graficosRaw.value.distribuicao_especialidade?.data || []
         }
       ]
     },
     espera: {
-      labels: graficosRaw.value.tempo_espera.labels,
+      labels: graficosRaw.value.tempo_espera?.labels || [],
       datasets: [
         {
           label: 'Volume de Solicitações',
           backgroundColor: '#3b82f6',
-          data: graficosRaw.value.tempo_espera.data
+          data: graficosRaw.value.tempo_espera?.data || []
         }
       ]
     }

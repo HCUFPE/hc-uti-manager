@@ -1,14 +1,4 @@
-# bi-dashboard Specification
-
-## Purpose
-TBD - created by archiving change setup-openspec-docs. Update Purpose after archive.
-## Requirements
-### Requirement: Integração com Metabase
-O sistema MUST apresentar painéis gerenciais e analíticos usando componentes do Metabase.
-
-#### Scenario: Visualização de Dashboards
-- **WHEN** o usuário navega para a seção de relatórios
-- **THEN** o sistema carrega o painel de BI correspondente através de integração em iframe/API
+## ADDED Requirements
 
 ### Requirement: Acesso ao Dashboard de Indicadores e Histórico para Perfis Admin
 O sistema MUST permitir que todos os usuários com perfil de administrador setorial (`*-Admin`, ou seja, `UTI-Admin`, `NIR-Admin`, `COB-Admin`, `BC-Admin` e `HEM-Admin`) e administradores do sistema (`Administrador` ou `admin`) acessem as rotas de API e as telas de interface correspondentes ao Histórico de Ações e Indicadores.
@@ -23,4 +13,3 @@ A tela de Indicadores MUST apresentar campos de seleção de período (data de i
 #### Scenario: Usuário seleciona período de datas
 - **WHEN** o usuário define uma data de início e fim no filtro e clica em aplicar
 - **THEN** a tela recarrega os dados de indicadores com base no intervalo de datas selecionado
-

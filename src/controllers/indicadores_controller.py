@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import HTTPException
 from providers.implementations.indicadores_provider import IndicadoresProvider
 
@@ -10,10 +10,10 @@ class IndicadoresController:
     def __init__(self, indicadores_provider: IndicadoresProvider):
         self.indicadores_provider = indicadores_provider
 
-    async def obter_resumo(self) -> Dict[str, Any]:
+    async def obter_resumo(self, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> Dict[str, Any]:
         """Retorna o JSON consolidado das métricas de ocupação e fluxo."""
         try:
-            dados = await self.indicadores_provider.get_indicadores_gerais()
+            dados = await self.indicadores_provider.get_indicadores_gerais(data_inicio, data_fim)
             return dados
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Erro ao calcular indicadores: {str(e)}")

@@ -58,20 +58,6 @@ def get_solicitacao_leito_provider(
 ) -> SolicitacaoLeitoProvider:
     return SolicitacaoLeitoProvider(session=session)
 
-def get_leito_controller(
-    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
-    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
-    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
-    solicitacao_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider)
-) -> LeitosController:
-    """
-    Constrói o controller injetando as três fontes de dados:
-    - census_provider: dados em tempo real do AGHU (PostgreSQL)
-    - estado_provider: estado local persistido (SQLite) - Reservas
-    - alta_provider: solicitações de alta ricas (SQLite)
-    """
-    return LeitosController(census_provider, estado_provider, alta_provider, solicitacao_provider)
-
 # --- HISTORICO --------------------------------------------------
 
 def get_historico_provider(
@@ -79,6 +65,30 @@ def get_historico_provider(
 ) -> HistoricoProvider:
     """Provedor para registro e consulta do histórico de ações."""
     return HistoricoProvider(session=session)
+
+# --- LEITOS CONTROLLER ------------------------------------------
+
+def get_leito_controller(
+    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
+    estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
+    alta_provider: SolicitacaoAltaProvider = Depends(get_solicitacao_alta_provider),
+    solicitacao_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
+    historico_provider: HistoricoProvider = Depends(get_historico_provider)
+) -> LeitosController:
+    """
+    Constrói o controller injetando as quatro fontes de dados:
+    - census_provider: dados em tempo real do AGHU (PostgreSQL)
+    - estado_provider: estado local persistido (SQLite) - Reservas
+    - alta_provider: solicitações de alta ricas (SQLite)
+    - historico_provider: provedor do histórico de ações (SQLite)
+    """
+    return LeitosController(
+        census_provider=census_provider,
+        estado_provider=estado_provider,
+        alta_provider=alta_provider,
+        solicitacao_provider=solicitacao_provider,
+        historico_provider=historico_provider
+    )
 
 # --- ALTAS --------------------------------------------------------------
 
