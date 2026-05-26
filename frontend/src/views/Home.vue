@@ -89,13 +89,23 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Necessidades Especiais</label>
-          <textarea
-            v-model="formAlta.necessidadesEspeciais"
-            rows="4"
-            placeholder="Ex: Oxigênio portatil, Maca reforçada, Isolamento de contato..."
-            class="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-          />
+          <label class="block text-sm font-medium text-slate-700 mb-3">Necessidades Especiais</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <label
+              v-for="opcao in OPCOES_NECESSIDADES"
+              :key="opcao"
+              class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-200/50 cursor-pointer transition-all select-none"
+            >
+              <input
+                type="checkbox"
+                :value="opcao"
+                v-model="selectedNecessidades"
+                @change="onNecessidadeChange(opcao)"
+                class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-slate-700">{{ opcao }}</span>
+            </label>
+          </div>
         </div>
       </div>
       
@@ -334,6 +344,26 @@ const dotColor = (valor: StatusFilter) => {
 const showModalAlta = ref(false);
 const leitoSelecionado = ref<Leito | null>(null);
 const formAlta = ref({ necessidadesEspeciais: '' });
+const selectedNecessidades = ref<string[]>([]);
+
+const OPCOES_NECESSIDADES = [
+  'Isolamento de contato',
+  'Isolamento respiratório',
+  'Em uso de O2',
+  'Necessidade de aspiração',
+  'Necessidade de ventilador no leito',
+  'Nenhum'
+];
+
+const onNecessidadeChange = (opcao: string) => {
+  if (opcao === 'Nenhum') {
+    if (selectedNecessidades.value.includes('Nenhum')) {
+      selectedNecessidades.value = ['Nenhum'];
+    }
+  } else {
+    selectedNecessidades.value = selectedNecessidades.value.filter(n => n !== 'Nenhum');
+  }
+};
 
 const showModalCancelAlta = ref(false);
 const motivoCancelAlta = ref('');
@@ -358,11 +388,20 @@ const MOTIVOS_CANCELAMENTO_RESERVA = [
 const handleSolicitarAlta = (leito: Leito) => {
   leitoSelecionado.value = leito;
   formAlta.value.necessidadesEspeciais = '';
+  selectedNecessidades.value = ['Nenhum']; // Inicia com Nenhum selecionado por padrão
   showModalAlta.value = true;
 };
 
 const confirmarSolicitacaoAlta = async () => {
   if (!leitoSelecionado.value) return;
+  
+  // Serializa a lista de necessidades selecionadas
+  const selecionadas = selectedNecessidades.value.filter(n => n !== 'Nenhum');
+  if (selecionadas.length === 0) {
+    formAlta.value.necessidadesEspeciais = 'Nenhum';
+  } else {
+    formAlta.value.necessidadesEspeciais = selecionadas.join(', ');
+  }
   
   try {
     await api.post(`/api/altas/${leitoSelecionado.value.leitoNumero}`, formAlta.value);
