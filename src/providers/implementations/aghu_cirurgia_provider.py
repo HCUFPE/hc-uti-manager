@@ -42,8 +42,11 @@ class AghuCirurgiaProvider:
             Optional[Dict[str, Any]]: Dados da cirurgia mapeados em dicionário, ou None.
         """
         query_text = get_sql_query('obter_cirurgia_aghu.sql')
-        result = await self.session.execute(text(query_text), {"prontuario": prontuario})
+        # Converter prontuário para int se for numérico, pois a coluna no AGHU é do tipo INTEGER
+        prontuario_param = int(prontuario.strip()) if prontuario.strip().isdigit() else prontuario
+        result = await self.session.execute(text(query_text), {"prontuario": prontuario_param})
         row = result.mappings().first()
         if not row:
             return None
         return dict(row)
+
