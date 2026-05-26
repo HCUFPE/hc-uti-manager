@@ -141,7 +141,7 @@ class SolicitacaoLeitoController:
         
         return {"message": "Solicitação atualizada."}
 
-    async def editar_solicitacao(self, sol_id: int, payload: dict, user_perfil: str = "") -> dict:
+    async def editar_solicitacao(self, sol_id: int, payload: dict, user_perfil: str = "", username: str = "Sistema") -> dict:
         """
         Permite editar os dados de uma solicitação.
         """
@@ -163,20 +163,89 @@ class SolicitacaoLeitoController:
         campos_validos = ["prontuario", "idade", "especialidade", "tipo", "turno", "data_cirurgia", "prioridade", "nome", "procedimento", "hora_cirurgia"]
         dados_atualizar = {k: v for k, v in payload.items() if k in campos_validos}
         
-        # Se mudou o prontuário, busca os novos dados no AGHU
+        # Se mudou o prontuário, trata como cancelamento da antiga e criação de nova, transferindo a reserva
         if "prontuario" in payload and str(payload["prontuario"]) != str(alvo.prontuario):
+            alvo_status_orig = alvo.status
+            alvo_destino_orig = alvo.destino
+            
+            # 1. Consultar dados do novo prontuário no AGHU
             dados_aghu = await self.consultar_dados_aghu(str(payload["prontuario"]))
-            dados_atualizar.update({
+            
+            # 2. Criar a nova solicitação
+            nova_solicitacao_data = {
                 "prontuario": str(payload["prontuario"]),
                 "nome": dados_aghu["nome"],
                 "idade": dados_aghu["idade"],
                 "especialidade": dados_aghu["especialidade"] or "GERAL",
                 "procedimento": dados_aghu["procedimento"],
+                "tipo": payload.get("tipo") or alvo.tipo,
+                "turno": dados_aghu["turno"],
                 "data_cirurgia": dados_aghu["data_cirurgia"],
                 "hora_cirurgia": dados_aghu["hora_cirurgia"],
-                "turno": dados_aghu["turno"]
+                "status": alvo_status_orig,
+                "destino": alvo_destino_orig if alvo_status_orig == "Reservado" else None,
+                "prioridade": payload.get("prioridade") or alvo.prioridade,
+                "perfil_solicitante": alvo.perfil_solicitante
+            }
+            nova_sol = await self.leito_provider.criar(nova_solicitacao_data)
+            
+            # 3. Cancelar a solicitação original
+            await self.leito_provider.atualizar(sol_id, {
+                "status": "Cancelada",
+                "destino": None
             })
-        
+            
+            # 4. Registrar logs de histórico de cancelamento e nova criação
+            if self.historico_provider:
+                # Cancelamento
+                await self.historico_provider.registrar(
+                    operador=username,
+                    tipo="exclusao_solicitacao",
+                    acao="Cancelou solicitação de vaga",
+                    detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito",
+                    prontuario=str(alvo.prontuario)
+                )
+                # Criação
+                await self.historico_provider.registrar(
+                    operador=username,
+                    tipo="nova_solicitacao",
+                    acao="Nova solicitação de vaga",
+                    detalhes=f"Solicitação #{nova_sol.id} - Prontuário {nova_sol.prontuario} — {nova_sol.especialidade} ({nova_sol.tipo}) - Data: {nova_sol.data_cirurgia} (Gerada via troca de paciente)",
+                    prontuario=str(nova_sol.prontuario)
+                )
+            
+            # 5. Se estava reservada, transfere a reserva física (SQLite) para o novo paciente
+            if alvo_status_orig == "Reservado" and self.estado_provider:
+                from sqlalchemy import select
+                from models.leito_estado import LeitoEstado
+                res_reserva = await self.estado_provider.session.execute(
+                    select(LeitoEstado).where(LeitoEstado.solicitacao_id == sol_id)
+                )
+                estado_reserva = res_reserva.scalar_one_or_none()
+                if estado_reserva:
+                    estado_reserva.solicitacao_id = nova_sol.id
+                    estado_reserva.prontuario_proximo = int(nova_sol.prontuario)
+                    estado_reserva.idade_proximo = nova_sol.idade
+                    estado_reserva.especialidade_proximo = nova_sol.especialidade
+                    await self.estado_provider.session.commit()
+                    
+                    if self.historico_provider:
+                        await self.historico_provider.registrar(
+                            operador=username,
+                            tipo="reserva",
+                            acao="Reservou leito para solicitação",
+                            detalhes=f"Solicitação #{nova_sol.id} (Prontuário {nova_sol.prontuario}) para {nova_sol.destino}",
+                            prontuario=str(nova_sol.prontuario)
+                        )
+
+            # 6. Sincroniza prioridades das filas (antiga e nova)
+            await self._sincronizar_prioridades(alvo.data_cirurgia, alvo.turno)
+            if nova_sol.data_cirurgia != alvo.data_cirurgia or nova_sol.turno != alvo.turno:
+                await self._sincronizar_prioridades(nova_sol.data_cirurgia, nova_sol.turno)
+                
+            return {"message": "Solicitação editada com sucesso via troca de paciente."}
+            
+        # Caso geral: Não houve troca de prontuário
         if not dados_atualizar:
             raise HTTPException(status_code=400, detail="Nenhum campo válido para atualização fornecido.")
 

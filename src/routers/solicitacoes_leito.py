@@ -119,7 +119,13 @@ async def editar_solicitacao(
         if solicitacao.perfil_solicitante != user_grupo:
             raise HTTPException(status_code=403, detail="Você não tem permissão para editar esta solicitação.")
 
-    await controller.editar_solicitacao(sol_id, payload, user_perfil)
+    username = current_user.get("username", "Sistema")
+    await controller.editar_solicitacao(sol_id, payload, user_perfil, username=username)
+
+    # Se houve troca de prontuário, a controller já registrou as ações específicas (cancelamento/criação/reserva) no histórico
+    if "prontuario" in payload and str(payload["prontuario"]) != str(solicitacao.prontuario):
+        return {"message": "Solicitação editada com sucesso via troca de paciente"}
+
     prontuario = payload.get("prontuario", "N/D")
     
     # Se mudou a prioridade, usamos um tipo específico para o alerta
@@ -135,7 +141,7 @@ async def editar_solicitacao(
         if len(p) == 3: data_br = f"{p[2]}/{p[1]}/{p[0]}"
 
     await historico.registrar(
-        operador=current_user.get("username", "Sistema"),
+        operador=username,
         tipo=tipo_hist,
         acao="Editou solicitação de vaga",
         detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) - Data: {data_br}",
