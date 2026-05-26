@@ -123,7 +123,7 @@
                 </UiButton>
                 
                 <UiButton 
-                  v-if="podeGerenciar(sol)" 
+                  v-if="podeGerenciar(sol) || authStore.isUTI" 
                   size="sm" 
                   @click="abrirModalCancelamento(sol.id, false)" 
                   class="bg-red-600 text-white hover:bg-red-700 border-none shadow-sm px-4"
@@ -537,7 +537,18 @@ const MOTIVOS_CANCELAMENTO_RESERVA = [
 ];
 
 const motivosAtuais = computed(() => {
-  return isCancelamentoReserva.value ? MOTIVOS_CANCELAMENTO_RESERVA : MOTIVOS_CANCELAMENTO;
+  if (isCancelamentoReserva.value) {
+    return MOTIVOS_CANCELAMENTO_RESERVA;
+  }
+  // Se for UTI (e não admin), o motivo único de cancelamento da solicitação deve ser "Falta de vaga de UTI"
+  if (authStore.isUTI && !authStore.isAdmin) {
+    return ['Falta de vaga de UTI'];
+  }
+  // Se for Administrador, pode escolher tanto os normais quanto o de UTI
+  if (authStore.isAdmin) {
+    return [...MOTIVOS_CANCELAMENTO, 'Falta de vaga de UTI'];
+  }
+  return MOTIVOS_CANCELAMENTO;
 });
 
 const showModalCancelamento = ref(false);
@@ -698,8 +709,16 @@ async function confirmarReserva() {
 
 function abrirModalCancelamento(id: string, isReserva: boolean = false) {
   idCancelamento.value = id;
-  motivoCancelamento.value = '';
   isCancelamentoReserva.value = isReserva;
+  
+  // Se houver apenas um motivo possível, já pré-seleciona ele
+  const currentMotivos = motivosAtuais.value;
+  if (currentMotivos.length === 1) {
+    motivoCancelamento.value = currentMotivos[0];
+  } else {
+    motivoCancelamento.value = '';
+  }
+  
   showModalCancelamento.value = true;
 }
 

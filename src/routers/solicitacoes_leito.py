@@ -166,7 +166,13 @@ async def cancelar_solicitacao(
     user_grupo = user_perfil.replace("-Admin", "")
     
     if user_perfil != Role.ADMIN:
-        if solicitacao.perfil_solicitante != user_grupo:
+        is_uti = user_perfil in [Role.UTI, Role.UTI_ADMIN]
+        is_sol_pendente = solicitacao.status == "Pendente"
+        is_motivo_valido = motivo == "Falta de vaga de UTI"
+        
+        if is_uti and is_sol_pendente and is_motivo_valido:
+            pass # Permitido para a UTI
+        elif solicitacao.perfil_solicitante != user_grupo:
             raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar esta solicitação.")
 
     await controller.cancelar_solicitacao(sol_id, user_perfil)
