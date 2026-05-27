@@ -16,6 +16,12 @@ class SolicitacaoLeitoProvider:
         )
         return list(result.scalars().all())
 
+    async def get_todas_completo(self) -> List[SolicitacaoLeito]:
+        result = await self.session.execute(
+            select(SolicitacaoLeito)
+        )
+        return list(result.scalars().all())
+
     async def get_por_id(self, id: int) -> Optional[SolicitacaoLeito]:
         result = await self.session.execute(
             select(SolicitacaoLeito).where(SolicitacaoLeito.id == id)

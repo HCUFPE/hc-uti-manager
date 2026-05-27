@@ -126,7 +126,7 @@ class AlertaController:
             return
 
         try:
-            vagas = await self.solicitacao_leito_provider.get_todas()
+            vagas = await self.solicitacao_leito_provider.get_todas_completo()
             limite_24h = datetime.utcnow() - timedelta(hours=24)
             eventos = await self.historico_provider.listar(limit=300)
             eventos_recentes = [e for e in eventos if e.get("criado_em") and e.get("criado_em") > limite_24h]
@@ -173,24 +173,36 @@ class AlertaController:
         # Lógica de Alertas por Tipo
         self._gerar_alerta_por_tipo(tipo, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas)
 
+    def _normalizar_data(self, d_str: str) -> str:
+        if not d_str:
+            return ""
+        d_str = d_str.strip()
+        # Remove time if present
+        d_str = re.split(r'[\sT]', d_str)[0]
+        # Split by / or -
+        parts = re.split(r'[/-]', d_str)
+        if len(parts) == 3:
+            # Check if first part is YYYY (4 digits)
+            if len(parts[0]) == 4:
+                return f"{parts[0]}-{parts[1].zfill(2)}-{parts[2].zfill(2)}"
+            # Check if last part is YYYY (4 digits)
+            elif len(parts[2]) == 4:
+                return f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+        return d_str
+
     def _validar_data_hoje(self, detalhes, vaga, hoje_bsb) -> bool:
         d_sol = None
         if vaga:
             d_sol = str(vaga.data_cirurgia).strip()
-            if "/" in d_sol:
-                p = d_sol.split("/")
-                if len(p) == 3: d_sol = f"{p[2]}-{p[1]}-{p[0]}"
-            elif " " in d_sol: d_sol = d_sol.split(" ")[0]
-            elif "T" in d_sol: d_sol = d_sol.split("T")[0]
         else:
             d_match = re.search(r'Data:\s+([\d/-]+)', detalhes)
             if d_match:
                 d_sol = d_match.group(1).strip()
-                if "/" in d_sol:
-                    p = d_sol.split("/")
-                    if len(p) == 3: d_sol = f"{p[2]}-{p[1]}-{p[0]}"
         
-        return d_sol == hoje_bsb
+        if not d_sol:
+            return False
+        
+        return self._normalizar_data(d_sol) == hoje_bsb
 
     def _gerar_alerta_por_tipo(self, tipo, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas):
         # 1. UTI <-> SOLICITANTE
@@ -307,13 +319,33 @@ class AlertaController:
                     "criado_em": criado_em_evento
                 })
 
+    def _parse_to_naive_utc(self, dt: Any) -> Any:
+        if not dt:
+            return None
+        if isinstance(dt, str):
+            try:
+                dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+            except Exception:
+                for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                    try:
+                        dt = datetime.strptime(dt, fmt)
+                        break
+                    except Exception:
+                        pass
+        if not isinstance(dt, datetime):
+            return dt
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+
     async def _sincronizar_alertas(self, novos_alertas_data: List[Dict[str, Any]]) -> dict:
         alertas_existentes = await self.alerta_provider.get_todos()
         alertas_manter_ids = []
         chaves_ja_processadas = set()
         
         for data in novos_alertas_data:
-            ts_str = data.get("criado_em").isoformat() if data.get("criado_em") else "now"
+            req_criado_em = self._parse_to_naive_utc(data.get("criado_em"))
+            ts_str = req_criado_em.isoformat() if req_criado_em else "now"
             chave = f"{data.get('titulo')}|{data.get('prontuario')}|{data.get('perfil_alvo')}|{data.get('mensagem')}|{ts_str}"
             
             if chave in chaves_ja_processadas:
@@ -326,9 +358,9 @@ class AlertaController:
                     a.perfil_alvo == data.get("perfil_alvo") and
                     a.mensagem == data.get("mensagem")):
                     
-                    req_criado_em = data.get("criado_em")
                     if req_criado_em:
-                        if a.criado_em and abs((a.criado_em - req_criado_em).total_seconds()) < 2:
+                        a_naive = self._parse_to_naive_utc(a.criado_em)
+                        if a_naive and abs((a_naive - req_criado_em).total_seconds()) < 5:
                             existente = a
                             break
                     else:
