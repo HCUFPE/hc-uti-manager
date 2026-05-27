@@ -418,7 +418,7 @@
             <h4 class="text-base font-bold text-slate-800 leading-snug">{{ dadosAghu.nome }}</h4>
             <p class="text-xs text-slate-500 font-medium mt-0.5">
               <template v-if="dadosAghu.data_nascimento">
-                Dt Nasc.: {{ dadosAghu.data_nascimento }} ({{ dadosAghu.idade }} ANOS)
+                Data de Nascimento: {{ dadosAghu.data_nascimento }} ({{ dadosAghu.idade }} anos)
               </template>
               <template v-else>
                 {{ dadosAghu.idade }} anos
