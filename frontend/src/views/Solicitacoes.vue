@@ -81,7 +81,7 @@
               </div>
 
               <!-- Middle Row: Details -->
-              <div class="grid grid-cols-4 gap-6 py-3 border-t border-slate-50 text-left">
+              <div class="grid grid-cols-5 gap-6 py-3 border-t border-slate-50 text-left">
                 <div class="space-y-0.5">
                   <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Tipo</p>
                   <p class="text-sm font-semibold text-slate-700">{{ sol.tipo }}</p>
@@ -89,6 +89,10 @@
                 <div class="space-y-0.5">
                   <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Data Prevista da Cirurgia</p>
                   <p class="text-sm font-semibold text-slate-700">{{ sol.data_cirurgia ? formatarDataBR(sol.data_cirurgia) : 'Não informada' }}</p>
+                </div>
+                <div class="space-y-0.5">
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Horário</p>
+                  <p class="text-sm font-semibold text-slate-700">{{ sol.hora_cirurgia || '--:--' }}</p>
                 </div>
                 <div class="space-y-0.5">
                   <p class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Turno</p>
@@ -157,7 +161,7 @@
             class="overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-sm transition hover:shadow-md opacity-90"
           >
             <div class="flex items-start justify-between p-6">
-              <div class="grid grid-cols-1 md:grid-cols-6 gap-6 w-full text-left">
+              <div class="grid grid-cols-1 md:grid-cols-7 gap-6 w-full text-left">
                 <div class="space-y-1 md:col-span-2 text-left">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-200">
@@ -177,12 +181,16 @@
                   <p class="text-lg font-black text-emerald-700">{{ sol.destino || '---' }}</p>
                 </div>
                 <div class="space-y-1">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Turno</p>
-                  <p class="text-base font-bold text-slate-700">{{ sol.turno }}</p>
-                </div>
-                <div class="space-y-1">
                   <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Data Cirurgia</p>
                   <p class="text-base font-bold text-slate-700">{{ sol.data_cirurgia ? formatarDataBR(sol.data_cirurgia) : '-' }}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Horário</p>
+                  <p class="text-base font-bold text-slate-700">{{ sol.hora_cirurgia || '--:--' }}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Turno</p>
+                  <p class="text-base font-bold text-slate-700">{{ sol.turno }}</p>
                 </div>
                 <div class="flex flex-col items-end justify-center">
                   <span class="rounded-full border border-emerald-300 bg-emerald-500 px-3 py-1 text-[10px] font-bold uppercase tracking-tighter text-white shadow-sm">

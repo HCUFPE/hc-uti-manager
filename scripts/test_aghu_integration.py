@@ -48,6 +48,25 @@ async def test_all():
         assert len(dados["data_cirurgia"].split("-")[0]) == 4
         print("[OK] Consulta ao AGHU OK")
         
+        # 2.1 Testar prontuário 6 (amanhã)
+        print("\n--- Testando consulta do prontuário 6 (Amanhã) ---")
+        dados_6 = await controller.consultar_dados_aghu("6")
+        print(f"Paciente 6 localizado: {dados_6['nome']}, Data Cirurgia: {dados_6['data_cirurgia']}")
+        assert dados_6["nome"] == "MARCOS DE SOUZA"
+        from datetime import datetime, timedelta
+        amanha_esperada = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+        assert dados_6["data_cirurgia"] == amanha_esperada
+        print("[OK] Consulta prontuário 6 OK")
+
+        # 2.2 Testar prontuário 7 (2 dias no futuro)
+        print("\n--- Testando consulta do prontuário 7 (Depois de Amanhã) ---")
+        dados_7 = await controller.consultar_dados_aghu("7")
+        print(f"Paciente 7 localizado: {dados_7['nome']}, Data Cirurgia: {dados_7['data_cirurgia']}")
+        assert dados_7["nome"] == "CLARA LINHARES"
+        depois_esperada = (datetime.today() + timedelta(days=2)).strftime("%Y-%m-%d")
+        assert dados_7["data_cirurgia"] == depois_esperada
+        print("[OK] Consulta prontuário 7 OK")
+        
         # 3. Testar criação de solicitação e preenchimento automático
         print("\n--- Testando criação de solicitação (paciente 77) ---")
         payload = {

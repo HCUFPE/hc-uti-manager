@@ -487,6 +487,24 @@ class SolicitacaoLeitoController:
                         "Hora de Início": "20:00",
                         "Especialidade": "PROCTOLOGIA",
                         "Procedimento Principal": "HEMORROIDECTOMIA"
+                    },
+                    "6": {
+                        "Prontuário": 6,
+                        "Nome Completo": "MARCOS DE SOUZA",
+                        "Data de Nascimento": "20-08-1975",
+                        "Data da Cirurgia": (datetime.today() + timedelta(days=1)).strftime("%d-%m-%Y"),
+                        "Hora de Início": "10:30",
+                        "Especialidade": "CARDÍACA",
+                        "Procedimento Principal": "REVASCULARIZACAO MIOCARDICA"
+                    },
+                    "7": {
+                        "Prontuário": 7,
+                        "Nome Completo": "CLARA LINHARES",
+                        "Data de Nascimento": "12-12-1960",
+                        "Data da Cirurgia": (datetime.today() + timedelta(days=2)).strftime("%d-%m-%Y"),
+                        "Hora de Início": "15:00",
+                        "Especialidade": "NEUROCIRURGIA",
+                        "Procedimento Principal": "CRANIOTOMIA DESCOMPRESSIVA"
                     }
                 }
                 

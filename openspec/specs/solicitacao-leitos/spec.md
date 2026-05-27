@@ -71,6 +71,11 @@ O sistema MUST mapear o turno automaticamente a partir da hora de início da cir
 
 A prioridade inicial do paciente na fila e a ordem de exibição correspondente MUST ser definida de forma crescente com base na data da cirurgia e, em caso de empate na data, pelo turno (Manhã < Tarde < Noite) e, em caso de empate no turno, de forma cronológica pelo horário de início da cirurgia (horários mais cedo recebem prioridades maiores: P1, P2, P3...).
 
+No ambiente de desenvolvimento local (Mock), o sistema MUST retornar dados simulados de cirurgia. Para possibilitar testes locais de transição de datas e indicadores temporais:
+1. O prontuário `6` MUST retornar dados de cirurgia agendada para o **dia seguinte** (amanhã).
+2. O prontuário `7` MUST retornar dados de cirurgia agendada para **2 dias no futuro** (depois de amanhã).
+3. Outros prontuários sem mapeamento estático mockado MUST retornar cirurgia para o dia corrente.
+
 #### Scenario: Cadastro de solicitação com prontuário localizado com sucesso
 - **WHEN** o usuário solicitante fornece um prontuário válido e com cirurgia programada ativa no AGHU e clica em cadastrar
 - **THEN** o sistema executa a consulta no AGHU, recupera os dados, calcula a idade e o turno correspondente, define a prioridade de acordo com a ordem cronológica do início da cirurgia para aquele dia/turno, e cria a solicitação no status "Pendente"
@@ -110,4 +115,11 @@ Adicionalmente, o sistema MUST registrar no histórico de ações:
 #### Scenario: Gravação de log de saída física de alta de leito
 - **WHEN** o sistema detecta (durante listagem/sincronização de leitos) que um leito com alta ativa foi liberado (o prontuário atual no censo difere da alta)
 - **THEN** o sistema atualiza o status da alta para "concluida" e grava no histórico um evento de tipo `"conclusao_alta"`
+
+### Requirement: Exibição do Horário da Cirurgia na Fila
+O sistema MUST exibir o horário de início da cirurgia na visualização dos cards de solicitação de leito, posicionado especificamente entre a data prevista da cirurgia e o turno do paciente.
+
+#### Scenario: Visualização do horário da cirurgia na fila
+- **WHEN** o usuário visualiza a fila de solicitações no frontend
+- **THEN** o sistema exibe o horário de início da cirurgia de forma clara no card de detalhes de cada solicitação pendente ou reservada
 
