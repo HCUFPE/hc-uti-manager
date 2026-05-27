@@ -110,7 +110,7 @@
             </div>
 
             <p class="text-center text-sm text-slate-500">
-              Use qualquer usuario e senha para demonstracao
+              Utilize Login e Senha de Rede
             </p>
           </form>
 
