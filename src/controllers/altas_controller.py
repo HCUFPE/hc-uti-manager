@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import HTTPException
 from providers.implementations.solicitacao_alta_provider import SolicitacaoAltaProvider
 import logging
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class AltasController:
                 "especialidade": especialidade,
                 "leitoAtual": alta.lto_id,
                 "leitoDestino": alta.leito_destino or "Pendente (NIR)",
-                "dataHora": alta.criado_em.strftime("%Y-%m-%d %H:%M") if alta.criado_em else "",
+                "dataHora": (alta.criado_em - timedelta(hours=3)).strftime("%d-%m-%Y %H:%M") if alta.criado_em else "",
                 "necessidadesEspeciais": alta.necessidades_especiais or "",
                 "status": alta.status,
                 "destinoDisponivel": bool(alta.destino_disponivel)

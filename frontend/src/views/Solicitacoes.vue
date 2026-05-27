@@ -351,13 +351,12 @@
               type="text" 
               placeholder="Digite o prontuário" 
               class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-500" 
-              :disabled="isEditing || buscandoAghu"
+              :disabled="buscandoAghu"
               @blur="buscarPacienteAghu"
               @keyup.enter="buscarPacienteAghu"
             />
           </div>
           <UiButton 
-            v-if="!isEditing"
             type="button" 
             variant="outline" 
             size="sm" 
@@ -453,7 +452,7 @@
       <template #footer>
         <UiButton variant="outline" @click="fecharModalNova">Cancelar</UiButton>
         <UiButton 
-          :disabled="submetendoNova || !formNova.prontuario || !formNova.tipo || buscandoAghu || (!isEditing && !dadosAghu)" 
+          :disabled="submetendoNova || !formNova.prontuario || !formNova.tipo || buscandoAghu || !dadosAghu || (dadosAghu.prontuario !== formNova.prontuario)" 
           @click="salvarNova"
         >
           {{ submetendoNova ? 'Salvando...' : 'Salvar' }}

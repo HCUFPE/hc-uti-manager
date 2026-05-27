@@ -31,21 +31,21 @@
         </UiBadge>
       </div>
 
-      <div class="flex flex-col items-end gap-1.5">
+      <div class="flex flex-col items-end gap-1.5 shrink-0">
         <StatusBadge :status="status" />
-        
-        <!-- Tag de Destino Definido (NIR) -->
-        <div 
-          v-if="destinoDefinido"
-          class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold leading-none border shadow-sm transition-all duration-500 whitespace-nowrap"
-          :class="destinoDisponivel 
-            ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
-            : 'bg-amber-100 text-amber-700 border-amber-200'"
-        >
-          <MapPinIcon class="h-3 w-3" :class="destinoDisponivel ? 'text-emerald-600' : 'text-amber-600'" />
-          <span>Destino Definido: {{ destinoDefinido }}{{ destinoDisponivel ? ' Disponível' : '' }}</span>
-        </div>
       </div>
+    </div>
+
+    <!-- Tag de Destino Definido (NIR) -->
+    <div 
+      v-if="destinoDefinido"
+      class="mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold leading-none border shadow-sm transition-all duration-500 whitespace-normal break-words max-w-full w-fit"
+      :class="destinoDisponivel 
+        ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+        : 'bg-amber-100 text-amber-700 border-amber-200'"
+    >
+      <MapPinIcon class="h-3 w-3 shrink-0" :class="destinoDisponivel ? 'text-emerald-600' : 'text-amber-600'" />
+      <span>Destino Definido: {{ destinoDefinido }}{{ destinoDisponivel ? ' Disponível' : '' }}</span>
     </div>
 
     <div class="mt-4 space-y-4 text-sm text-slate-700">

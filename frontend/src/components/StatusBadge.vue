@@ -1,14 +1,23 @@
 <template>
   <span
-    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold leading-none"
+    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold leading-none border shadow-sm transition-all duration-300"
     :class="badgeClass"
   >
-    {{ label }}
+    <component :is="iconComponent" class="h-3.5 w-3.5 shrink-0" />
+    <span>{{ label }}</span>
   </span>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { 
+  CheckCircleIcon, 
+  UserIcon, 
+  ArrowPathIcon, 
+  NoSymbolIcon, 
+  ArrowRightOnRectangleIcon, 
+  CalendarDaysIcon 
+} from '@heroicons/vue/24/outline';
 
 type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 
@@ -16,34 +25,41 @@ const props = defineProps<{
   status: BedStatus;
 }>();
 
-const statusConfig: Record<BedStatus, { label: string; className: string }> = {
+const statusConfig: Record<BedStatus, { label: string; className: string; icon: any }> = {
   disponivel: {
-    label: 'Disponivel',
-    className: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+    label: 'Disponível',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200/80 shadow-emerald-50/50',
+    icon: CheckCircleIcon,
   },
   ocupado: {
     label: 'Ocupado',
-    className: 'bg-blue-100 text-blue-700 border border-blue-200',
+    className: 'bg-blue-50 text-blue-700 border-blue-200/80 shadow-blue-50/50',
+    icon: UserIcon,
   },
   higienizacao: {
-    label: 'Higienizacao',
-    className: 'bg-amber-100 text-amber-700 border border-amber-200',
+    label: 'Higienização',
+    className: 'bg-amber-50 text-amber-700 border-amber-200/80 shadow-amber-50/50',
+    icon: ArrowPathIcon,
   },
   desativado: {
     label: 'Desativado',
-    className: 'bg-slate-100 text-slate-600 border border-slate-300',
+    className: 'bg-slate-50 text-slate-600 border-slate-300/80 shadow-slate-50/50',
+    icon: NoSymbolIcon,
   },
   alta: {
     label: 'Alta Solicitada',
-    className: 'bg-rose-100 text-rose-700 border border-rose-200',
+    className: 'bg-rose-50 text-rose-700 border-rose-200/80 shadow-rose-50/50 font-bold animate-pulse',
+    icon: ArrowRightOnRectangleIcon,
   },
   reservado: {
     label: 'Reservado',
-    className: 'bg-purple-100 text-purple-700 border border-purple-200',
+    className: 'bg-purple-50 text-purple-700 border-purple-200/80 shadow-purple-50/50',
+    icon: CalendarDaysIcon,
   },
 };
 
 const selectedConfig = computed(() => statusConfig[props.status]);
 const label = computed(() => selectedConfig.value.label);
 const badgeClass = computed(() => selectedConfig.value.className);
+const iconComponent = computed(() => selectedConfig.value.icon);
 </script>
