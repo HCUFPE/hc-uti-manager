@@ -380,7 +380,11 @@ class SolicitacaoLeitoController:
         sol = await self.leito_provider.get_por_id(sol_id)
         if not sol:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
-        await self.leito_provider.atualizar(sol_id, {"cirurgia_finalizada": True})
+        from datetime import datetime
+        await self.leito_provider.atualizar(sol_id, {
+            "cirurgia_finalizada": True,
+            "cirurgia_finalizada_em": datetime.utcnow()
+        })
         return {"message": "Cirurgia finalizada com sucesso."}
 
     async def liberar_encaminhamento(self, sol_id: int) -> dict:
@@ -388,15 +392,30 @@ class SolicitacaoLeitoController:
         sol = await self.leito_provider.get_por_id(sol_id)
         if not sol:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
-        await self.leito_provider.atualizar(sol_id, {"encaminhamento_liberado": True})
-        return {"message": "Encaminhamento liberado com sucesso."}
+        from datetime import datetime
+        now_utc = datetime.utcnow()
+        minutos_espera = None
+        if sol.cirurgia_finalizada_em:
+            minutos_espera = int((now_utc - sol.cirurgia_finalizada_em).total_seconds() / 60)
+            
+        await self.leito_provider.atualizar(sol_id, {
+            "encaminhamento_liberado": True,
+            "encaminhamento_liberado_em": now_utc
+        })
+        return {
+            "message": "Encaminhamento liberado com sucesso.",
+            "minutos_espera": minutos_espera
+        }
 
     async def cancelar_liberacao(self, sol_id: int) -> dict:
         """Revoga a liberação de encaminhamento do paciente para a UTI."""
         sol = await self.leito_provider.get_por_id(sol_id)
         if not sol:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
-        await self.leito_provider.atualizar(sol_id, {"encaminhamento_liberado": False})
+        await self.leito_provider.atualizar(sol_id, {
+            "encaminhamento_liberado": False,
+            "encaminhamento_liberado_em": None
+        })
         return {"message": "Liberação de encaminhamento cancelada."}
 
     async def remanejar_reserva(self, sol_id: int, novo_leito_id: str) -> dict:

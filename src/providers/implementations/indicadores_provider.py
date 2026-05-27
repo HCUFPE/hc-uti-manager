@@ -346,6 +346,21 @@ class IndicadoresProvider:
                     tempos_liberacao_leito.append(diff)
         tempo_medio_liberacao_leito = (sum(tempos_liberacao_leito) / len(tempos_liberacao_leito)) if tempos_liberacao_leito else 0.0
 
+        # 8b. Tempo Médio de Liberação de Encaminhamento (Cirurgia Finalizada -> Liberar Encaminhamento)
+        tempos_liberacao_encaminhamento = []
+        for s in solicitacoes_todas:
+            if s.cirurgia_finalizada_em and s.encaminhamento_liberado_em and in_period(s.encaminhamento_liberado_em):
+                diff = (s.encaminhamento_liberado_em - s.cirurgia_finalizada_em).total_seconds() / 60.0 # em minutos
+                if diff >= 0:
+                    tempos_liberacao_encaminhamento.append(diff)
+                    
+        tempo_medio_liberacao_encaminhamento = (sum(tempos_liberacao_encaminhamento) / len(tempos_liberacao_encaminhamento)) if tempos_liberacao_encaminhamento else 0.0
+        
+        # Mock de fallback para desenvolvimento
+        import os
+        if not tempos_liberacao_encaminhamento and os.getenv("ENV") == "development":
+            tempo_medio_liberacao_encaminhamento = 45.2
+
         # 9. Volumes e Relações Percentuais
         altas_criadas_periodo = [a for a in altas_todas if in_period(a.criado_em)]
         
@@ -449,6 +464,7 @@ class IndicadoresProvider:
                 "tempo_recepcao_bc_minutos": round(tempo_medio_recepcao_bc, 1),
                 "tempo_acomodacao_alta_horas": round(tempo_medio_acomodacao_alta, 1),
                 "tempo_liberacao_leito_horas": round(tempo_medio_liberacao_leito, 1),
+                "tempo_liberacao_encaminhamento_minutos": round(tempo_medio_liberacao_encaminhamento, 1),
                 "volumes": {
                     "solicitacoes": volume_solicitacoes,
                     "reservadas": volume_reservas,

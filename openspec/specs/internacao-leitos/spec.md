@@ -88,3 +88,41 @@ O sistema MUST persistir a seleção concatenando as opções escolhidas em uma 
 - **WHEN** o usuário abre o modal de alta, seleciona a opção "Nenhum" (ou não seleciona nenhuma das opções) e confirma a solicitação
 - **THEN** o sistema desmarca as outras opções se estivessem selecionadas e envia o payload com a string formatada "Nenhum" para persistência no banco
 
+### Requirement: Atualização Automática do Censo e Leitos
+A tela do Painel de Leitos (Home) do frontend MUST atualizar as informações de leitos e censo automaticamente a cada 2 minutos (120.000 ms) enquanto estiver ativa/montada.
+
+#### Scenario: Atualização automática periódica no painel de leitos
+- **WHEN** o usuário estiver com a tela do Painel de Leitos (Home) aberta
+- **THEN** o sistema SHALL iniciar um temporizador (timer) que recarrega a lista de leitos a cada 2 minutos
+- **THEN** ao desmontar ou trocar de tela, o temporizador SHALL ser cancelado/limpo para evitar vazamentos de memória
+
+### Requirement: Exibição de Nome e Hora da Cirurgia na Reserva de Leito
+O card de leito no painel principal, quando possuir uma reserva de próximo paciente ativa, MUST exibir o nome do próximo paciente e o horário programado de início da cirurgia. O horário da cirurgia MUST ser exibido no formato `DD/MM/AAAA - HH:MM`.
+
+#### Scenario: Visualização dos dados adicionais da reserva
+- **WHEN** o usuário visualiza o card de um leito que possui uma reserva ativa
+- **THEN** o sistema SHALL exibir o nome do próximo paciente entre o número do prontuário e a idade
+- **THEN** o sistema SHALL exibir a data e hora da cirurgia no formato "DD/MM/AAAA - HH:MM" no bloco de detalhes da cirurgia
+
+### Requirement: Temporizador de Espera de Liberação no Card
+O card de leito no painel da UTI, quando possuir um paciente com cirurgia finalizada mas sem encaminhamento liberado, MUST apresentar um temporizador indicando o tempo decorrido desde o encerramento da cirurgia. Uma vez que o encaminhamento seja liberado, o temporizador e o relógio MUST ser ocultados e o status do card alterado para indicar a liberação.
+
+#### Scenario: Visualização do relógio com tempo de espera
+- **WHEN** o usuário visualiza o card de um leito que está no status "Cirurgia Concluída" e o encaminhamento não foi liberado ainda
+- **THEN** o card do leito SHALL exibir um ícone de relógio e um contador dinâmico (ex: "45m", "1h 12m") ao lado do texto de conclusão, representando o tempo de espera do paciente
+
+#### Scenario: Ocultamento do relógio após liberação do encaminhamento
+- **WHEN** o encaminhamento do paciente com cirurgia concluída é liberado pela UTI
+- **THEN** o card do leito SHALL ocultar o temporizador de espera e exibir a etiqueta "Encaminhamento Liberado"
+
+### Requirement: Detecção de Conflito de Reserva
+O sistema MUST identificar e marcar como em conflito qualquer leito físico de UTI que possua uma reserva de paciente cadastrada localmente no banco de dados, mas que esteja atualmente ocupado por um paciente diferente no censo do hospital (AGHU), exceto se houver uma solicitação de alta ativa para o ocupante atual.
+
+#### Scenario: Detecção de conflito em leito ocupado sem alta ativa
+- **WHEN** o usuário do painel visualiza um leito reservado para o Paciente A, mas o censo do AGHU indica que o leito está ocupado pelo Paciente B (sendo que não há solicitação de alta ativa cadastrada para o Paciente B)
+- **THEN** o sistema SHALL marcar o leito como em conflito (`conflito_reserva` = True) e exibir um destaque visual de conflito no card do leito
+
+#### Scenario: Ausência de conflito em leito ocupado com alta ativa
+- **WHEN** o usuário do painel visualiza um leito reservado para o Paciente A, o censo indica que está ocupado pelo Paciente B, e existe uma solicitação de alta ativa cadastrada para o Paciente B
+- **THEN** o sistema SHALL considerar que o Paciente B está prestes a sair, portanto o leito não está em conflito (`conflito_reserva` = False)
+

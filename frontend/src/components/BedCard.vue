@@ -58,20 +58,31 @@
       <div v-if="proximoPaciente" class="space-y-1 border-l-4 border-emerald-500 pl-4 bg-emerald-50/30 py-1 rounded-r-lg">
         <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Próximo Paciente</p>
         <p class="text-base font-bold text-slate-900">Prontuário: {{ proximoPaciente.prontuario }}</p>
+        <p v-if="proximoPaciente.nome" class="text-xs font-semibold text-slate-500 leading-none my-1">
+          {{ proximoPaciente.nome }}
+        </p>
         <p class="text-slate-600">{{ proximoPaciente.idade }} anos - {{ proximoPaciente.especialidade }}</p>
         
         <!-- Detalhes da Cirurgia -->
         <div v-if="proximoPaciente.dataCirurgia" class="mt-2 flex flex-wrap gap-2">
           <div class="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 border border-slate-200">
-            Cirurgia: {{ proximoPaciente.dataCirurgia.includes('-') ? proximoPaciente.dataCirurgia.split('-').reverse().join('/') : proximoPaciente.dataCirurgia }}
+            Cirurgia: {{ formatarDataHoraCirurgia(proximoPaciente.dataCirurgia, proximoPaciente.horaCirurgia) }}
           </div>
           <div v-if="proximoPaciente.turno" class="flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600 border border-blue-100 uppercase">
             Turno: {{ proximoPaciente.turno }}
           </div>
         </div>
-        <div v-if="cirurgiaFinalizada" class="mt-2 flex items-center gap-1 text-[11px] font-bold text-amber-700">
+        <div v-if="cirurgiaFinalizada && !encaminhamentoLiberado" class="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-amber-700">
           <span class="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
           Cirurgia Concluída
+          <span v-if="proximoPaciente?.horaCirurgiaFinalizada" class="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-800 border border-amber-200">
+            <ClockIcon class="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            {{ obterTempoDecorrido(proximoPaciente.horaCirurgiaFinalizada) }}
+          </span>
+        </div>
+        <div v-else-if="encaminhamentoLiberado" class="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+          <span class="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Encaminhamento Liberado
         </div>
         <UiBadge
           v-if="tipoReserva"
@@ -146,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { ExclamationTriangleIcon, ClockIcon, MapPinIcon } from '@heroicons/vue/24/outline';
 import StatusBadge from './StatusBadge.vue';
@@ -157,10 +168,13 @@ type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_defin
 
 type Patient = {
   prontuario: string;
+  nome?: string;
   idade: number;
   especialidade: string;
   dataCirurgia?: string;
+  horaCirurgia?: string;
   turno?: string;
+  horaCirurgiaFinalizada?: string;
 };
 
 const props = defineProps<{
@@ -202,4 +216,35 @@ const tipoPalette: Record<BedType, { label: string; className: string }> = {
 
 const tipoConfig = computed(() => tipoPalette[props.tipo] || tipoPalette.outro);
 const tipoClass = computed(() => tipoConfig.value.className);
+
+const formatarDataHoraCirurgia = (dataStr?: string, horaStr?: string) => {
+  if (!dataStr) return '';
+  const dataFormatada = dataStr.includes('-') ? dataStr.split('-').reverse().join('/') : dataStr;
+  return horaStr ? `${dataFormatada} - ${horaStr}` : dataFormatada;
+};
+
+const currentTime = ref(new Date());
+let timerId: any = null;
+
+onMounted(() => {
+  timerId = setInterval(() => {
+    currentTime.value = new Date();
+  }, 60000);
+});
+
+onUnmounted(() => {
+  if (timerId) clearInterval(timerId);
+});
+
+const obterTempoDecorrido = (dataIso?: string) => {
+  if (!dataIso) return '';
+  const dateFim = new Date(dataIso);
+  const diffMs = currentTime.value.getTime() - dateFim.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 0) return '0m';
+  if (diffMins < 60) return `${diffMins}m`;
+  const horas = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  return `${horas}h ${mins}m`;
+};
 </script>

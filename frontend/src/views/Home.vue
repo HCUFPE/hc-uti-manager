@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { FunnelIcon } from '@heroicons/vue/24/outline';
 import { ChevronRightIcon } from '@heroicons/vue/20/solid';
 import BedCard from '../components/BedCard.vue';
@@ -209,10 +209,13 @@ type StatusFilter = BedStatus | 'todos';
 
 type Patient = {
   prontuario: string;
+  nome?: string;
   idade: number;
   especialidade: string;
   dataCirurgia?: string;
+  horaCirurgia?: string;
   turno?: string;
+  horaCirurgiaFinalizada?: string;
 };
 
 type Leito = {
@@ -254,10 +257,13 @@ const loadLeitos = async () => {
       } : undefined,
       proximoPaciente: l.prontuario_proximo ? {
         prontuario: String(l.prontuario_proximo),
+        nome: l.nome_proximo || undefined,
         idade: l.idade_proximo || 0,
         especialidade: l.especialidade_proximo || 'ND',
         dataCirurgia: l.data_cirurgia_proximo,
+        horaCirurgia: l.hora_cirurgia_proximo || undefined,
         turno: l.turno_proximo,
+        horaCirurgiaFinalizada: l.cirurgia_finalizada_em || undefined,
       } : undefined,
       temConflito: l.conflito_reserva || false,
       destinoDefinido: l.leito_destino,
@@ -272,8 +278,17 @@ const loadLeitos = async () => {
   }
 };
 
+let leitosIntervalId: any = null;
+
 onMounted(() => {
   loadLeitos();
+  leitosIntervalId = setInterval(loadLeitos, 120000);
+});
+
+onUnmounted(() => {
+  if (leitosIntervalId) {
+    clearInterval(leitosIntervalId);
+  }
 });
 
 const overviewCards = computed(() => {

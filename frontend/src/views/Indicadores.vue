@@ -71,7 +71,7 @@
       </div>
 
       <!-- Nova Seção: Tempos Médios de Processo e Fluxo (Gargalos) -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Solicitação a Ocupação</p>
           <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_solicitacao_ocupacao_horas ?? 0 }}h</p>
@@ -82,6 +82,12 @@
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Recepção Pós-Cirúrgico (BC)</p>
           <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_recepcao_bc_minutos ?? 0 }} min</p>
           <p class="mt-1 text-xs text-slate-500">Intervalo médio entre o fim cirúrgico e a entrada na UTI.</p>
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Liberação Encaminhamento</p>
+          <p class="mt-2 text-3xl font-extrabold text-slate-800 text-blue-600">{{ formatarTempoLiberacao(detalhado.tempo_liberacao_encaminhamento_minutos) }}</p>
+          <p class="mt-1 text-xs text-slate-500">Espera média do fim da cirurgia até liberação de encaminhamento pela UTI.</p>
         </article>
 
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -322,6 +328,17 @@ const fetchResumo = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const formatarTempoLiberacao = (minutos?: number) => {
+  if (minutos === undefined || minutos === null) return '0 min';
+  const mins = Math.round(minutos);
+  if (mins < 60) {
+    return `${mins} min`;
+  }
+  const horas = Math.floor(mins / 60);
+  const resto = mins % 60;
+  return `${horas}h ${resto}m`;
 };
 
 const limparFiltros = () => {

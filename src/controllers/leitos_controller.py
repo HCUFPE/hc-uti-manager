@@ -1,6 +1,6 @@
 from models.reserva_leito import ReservaLeitoInput
 from typing import List, Dict, Any, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import asyncio
 import os
 
@@ -56,7 +56,7 @@ class LeitosController:
             mock_beds = [
                 {"lto_lto_id": "UTI-01", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
                 {"lto_lto_id": "UTI-02", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "999999", "nome_atual": "PACIENTE TESTE ALTA", "idade_atual": 45, "especialidade_atual": "CARDIOLOGIA"},
-                {"lto_lto_id": "UTI-03", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "123456", "nome_atual": "PACIENTE ATUAL", "prontuario_proximo": "987654", "nome_proximo": "PACIENTE CHEGANDO"},
+                {"lto_lto_id": "UTI-03", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "123456", "nome_atual": "PACIENTE ATUAL"},
                 {"lto_lto_id": "UTI-04", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
             ]
             
@@ -188,22 +188,31 @@ class LeitosController:
                     leito['prontuario_proximo'] = est.prontuario_proximo
                     leito['idade_proximo'] = est.idade_proximo
                     leito['especialidade_proximo'] = est.especialidade_proximo
+                    leito['nome_proximo'] = None
+                    leito['hora_cirurgia_proximo'] = None
+                    leito['cirurgia_finalizada_em'] = None
                     
                     # Busca info da cirurgia
                     sol_id = getattr(est, 'solicitacao_id', None)
                     if sol_id and self.solicitacao_provider:
                         sol = await self.solicitacao_provider.get_por_id(sol_id)
                         if sol:
+                            leito['nome_proximo'] = sol.nome
+                            leito['hora_cirurgia_proximo'] = sol.hora_cirurgia
                             leito['data_cirurgia_proximo'] = sol.data_cirurgia
                             leito['turno_proximo'] = sol.turno
                             leito['cirurgia_finalizada'] = getattr(sol, 'cirurgia_finalizada', False)
                             leito['encaminhamento_liberado'] = getattr(sol, 'encaminhamento_liberado', False)
                             leito['solicitacao_id'] = sol.id
+                            leito['cirurgia_finalizada_em'] = (sol.cirurgia_finalizada_em - timedelta(hours=3)).isoformat() if getattr(sol, 'cirurgia_finalizada_em', None) else None
             else:
                 leito['conflito_reserva'] = False
-                leito['prontuario_proximo'] = None
-                leito['idade_proximo'] = None
-                leito['especialidade_proximo'] = None
+                leito['prontuario_proximo'] = leito.get('prontuario_proximo')
+                leito['idade_proximo'] = leito.get('idade_proximo')
+                leito['especialidade_proximo'] = leito.get('especialidade_proximo')
+                leito['nome_proximo'] = leito.get('nome_proximo')
+                leito['hora_cirurgia_proximo'] = leito.get('hora_cirurgia_proximo')
+                leito['cirurgia_finalizada_em'] = leito.get('cirurgia_finalizada_em')
         return leitos
 
     async def listar(self):

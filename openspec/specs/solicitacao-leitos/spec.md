@@ -123,3 +123,20 @@ O sistema MUST exibir o horário de início da cirurgia na visualização dos ca
 - **WHEN** o usuário visualiza a fila de solicitações no frontend
 - **THEN** o sistema exibe o horário de início da cirurgia de forma clara no card de detalhes de cada solicitação pendente ou reservada
 
+### Requirement: Atualização Automática da Fila de Solicitações
+A tela de Fila de Solicitações do frontend MUST atualizar as informações de solicitações de leitos de UTI automaticamente a cada 2 minutos (120.000 ms) enquanto estiver ativa/montada.
+
+#### Scenario: Atualização automática periódica na fila de solicitações
+- **WHEN** o usuário estiver com a tela de Solicitações aberta
+- **THEN** o sistema SHALL iniciar um temporizador (timer) que recarrega a lista de solicitações a cada 2 minutos
+- **THEN** ao desmontar ou trocar de tela, o temporizador SHALL ser cancelado/limpo para evitar vazamentos de memória
+
+### Requirement: Registro de Horário de Fim de Cirurgia e Liberação
+A solicitação de leito MUST registrar o momento exato em que a cirurgia correspondente é finalizada e o momento exato em que o encaminhamento é liberado. Ao liberar o encaminhamento, o sistema MUST registrar o tempo decorrido no histórico de auditoria.
+
+#### Scenario: Registro de fim da cirurgia e liberação de encaminhamento
+- **WHEN** o solicitante clica em "Cirurgia Finalizada"
+- **THEN** o sistema SHALL gravar a data e a hora atual no campo de cirurgia finalizada
+- **WHEN** a UTI clica em "Liberar Encaminhamento"
+- **THEN** o sistema SHALL gravar a data e a hora atual no campo de encaminhamento liberado, calcular a diferença de tempo e salvar o tempo decorrido na mensagem do histórico
+

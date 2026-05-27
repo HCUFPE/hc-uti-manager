@@ -293,11 +293,21 @@ async def liberar_encaminhamento(
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
     
     result = await controller.liberar_encaminhamento(sol_id)
+    minutos = result.get("minutos_espera")
+    duration_str = ""
+    if minutos is not None:
+        if minutos >= 60:
+            horas = minutos // 60
+            resto = minutos % 60
+            duration_str = f" [Tempo de Liberação: {horas}h {resto}m]"
+        else:
+            duration_str = f" [Tempo de Liberação: {minutos}m]"
+            
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="encaminhamento_liberado",
         acao="Liberou encaminhamento",
-        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Encaminhamento liberado para {solicitacao.destino or 'UTI'}.",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Encaminhamento liberado para {solicitacao.destino or 'UTI'}.{duration_str}",
         prontuario=str(solicitacao.prontuario)
     )
     return result

@@ -490,7 +490,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon, CheckIcon, ClockIcon, CheckCircleIcon, MagnifyingGlassIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiButton from '../components/ui/Button.vue';
@@ -907,7 +907,16 @@ async function confirmarCirurgiaFinalizada(id: string) {
   }
 }
 
+let solicitacoesIntervalId: any = null;
+
 onMounted(() => {
   carregarSolicitacoes();
+  solicitacoesIntervalId = setInterval(carregarSolicitacoes, 120000);
+});
+
+onUnmounted(() => {
+  if (solicitacoesIntervalId) {
+    clearInterval(solicitacoesIntervalId);
+  }
 });
 </script>

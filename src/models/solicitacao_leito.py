@@ -26,6 +26,8 @@ class SolicitacaoLeito(Base):
     
     cirurgia_finalizada = Column(Boolean, default=False)
     encaminhamento_liberado = Column(Boolean, default=False)
+    cirurgia_finalizada_em = Column(DateTime, nullable=True)
+    encaminhamento_liberado_em = Column(DateTime, nullable=True)
     
     criado_em = Column(DateTime, server_default=func.now())
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -34,6 +36,8 @@ class SolicitacaoLeito(Base):
         # Ajuste para horário de Brasília (-3h)
         criado_local = (self.criado_em - timedelta(hours=3)) if self.criado_em else None
         atualizado_local = (self.atualizado_em - timedelta(hours=3)) if self.atualizado_em else None
+        cirurgia_finalizada_local = (self.cirurgia_finalizada_em - timedelta(hours=3)) if self.cirurgia_finalizada_em else None
+        encaminhamento_liberado_local = (self.encaminhamento_liberado_em - timedelta(hours=3)) if self.encaminhamento_liberado_em else None
         
         return {
             "id": self.id,
@@ -52,6 +56,8 @@ class SolicitacaoLeito(Base):
             "perfil_solicitante": self.perfil_solicitante,
             "cirurgia_finalizada": bool(self.cirurgia_finalizada),
             "encaminhamento_liberado": bool(self.encaminhamento_liberado),
+            "cirurgia_finalizada_em": cirurgia_finalizada_local.isoformat() if cirurgia_finalizada_local else None,
+            "encaminhamento_liberado_em": encaminhamento_liberado_local.isoformat() if encaminhamento_liberado_local else None,
             "criado_em": criado_local.isoformat() if criado_local else None,
-            "atualizado_em": atualizado_local.isoformat() if atualizado_local else None,
+            "atualizado_em": updated_local.isoformat() if (updated_local := atualizado_local) else None,
         }
