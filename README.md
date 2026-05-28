@@ -1,12 +1,12 @@
 # HC UTI Manager
 
-Sistema de gerenciamento de leitos, controle de fluxo de pacientes, monitoramento de tempos de liberação e reserva de vagas para a Unidade de Terapia Intensiva (UTI) do Hospital das Clínicas da UFPE.
+Sistema de gerenciamento de leitos, controle de fluxo de pacientes do Bloco Cirúrgico para a UTI, monitoramento de tempos de transferência e alocação de vagas para a Unidade de Terapia Intensiva (UTI) do Hospital das Clínicas da UFPE.
 
 ---
 
 ## 🚀 Visão Geral
 
-O **HC UTI Manager** é uma aplicação web full-stack de alto desempenho projetada para otimizar a coordenação de leitos e o tráfego de pacientes em UTIs. Ele automatiza o fluxo de solicitações de leitos, monitora o tempo decorrido de liberação de leitos (com alertas dinâmicos para a equipe do Núcleo Interno de Regulação - NIR e da UTI) e fornece dados analíticos (indicadores de ocupação, cancelamentos e tempos de espera).
+O **HC UTI Manager** é uma aplicação web full-stack projetada para otimizar o fluxo de encaminhamento de pacientes do Bloco Cirúrgico para a UTI. O sistema centraliza a visualização do censo de leitos, automatiza o fluxo de solicitações de UTI vindas do Bloco Cirúrgico, monitora o tempo de transferência após a finalização da cirurgia por meio de um cronômetro de tempo de liberação e auxilia a UTI na alocação rápida das vagas disponíveis.
 
 ---
 
@@ -38,12 +38,20 @@ HC-UTI-Manager/
 
 ## ⚙️ Funcionalidades Principais
 
-- **Painel de Leitos (Censo UTI):** Visualização em tempo real do estado de ocupação de cada leito, com informações completas do paciente, necessidade de isolamento e status.
-- **Gerenciador de Solicitações:** Painel para o NIR gerenciar pedidos de leito UTI com níveis de prioridade de **P1 a P10**.
+- **Painel de Leitos (Censo UTI):** Visualização em tempo real do estado de ocupação de cada leito, com informações completas do paciente, necessidade de isolamento e status. Permite à equipe da **UTI** determinar as vagas disponíveis para alocação.
+- **Gerenciador de Solicitações:** Painel focado na **UTI** para gerenciar as solicitações de vagas pendentes vindas do Bloco Cirúrgico.
+- **Definição de Prioridades:** Permite ao **Bloco Cirúrgico** definir o nível de prioridade (de **P1 a P10**) para cada paciente cirúrgico que aguarda leito.
 - **Controle de Reservas e Conflitos:** Inteligência para evitar conflitos de reserva de leito (ex: não permitir novas reservas automáticas para leitos já ocupados ou reservados).
-- **Controle de Tempo de Liberação:** Cronômetro regressivo/progressivo inteligente para acompanhar o tempo de transferência após a alta do leito ser sinalizada.
+- **Tempo de Transferência:** Cronômetro dinâmico para acompanhar o tempo gasto na transferência do Bloco Cirúrgico para o leito de UTI (iniciado logo após a finalização da cirurgia).
+- **Fluxo pós-alta da UTI:** O destino do paciente após a alta da UTI é de responsabilidade e determinação do **NIR (Núcleo Interno de Regulação)**.
 - **Autenticação LDAP/Active Directory:** Login seguro integrado com o diretório ativo corporativo do hospital, além de fallback automático para desenvolvimento local.
 - **Dashboard de Indicadores:** Métricas consolidadas sobre taxa de ocupação, tempo médio de espera, cancelamentos de reserva e fluxo de altas.
+
+---
+
+## ⚙️ Configurações de Ambiente (`.env.example`)
+
+Os arquivos de configuração e exemplos de credenciais contidos em `.env.example` (como conexões com bancos PostgreSQL/Oracle e LDAP/AD) contêm apenas **endereços e credenciais de simulação/exemplo genéricos**. Os acessos reais à rede hospitalar de produção são configurados estritamente locais no servidor no arquivo `.env`, que é ignorado pelo Git (conforme configurado em `.gitignore`) garantindo total segurança do ambiente.
 
 ---
 
