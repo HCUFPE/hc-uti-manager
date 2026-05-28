@@ -18,6 +18,10 @@
               </p>
             </div>
           </div>
+          <!-- Versão e assinatura -->
+          <div class="absolute bottom-4 left-6 text-xs text-slate-400 font-medium">
+            Versão: 01.00 atualizada em 28/05/2026 às 13:37h - SETISD HC-UFPE
+          </div>
         </div>
 
         <!-- Lado direito: formulario -->

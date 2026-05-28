@@ -201,7 +201,10 @@ class AuthHandler:
             # Re-load env just in case something changed (e.g., in development)
             load_dotenv()
             ad_url = os.getenv("AD_URL")
-            if ad_url and ad_url.strip():
+            if os.getenv("MOCK_BEDS") == "true":
+                logger.warning("MOCK_BEDS is active. Initializing Mock Auth Provider for training.")
+                self._provider = MockAuthProvider()
+            elif ad_url and ad_url.strip():
                 logger.info(f"Initializing Active Directory Auth Provider (URL: {ad_url}).")
                 self._provider = ActiveDirectoryAuthProvider()
             else:
