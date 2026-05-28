@@ -467,7 +467,7 @@ class SolicitacaoLeitoController:
         data_cirurgia_aghu = None
         
         # Tenta buscar do AGHU
-        if self.aghu_cirurgia_provider:
+        if self.aghu_cirurgia_provider and os.getenv("MOCK_BEDS") != "true":
             try:
                 data_cirurgia_aghu = await self.aghu_cirurgia_provider.obter_cirurgia_por_prontuario(prontuario)
             except Exception as e:

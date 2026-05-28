@@ -52,7 +52,7 @@ class MockAuthProvider(AuthProviderInterface):
             "uti": "uti1",
             "nir": "nir1",
             "cob": "cob1",
-            "bc_user": "bc123",
+            "bloco": "bloco",
             "comum": "comum"
         }
 

@@ -44,14 +44,15 @@ class LeitosController:
     async def listar_leitos(self) -> List[Dict[str, Any]]:
         # 1. Busca o censo (Realidade do Hospital)
         leitos = []
-        try:
-            leitos = await self.census_provider.listar_leitos()
-        except Exception as e:
-            logger.error(f"Erro ao buscar censo: {e}")
-            leitos = []
+        if os.getenv("MOCK_BEDS") != "true":
+            try:
+                leitos = await self.census_provider.listar_leitos()
+            except Exception as e:
+                logger.error(f"Erro ao buscar censo: {e}")
+                leitos = []
             
         # Injeção de leitos de teste via variável de ambiente para flexibilidade
-        if os.getenv("ENV") == "development" and os.getenv("MOCK_BEDS") == "true":
+        if os.getenv("MOCK_BEDS") == "true":
             logger.info("Injetando leitos de teste (Mock)...")
             mock_beds = [
                 {"lto_lto_id": "UTI-01", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
