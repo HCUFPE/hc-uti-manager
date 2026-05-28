@@ -400,7 +400,12 @@
               <option value="P2">P2</option>
               <option value="P3">P3</option>
               <option value="P4">P4</option>
-              <option value="P5">P5 (Menor)</option>
+              <option value="P5">P5</option>
+              <option value="P6">P6</option>
+              <option value="P7">P7</option>
+              <option value="P8">P8</option>
+              <option value="P9">P9</option>
+              <option value="P10">P10 (Menor)</option>
             </select>
           </div>
         </div>
