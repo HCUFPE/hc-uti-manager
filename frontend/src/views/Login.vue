@@ -23,7 +23,10 @@
         <!-- Lado direito: formulario -->
         <div class="p-8 md:p-12 bg-white lg:col-span-2 flex flex-col justify-center">
           <div class="flex flex-col items-center mb-8 space-y-3">
-            <img src="/hc_ufpe_icon.jpeg" alt="Hospital das Clinicas UFPE" class="h-20 w-20 rounded-xl object-cover" />
+            <div class="flex items-center gap-4">
+              <img src="/hc_ufpe_icon.jpeg" alt="Hospital das Clinicas UFPE" class="h-20 w-20 rounded-xl object-cover" />
+              <img src="/HU Brasil - transparente.png" alt="HU Ebserh Brasil" class="h-20 object-contain" />
+            </div>
             <h1 class="text-3xl font-bold text-slate-900">Bem-vindo de Volta</h1>
             <p class="text-center text-slate-600">
               Acesse sua conta para gerenciar os leitos da UTI
