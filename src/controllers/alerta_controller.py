@@ -230,7 +230,12 @@ class AlertaController:
 
         # 2. SOLICITANTE -> UTI
         elif tipo in ["nova_solicitacao", "exclusao_solicitacao", "alteracao_prioridade"]:
-            if match_hoje:
+            hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
+            evento_bsb_date = ""
+            if isinstance(criado_em_evento, datetime):
+                evento_bsb_date = (criado_em_evento - timedelta(hours=3)).strftime("%Y-%m-%d")
+                
+            if match_hoje and evento_bsb_date == hoje_bsb:
                 titulos = {
                     "nova_solicitacao": "Nova solicitação para hoje",
                     "exclusao_solicitacao": "Solicitação para hoje removida",
