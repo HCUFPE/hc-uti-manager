@@ -27,8 +27,7 @@ class SolicitacaoLeitoController:
     async def _sincronizar_prioridades(self, data_cirurgia: str, turno: str, sol_id_foco: int | None = None, prioridade_desejada: str | None = None):
         """
         Garante que a fila de prioridades seja contínua (P1, P2, P3...) e sem buracos.
-        Ordena respeitando a prioridade manual se sol_id_foco e prioridade_desejada forem fornecidos.
-        Caso contrário, ordena com base na hora de início da cirurgia e na data de criação como desempate.
+        Preserva as prioridades manuais já existentes para as solicitações no bucket.
         """
         if not data_cirurgia or not turno:
             return
@@ -40,48 +39,49 @@ class SolicitacaoLeitoController:
         if not bucket:
             return
 
-        # 2. Ordena de acordo com o foco manual ou cronologicamente
+        # 2. Divide os demais registros entre quem já tem prioridade atribuída e quem não tem (novos)
+        com_prio = []
+        sem_prio = []
+        for s in bucket:
+            if sol_id_foco is not None and s.id == sol_id_foco:
+                continue
+            if s.prioridade and s.prioridade.startswith("P"):
+                com_prio.append(s)
+            else:
+                sem_prio.append(s)
+
+        # Ordena quem já tem prioridade pelo valor dela
+        def obter_peso_prio(s):
+            try:
+                return int(s.prioridade.replace("P", ""))
+            except (ValueError, TypeError, AttributeError):
+                return 999
+        com_prio.sort(key=obter_peso_prio)
+
+        # Ordena os sem prioridade (novos) cronologicamente
+        def obter_peso_cronologico(s):
+            hora = s.hora_cirurgia if s.hora_cirurgia else "99:99"
+            criado = s.criado_em.timestamp() if s.criado_em else 0
+            return (hora, criado)
+        sem_prio.sort(key=obter_peso_cronologico)
+
+        # Junta os dois grupos preservando a ordenação manual prévia e jogando os novos para o final
+        restantes = com_prio + sem_prio
+
+        # Se houver um foco de reordenação manual
         if sol_id_foco is not None and prioridade_desejada:
-            # Encontra a solicitação em foco no bucket
             foco = next((s for s in bucket if s.id == sol_id_foco), None)
             if foco:
-                # Extrai o foco
-                restantes = [s for s in bucket if s.id != sol_id_foco]
-                
-                # Ordena os restantes cronologicamente
-                def obter_peso(s):
-                    hora = s.hora_cirurgia if s.hora_cirurgia else "99:99"
-                    criado = s.criado_em.timestamp() if s.criado_em else 0
-                    return (hora, criado)
-                restantes.sort(key=obter_peso)
-                
-                # Calcula o índice baseado na prioridade desejada (ex: "P1" -> index 0)
                 try:
                     num_prio = int(prioridade_desejada.replace("P", ""))
                     target_idx = max(0, num_prio - 1)
                 except ValueError:
                     target_idx = 0
-                
-                # Garante que o índice fique dentro dos limites (clamp)
                 target_idx = min(target_idx, len(restantes))
-                
-                # Insere o foco na posição desejada
                 restantes.insert(target_idx, foco)
-                bucket = restantes
-            else:
-                # Caso sol_id_foco não esteja no bucket pendente, ordena cronologicamente
-                def obter_peso(s):
-                    hora = s.hora_cirurgia if s.hora_cirurgia else "99:99"
-                    criado = s.criado_em.timestamp() if s.criado_em else 0
-                    return (hora, criado)
-                bucket.sort(key=obter_peso)
+            bucket = restantes
         else:
-            # Define a ordem base: Hora da Cirurgia crescente (default: "99:99") e Data de Criação
-            def obter_peso(s):
-                hora = s.hora_cirurgia if s.hora_cirurgia else "99:99"
-                criado = s.criado_em.timestamp() if s.criado_em else 0
-                return (hora, criado)
-            bucket.sort(key=obter_peso)
+            bucket = restantes
 
         # 3. Reatribui P1, P2, P3... sequencialmente para todos no bucket
         for i, sol in enumerate(bucket):
