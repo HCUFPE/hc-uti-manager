@@ -560,6 +560,15 @@ class SolicitacaoLeitoController:
                         "Hora de Início": "15:00",
                         "Especialidade": "NEUROCIRURGIA",
                         "Procedimento Principal": "CRANIOTOMIA DESCOMPRESSIVA"
+                    },
+                    "8": {
+                        "Prontuário": 8,
+                        "Nome Completo": "PACIENTE OITO MOCK",
+                        "Data de Nascimento": "01-01-1990",
+                        "Data da Cirurgia": hoje_str,
+                        "Hora de Início": "10:00",
+                        "Especialidade": "GERAL",
+                        "Procedimento Principal": "CIRURGIA TESTE 10H"
                     }
                 }
                 
