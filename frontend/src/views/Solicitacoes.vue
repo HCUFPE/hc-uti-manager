@@ -639,12 +639,7 @@ const solicitacoesFiltradas = computed(() => {
     const turnoB = pesoTurno[b.turno] || 99;
     if (turnoA !== turnoB) return turnoA - turnoB;
 
-    // Nível 3: Horário de Início da Cirurgia (crescente)
-    const horaA = a.hora_cirurgia || '99:99';
-    const horaB = b.hora_cirurgia || '99:99';
-    if (horaA !== horaB) return horaA.localeCompare(horaB);
-
-    // Nível 4: Prioridade (P1 < P2 < P3...)
+    // Nível 3: Prioridade (P1 < P2 < P3...)
     const getPrioridadeValor = (p: string | undefined) => {
       if (!p || !p.startsWith('P')) return 999;
       const num = parseInt(p.substring(1));
@@ -653,6 +648,11 @@ const solicitacoesFiltradas = computed(() => {
     const prioA = getPrioridadeValor(a.prioridade);
     const prioB = getPrioridadeValor(b.prioridade);
     if (prioA !== prioB) return prioA - prioB;
+
+    // Nível 4: Horário de Início da Cirurgia (crescente)
+    const horaA = a.hora_cirurgia || '99:99';
+    const horaB = b.hora_cirurgia || '99:99';
+    if (horaA !== horaB) return horaA.localeCompare(horaB);
 
     // Nível 5: Data da Solicitação (Desempate por ordem de chegada)
     return a.dataHora.localeCompare(b.dataHora);
