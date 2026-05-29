@@ -216,6 +216,7 @@ type Patient = {
   horaCirurgia?: string;
   turno?: string;
   horaCirurgiaFinalizada?: string;
+  dataNascimento?: string;
 };
 
 type Leito = {
@@ -254,6 +255,7 @@ const loadLeitos = async () => {
         prontuario: String(l.prontuario_atual),
         idade: l.idade_atual || 0,
         especialidade: l.especialidade_atual || 'ND',
+        dataNascimento: l.data_nascimento || undefined,
       } : undefined,
       proximoPaciente: l.prontuario_proximo ? {
         prontuario: String(l.prontuario_proximo),
