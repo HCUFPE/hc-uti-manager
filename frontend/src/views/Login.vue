@@ -27,13 +27,10 @@
         <!-- Lado direito: formulario -->
         <div class="p-8 md:p-12 bg-white lg:col-span-2 flex flex-col justify-center">
           <div class="flex flex-col items-center mb-8 space-y-3">
-            <div class="flex items-center gap-4">
-              <img src="/hc_ufpe_icon.jpeg" alt="Hospital das Clinicas UFPE" class="h-20 w-20 rounded-xl object-cover" />
-              <img src="/HU Brasil - transparente.png" alt="HU Ebserh Brasil" class="h-20 object-contain" />
-            </div>
+            <img src="/logo2.png" alt="UTI Manager" class="h-32 w-auto object-contain" />
             <h1 class="text-3xl font-bold text-slate-900">Bem-vindo de Volta</h1>
             <p class="text-center text-slate-600">
-              Acesse sua conta para gerenciar os leitos da UTI
+              Acesse o sistema
             </p>
           </div>
 
@@ -120,6 +117,12 @@
               Utilize Login e Senha de Rede
             </p>
           </form>
+
+          <!-- Rodapé Institucional -->
+          <div class="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-6">
+            <img src="/hc_ufpe_icon.jpeg" alt="Hospital das Clinicas UFPE" class="h-10 w-10 rounded-lg object-cover" />
+            <img src="/HU Brasil - transparente.png" alt="HU Ebserh Brasil" class="h-10 object-contain" />
+          </div>
 
           <div v-if="error" class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
             <strong class="font-semibold">Erro:</strong>
