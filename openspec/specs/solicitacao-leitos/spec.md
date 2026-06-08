@@ -13,7 +13,7 @@ O sistema MUST permitir que usuários dos setores solicitantes (Bloco Cirúrgico
 
 #### Scenario: Rejeição de solicitação duplicada para mesmo prontuário ativo
 - **WHEN** o usuário tenta cadastrar uma solicitação para um prontuário que já tem status "Pendente" ou "Reservado" no sistema
-- **THEN** o sistema bloqueia o cadastro e retorna uma mensagem de erro indicando que já há uma solicitação ativa para aquele prontuário
+- **THEN** o sistema bloqueia o cadastro e retorna a mensagem de erro específica: "Solicitação para este prontuário já inserida."
 
 ### Requirement: Gestão da Fila e Reserva pela UTI
 O sistema MUST permitir que a equipe da UTI visualize a fila de solicitações e atribua leitos físicos aos pacientes aprovados, bem como cancele reservas informando obrigatoriamente um motivo pré-definido da lista de cancelamento de reserva (tipo 2). Os motivos permitidos para o cancelamento de reserva pela UTI MUST ser:

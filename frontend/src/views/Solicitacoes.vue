@@ -864,9 +864,9 @@ async function salvarNova() {
     }
     fecharModalNova();
     carregarSolicitacoes();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao salvar:', error);
-    toast.error('Erro ao salvar solicitação.');
+    toast.error(error.response?.data?.detail || 'Erro ao salvar solicitação.');
   } finally {
     submetendoNova.value = false;
   }

@@ -129,7 +129,7 @@ class SolicitacaoLeitoController:
         if duplicada:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Já existe uma solicitação ativa ({duplicada.status}) para o prontuário {prontuario}."
+                detail="Solicitação para este prontuário já inserida."
             )
 
         # 1. Consultar dados do paciente/cirurgia no AGHU
