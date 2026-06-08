@@ -145,14 +145,15 @@ class SolicitacaoLeitoController:
             "data_cirurgia": dt,
             "hora_cirurgia": hora_cirurgia,
             "status": "Pendente",
-            "perfil_solicitante": payload.get("perfil_solicitante")
+            "perfil_solicitante": payload.get("perfil_solicitante"),
+            "prioridade": payload.get("prioridade")
         }
 
         # 2. Cria a solicitação no banco local
         sol = await self.leito_provider.criar(nova_solicitacao_data)
         
         # 3. Sincroniza a fila de prioridades para esse dia/turno
-        await self._sincronizar_prioridades(dt, trn)
+        await self._sincronizar_prioridades(dt, trn, sol_id_foco=sol.id, prioridade_desejada=payload.get("prioridade"))
         
         return {"message": "Solicitação de leito registrada com sucesso."}
 
