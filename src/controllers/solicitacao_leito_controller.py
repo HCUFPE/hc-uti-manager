@@ -43,7 +43,7 @@ class SolicitacaoLeitoController:
         com_prio = []
         sem_prio = []
         for s in bucket:
-            if sol_id_foco is not None and s.id == sol_id_foco:
+            if sol_id_foco is not None and s.id == sol_id_foco and prioridade_desejada:
                 continue
             if s.prioridade and s.prioridade.startswith("P"):
                 com_prio.append(s)
@@ -122,6 +122,15 @@ class SolicitacaoLeitoController:
         prontuario = payload.get("prontuario")
         if not prontuario:
             raise HTTPException(status_code=400, detail="O prontuário é obrigatório.")
+
+        # Verificar se já existe uma solicitação ativa (Pendente ou Reservado) para este prontuário
+        todas = await self.leito_provider.get_todas()
+        duplicada = next((s for s in todas if str(s.prontuario) == str(prontuario) and s.status in ["Pendente", "Reservado"]), None)
+        if duplicada:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Já existe uma solicitação ativa ({duplicada.status}) para o prontuário {prontuario}."
+            )
 
         # 1. Consultar dados do paciente/cirurgia no AGHU
         dados_aghu = await self.consultar_dados_aghu(str(prontuario))
