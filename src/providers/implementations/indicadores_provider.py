@@ -76,13 +76,22 @@ class IndicadoresProvider:
 
         # 2. Buscar Censo Atual (AGHU) para taxa de ocupação instantânea
         leitos = []
-        try:
-            leitos = await self.census_provider.listar_leitos()
-        except Exception as e:
-            logger.error(f"Erro ao buscar censo no indicadores_provider: {e}")
+        import os
+        if os.getenv("MOCK_BEDS") == "true":
+            leitos = [
+                {"lto_lto_id": "UTI-01", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+                {"lto_lto_id": "UTI-02", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "999999", "nome_atual": "PACIENTE TESTE ALTA", "idade_atual": 45, "especialidade_atual": "CARDIOLOGIA"},
+                {"lto_lto_id": "UTI-03", "status": "Ocupado", "tipo": "uti", "prontuario_atual": "123456", "nome_atual": "PACIENTE ATUAL"},
+                {"lto_lto_id": "UTI-04", "status": "Desocupado", "tipo": "uti", "prontuario_atual": None},
+            ]
+        else:
+            try:
+                leitos = await self.census_provider.listar_leitos()
+            except Exception as e:
+                logger.error(f"Erro ao buscar censo no indicadores_provider: {e}")
 
         total_leitos = len(leitos)
-        ocupados = [l for l in leitos if l.get("status") == "OCUPADO"]
+        ocupados = [l for l in leitos if str(l.get("status") or "").upper() == "OCUPADO"]
         total_ocupados = len(ocupados)
         taxa_ocupacao = (total_ocupados / total_leitos * 100) if total_leitos > 0 else 0
 
