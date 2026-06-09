@@ -7,4 +7,4 @@
 
 - [x] 2.1 Executar `npm audit fix` no frontend e certificar que o build do frontend compila sem erros
 - [x] 2.2 Verificar o cálculo da taxa de ocupação localmente
-- [ ] 2.3 Submeter alterações, enviar ao repositório remoto e implantar na máquina virtual (VM)
+- [x] 2.3 Submeter alterações, enviar ao repositório remoto e implantar na máquina virtual (VM)
