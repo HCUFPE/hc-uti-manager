@@ -1,4 +1,4 @@
-# Versão Estável 1.2 - Alertas Corrigidos (Reload Triggered)
+# versao para 09/06/2026 as 08:54h
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
