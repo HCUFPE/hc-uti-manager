@@ -355,11 +355,7 @@ class IndicadoresProvider:
                     tempos_liberacao_encaminhamento.append(diff)
                     
         tempo_medio_liberacao_encaminhamento = (sum(tempos_liberacao_encaminhamento) / len(tempos_liberacao_encaminhamento)) if tempos_liberacao_encaminhamento else 0.0
-        
-        # Mock de fallback para desenvolvimento
-        import os
-        if not tempos_liberacao_encaminhamento and os.getenv("ENV") == "development":
-            tempo_medio_liberacao_encaminhamento = 45.2
+
 
         # 9. Volumes e Relações Percentuais
         altas_criadas_periodo = [a for a in altas_todas if in_period(a.criado_em)]
