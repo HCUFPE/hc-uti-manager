@@ -6,4 +6,4 @@
 ## 2. Validação e Homologação
 
 - [x] 2.1 Criar e executar um script de validação local para atestar que o indicador retorna `0.0` com o banco vazio
-- [ ] 2.2 Submeter as mudanças ao Git, realizar push para o repositório remoto e atualizar a máquina virtual (VM)
+- [x] 2.2 Submeter as mudanças ao Git, realizar push para o repositório remoto e atualizar a máquina virtual (VM)
