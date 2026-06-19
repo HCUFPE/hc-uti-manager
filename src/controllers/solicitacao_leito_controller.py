@@ -229,15 +229,82 @@ class SolicitacaoLeitoController:
         
         # Se mudou o prontuário, trata como cancelamento da antiga e criação de nova, transferindo a reserva
         if "prontuario" in payload and str(payload["prontuario"]) != str(alvo.prontuario):
+            novo_prontuario = str(payload["prontuario"])
             alvo_status_orig = alvo.status
             alvo_destino_orig = alvo.destino
             
+            # 1. Verificar se o novo prontuário já possui alguma solicitação ativa ('Pendente' ou 'Reservado')
+            todas_sols = await self.leito_provider.get_todas()
+            sol_ativa = next((s for s in todas_sols if str(s.prontuario) == novo_prontuario and s.status in ["Pendente", "Reservado"]), None)
+            
+            if sol_ativa:
+                if sol_ativa.status == "Reservado":
+                    raise HTTPException(
+                        status_code=400,
+                        detail="O paciente de destino já possui uma reserva de leito ativa."
+                    )
+                elif sol_ativa.status == "Pendente":
+                    # Mesclagem inteligente: Promove a solicitação pendente do paciente de destino para o status da de origem
+                    # e vincula ao leito/destino se aplicável
+                    await self.leito_provider.atualizar(sol_ativa.id, {
+                        "status": alvo_status_orig,
+                        "destino": alvo_destino_orig if alvo_status_orig == "Reservado" else None,
+                        "prioridade": payload.get("prioridade") or alvo.prioridade,
+                        "prioridade_manual": bool(payload.get("prioridade") or (alvo.prioridade if alvo.prioridade_manual else None))
+                    })
+                    
+                    # Se estava reservado, transfere a reserva física (SQLite) para o registro preexistente
+                    if alvo_status_orig == "Reservado" and self.estado_provider:
+                        res_reserva = await self.estado_provider.session.execute(
+                            select(LeitoEstado).where(LeitoEstado.solicitacao_id == sol_id)
+                        )
+                        estado_reserva = res_reserva.scalar_one_or_none()
+                        if estado_reserva:
+                            estado_reserva.solicitacao_id = sol_ativa.id
+                            estado_reserva.prontuario_proximo = int(sol_ativa.prontuario)
+                            estado_reserva.idade_proximo = sol_ativa.idade
+                            estado_reserva.especialidade_proximo = sol_ativa.especialidade
+                            await self.estado_provider.session.commit()
+                    
+                    # Cancela a solicitação original
+                    await self.leito_provider.atualizar(sol_id, {
+                        "status": "Cancelada",
+                        "destino": None
+                    })
+                    
+                    # Registrar no histórico
+                    if self.historico_provider:
+                        # Cancelamento do anterior
+                        await self.historico_provider.registrar(
+                            operador=username,
+                            tipo="exclusao_solicitacao",
+                            acao="Cancelou solicitação de vaga",
+                            detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito (Mesclado)",
+                            prontuario=str(alvo.prontuario)
+                        )
+                        # Promoção da existente do novo
+                        await self.historico_provider.registrar(
+                            operador=username,
+                            tipo="reserva" if alvo_status_orig == "Reservado" else "status",
+                            acao=f"Atualizou status para {alvo_status_orig}" if alvo_status_orig != "Reservado" else "Reservou leito para solicitação",
+                            detalhes=f"Solicitação #{sol_id} mesclada com solicitação #{sol_ativa.id} existente do Paciente {sol_ativa.nome} - Status: {alvo_status_orig} " + (f"para {alvo_destino_orig}" if alvo_status_orig == "Reservado" else ""),
+                            prontuario=str(sol_ativa.prontuario)
+                        )
+                    
+                    # Sincroniza prioridades das filas (antiga e nova)
+                    await self._sincronizar_prioridades(alvo.data_cirurgia)
+                    if sol_ativa.data_cirurgia != alvo.data_cirurgia:
+                        await self._sincronizar_prioridades(sol_ativa.data_cirurgia)
+                        
+                    return {"message": "Solicitação mesclada com solicitação pendente preexistente do paciente de destino."}
+            
+            # Se não houver solicitação ativa para o novo prontuário, prossegue com a criação normal
             # 1. Consultar dados do novo prontuário no AGHU
-            dados_aghu = await self.consultar_dados_aghu(str(payload["prontuario"]))
+            dados_aghu = await self.consultar_dados_aghu(novo_prontuario)
             
             # 2. Criar a nova solicitação
             nova_solicitacao_data = {
-                "prontuario": str(payload["prontuario"]),
+                "prontuario": novo_prontuario,
                 "nome": dados_aghu["nome"],
                 "idade": dados_aghu["idade"],
                 "especialidade": dados_aghu["especialidade"] or "GERAL",
@@ -281,8 +348,6 @@ class SolicitacaoLeitoController:
             
             # 5. Se estava reservada, transfere a reserva física (SQLite) para o novo paciente
             if alvo_status_orig == "Reservado" and self.estado_provider:
-                from sqlalchemy import select
-                from models.leito_estado import LeitoEstado
                 res_reserva = await self.estado_provider.session.execute(
                     select(LeitoEstado).where(LeitoEstado.solicitacao_id == sol_id)
                 )
