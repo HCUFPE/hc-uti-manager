@@ -22,6 +22,7 @@ class SolicitacaoLeito(Base):
     hora_cirurgia = Column(String(5), nullable=True) # Hora prevista de início (HH:MM)
     destino = Column(String(100), nullable=True) # Ex: Leito 05
     prioridade = Column(String(10), nullable=True) # P1, P2, P3, P4, P5
+    prioridade_manual = Column(Boolean, default=False, server_default="0", nullable=False)
     perfil_solicitante = Column(String(50), nullable=True) # COB, BC, HEM, UTI, etc.
     
     cirurgia_finalizada = Column(Boolean, default=False)
@@ -52,6 +53,7 @@ class SolicitacaoLeito(Base):
             "data_cirurgia": self.data_cirurgia,
             "hora_cirurgia": self.hora_cirurgia,
             "prioridade": self.prioridade,
+            "prioridade_manual": bool(self.prioridade_manual),
             "destino": self.destino,
             "perfil_solicitante": self.perfil_solicitante,
             "cirurgia_finalizada": bool(self.cirurgia_finalizada),

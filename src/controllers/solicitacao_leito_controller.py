@@ -39,13 +39,29 @@ class SolicitacaoLeitoController:
         if not bucket:
             return
 
-        # 2. Divide os demais registros entre quem já tem prioridade atribuída e quem não tem (novos)
+        # Atualiza a marcação de prioridade manual se houver um foco com prioridade desejada
+        if sol_id_foco is not None:
+            foco = next((s for s in bucket if s.id == sol_id_foco), None)
+            if not foco:
+                foco = await self.leito_provider.get_por_id(sol_id_foco)
+            if foco:
+                if prioridade_desejada:
+                    foco.prioridade_manual = True
+                    await self.leito_provider.atualizar(foco.id, {"prioridade_manual": True})
+                else:
+                    foco.prioridade_manual = False
+                    await self.leito_provider.atualizar(foco.id, {"prioridade_manual": False})
+
+        # 2. Divide os registros entre quem tem prioridade manual e quem não tem (automáticos)
         com_prio = []
         sem_prio = []
+        
+        usar_insercao_manual = bool(sol_id_foco is not None and prioridade_desejada)
+
         for s in bucket:
-            if sol_id_foco is not None and s.id == sol_id_foco and prioridade_desejada:
+            if usar_insercao_manual and s.id == sol_id_foco:
                 continue
-            if s.prioridade and s.prioridade.startswith("P"):
+            if s.prioridade_manual:
                 com_prio.append(s)
             else:
                 sem_prio.append(s)
@@ -58,18 +74,18 @@ class SolicitacaoLeitoController:
                 return 999
         com_prio.sort(key=obter_peso_prio)
 
-        # Ordena os sem prioridade (novos) cronologicamente
+        # Ordena os sem prioridade (novos/automáticos) cronologicamente pelo horário e criação
         def obter_peso_cronologico(s):
             hora = s.hora_cirurgia if s.hora_cirurgia else "99:99"
             criado = s.criado_em.timestamp() if s.criado_em else 0
             return (hora, criado)
         sem_prio.sort(key=obter_peso_cronologico)
 
-        # Junta os dois grupos preservando a ordenação manual prévia e jogando os novos para o final
+        # Junta os dois grupos
         restantes = com_prio + sem_prio
 
-        # Se houver um foco de reordenação manual
-        if sol_id_foco is not None and prioridade_desejada:
+        # Se houver um foco com reordenação manual
+        if usar_insercao_manual:
             foco = next((s for s in bucket if s.id == sol_id_foco), None)
             if foco:
                 try:
@@ -108,6 +124,7 @@ class SolicitacaoLeitoController:
                 "data_cirurgia": s.data_cirurgia,
                 "hora_cirurgia": s.hora_cirurgia,
                 "prioridade": s.prioridade,
+                "prioridade_manual": bool(s.prioridade_manual),
                 "perfil_solicitante": s.perfil_solicitante,
                 "destino": s.destino,
                 "cirurgia_finalizada": bool(s.cirurgia_finalizada),
@@ -155,7 +172,8 @@ class SolicitacaoLeitoController:
             "hora_cirurgia": hora_cirurgia,
             "status": "Pendente",
             "perfil_solicitante": payload.get("perfil_solicitante"),
-            "prioridade": payload.get("prioridade")
+            "prioridade": payload.get("prioridade"),
+            "prioridade_manual": bool(payload.get("prioridade"))
         }
 
         # 2. Cria a solicitação no banco local
@@ -231,6 +249,7 @@ class SolicitacaoLeitoController:
                 "status": alvo_status_orig,
                 "destino": alvo_destino_orig if alvo_status_orig == "Reservado" else None,
                 "prioridade": payload.get("prioridade") or alvo.prioridade,
+                "prioridade_manual": bool(payload.get("prioridade") or (alvo.prioridade if alvo.prioridade_manual else None)),
                 "perfil_solicitante": alvo.perfil_solicitante
             }
             nova_sol = await self.leito_provider.criar(nova_solicitacao_data)
@@ -294,6 +313,9 @@ class SolicitacaoLeitoController:
         # Caso geral: Não houve troca de prontuário
         if not dados_atualizar:
             raise HTTPException(status_code=400, detail="Nenhum campo válido para atualização fornecido.")
+
+        if "prioridade" in dados_atualizar:
+            dados_atualizar["prioridade_manual"] = bool(dados_atualizar["prioridade"])
 
         # Salva o bucket antigo para caso mude data/turno
         old_dt = alvo.data_cirurgia
