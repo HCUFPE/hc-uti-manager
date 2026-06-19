@@ -24,17 +24,17 @@ class SolicitacaoLeitoController:
         self.historico_provider = historico_provider
         self.aghu_cirurgia_provider = aghu_cirurgia_provider
 
-    async def _sincronizar_prioridades(self, data_cirurgia: str, turno: str, sol_id_foco: int | None = None, prioridade_desejada: str | None = None):
+    async def _sincronizar_prioridades(self, data_cirurgia: str, turno: str | None = None, sol_id_foco: int | None = None, prioridade_desejada: str | None = None):
         """
         Garante que a fila de prioridades seja contínua (P1, P2, P3...) e sem buracos.
         Preserva as prioridades manuais já existentes para as solicitações no bucket.
         """
-        if not data_cirurgia or not turno:
+        if not data_cirurgia:
             return
 
-        # 1. Busca todas as solicitações Pendentes para esse bucket
+        # 1. Busca todas as solicitações Pendentes para esse bucket (agrupado apenas por dia)
         todas = await self.leito_provider.get_todas()
-        bucket = [s for s in todas if s.data_cirurgia == data_cirurgia and s.turno == turno and s.status == "Pendente"]
+        bucket = [s for s in todas if s.data_cirurgia == data_cirurgia and s.status == "Pendente"]
         
         if not bucket:
             return
@@ -161,8 +161,8 @@ class SolicitacaoLeitoController:
         # 2. Cria a solicitação no banco local
         sol = await self.leito_provider.criar(nova_solicitacao_data)
         
-        # 3. Sincroniza a fila de prioridades para esse dia/turno
-        await self._sincronizar_prioridades(dt, trn, sol_id_foco=sol.id, prioridade_desejada=payload.get("prioridade"))
+        # 3. Sincroniza a fila de prioridades para esse dia
+        await self._sincronizar_prioridades(dt, sol_id_foco=sol.id, prioridade_desejada=payload.get("prioridade"))
         
         return {"message": "Solicitação de leito registrada com sucesso."}
 
@@ -182,8 +182,8 @@ class SolicitacaoLeitoController:
 
         await self.leito_provider.atualizar(sol_id, dados)
         
-        # Se mudou status, a fila desse dia/turno pode ter buracos
-        await self._sincronizar_prioridades(alvo.data_cirurgia, alvo.turno)
+        # Se mudou status, a fila desse dia pode ter buracos
+        await self._sincronizar_prioridades(alvo.data_cirurgia)
         
         return {"message": "Solicitação atualizada."}
 
@@ -285,9 +285,9 @@ class SolicitacaoLeitoController:
                         )
 
             # 6. Sincroniza prioridades das filas (antiga e nova)
-            await self._sincronizar_prioridades(alvo.data_cirurgia, alvo.turno)
-            if nova_sol.data_cirurgia != alvo.data_cirurgia or nova_sol.turno != alvo.turno:
-                await self._sincronizar_prioridades(nova_sol.data_cirurgia, nova_sol.turno)
+            await self._sincronizar_prioridades(alvo.data_cirurgia)
+            if nova_sol.data_cirurgia != alvo.data_cirurgia:
+                await self._sincronizar_prioridades(nova_sol.data_cirurgia)
                 
             return {"message": "Solicitação editada com sucesso via troca de paciente."}
             
@@ -321,14 +321,13 @@ class SolicitacaoLeitoController:
         
         # Sincroniza o novo bucket
         new_dt = dados_atualizar.get("data_cirurgia", old_dt)
-        new_trn = dados_atualizar.get("turno", old_trn)
         new_prio = dados_atualizar.get("prioridade", alvo.prioridade)
         
-        await self._sincronizar_prioridades(new_dt, new_trn, sol_id_foco=sol_id, prioridade_desejada=new_prio)
+        await self._sincronizar_prioridades(new_dt, sol_id_foco=sol_id, prioridade_desejada=new_prio)
         
         # Se mudou de bucket, sincroniza o antigo também para tapar o buraco
-        if new_dt != old_dt or new_trn != old_trn:
-            await self._sincronizar_prioridades(old_dt, old_trn)
+        if new_dt != old_dt:
+            await self._sincronizar_prioridades(old_dt)
 
         return {"message": "Solicitação editada com sucesso."}
 
@@ -354,7 +353,7 @@ class SolicitacaoLeitoController:
         
         if sucesso:
             # Sincroniza para tapar o buraco
-            await self._sincronizar_prioridades(dt, trn)
+            await self._sincronizar_prioridades(dt)
             
         return {"message": "Solicitação cancelada."}
 
@@ -392,7 +391,7 @@ class SolicitacaoLeitoController:
         })
 
         # 3. Sincroniza a fila (um saiu da fila, os outros sobem)
-        await self._sincronizar_prioridades(dt, trn)
+        await self._sincronizar_prioridades(dt)
 
         return {"message": f"Reserva do leito {leito_id} realizada com sucesso."}
 
@@ -417,7 +416,7 @@ class SolicitacaoLeitoController:
         })
 
         # 3. Sincroniza a fila (um voltou, pode empurrar outros)
-        await self._sincronizar_prioridades(dt, trn, sol_id_foco=sol_id, prioridade_desejada=solicitacao.prioridade)
+        await self._sincronizar_prioridades(dt, sol_id_foco=sol_id, prioridade_desejada=solicitacao.prioridade)
 
         return {"message": "Reserva cancelada. Solicitação voltou para Pendente."}
 

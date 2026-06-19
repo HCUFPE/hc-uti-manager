@@ -364,11 +364,13 @@ const formAlta = ref({ necessidadesEspeciais: '' });
 const selectedNecessidades = ref<string[]>([]);
 
 const OPCOES_NECESSIDADES = [
+  'Em uso de O2',
+  'Gestante',
   'Isolamento de contato',
   'Isolamento respiratório',
-  'Em uso de O2',
   'Necessidade de aspiração',
   'Necessidade de ventilador no leito',
+  'Puérpera',
   'Nenhum'
 ];
 

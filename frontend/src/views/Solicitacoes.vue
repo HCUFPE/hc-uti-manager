@@ -633,13 +633,7 @@ const solicitacoesFiltradas = computed(() => {
     const dataB = b.data_cirurgia || '9999-99-99';
     if (dataA !== dataB) return dataA.localeCompare(dataB);
 
-    // Nível 2: Turno (Manhã < Tarde < Noite)
-    const pesoTurno: Record<string, number> = { 'Manhã': 1, 'Tarde': 2, 'Noite': 3 };
-    const turnoA = pesoTurno[a.turno] || 99;
-    const turnoB = pesoTurno[b.turno] || 99;
-    if (turnoA !== turnoB) return turnoA - turnoB;
-
-    // Nível 3: Prioridade (P1 < P2 < P3...)
+    // Nível 2: Prioridade (P1 < P2 < P3...)
     const getPrioridadeValor = (p: string | undefined) => {
       if (!p || !p.startsWith('P')) return 999;
       const num = parseInt(p.substring(1));

@@ -7,7 +7,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 # AJUSTE O CAMINHO ABAIXO PARA O DIRETÓRIO DO PROJETO NA VM
-WorkingDirectory=/opt/hc-uti-manager
+WorkingDirectory=/var/app/hc-uti-manager
 
 # Limpa qualquer estado anterior antes de iniciar
 ExecStartPre=-/usr/bin/podman-compose down
