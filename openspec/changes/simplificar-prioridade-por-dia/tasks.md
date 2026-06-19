@@ -15,4 +15,4 @@
 ## 3. Validação e Implantação
 
 - [x] 3.1 Executar testes automatizados locais para certificar de que a lógica de ordenação e deslocamento funciona sem erros
-- [ ] 3.2 Submeter as alterações, fazer push para o repositório remoto e implantar na máquina virtual (VM) de produção
+- [x] 3.2 Submeter as alterações, fazer push para o repositório remoto e implantar na máquina virtual (VM) de produção
