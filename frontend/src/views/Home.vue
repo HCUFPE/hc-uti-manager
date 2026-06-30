@@ -276,32 +276,44 @@ const tocarAlertaSonoro = () => {
     if (!AudioContextClass) return;
     const audioCtx = new AudioContextClass();
     
-    // Primeiro bipe (Lá 5)
-    const osc1 = audioCtx.createOscillator();
-    const gain1 = audioCtx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(880, audioCtx.currentTime);
-    gain1.gain.setValueAtTime(0.12, audioCtx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-    osc1.connect(gain1);
-    gain1.connect(audioCtx.destination);
-    osc1.start(audioCtx.currentTime);
-    osc1.stop(audioCtx.currentTime + 0.25);
+    const playBeep = (delay: number, freq: number, duration: number) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle'; // Mais perceptível e adequado para alertas que a onda senoidal pura
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime + delay); // Volume mais evidente (0.3)
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + duration);
+    };
 
-    // Segundo bipe (Dó 6)
-    const osc2 = audioCtx.createOscillator();
-    const gain2 = audioCtx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(1046.5, audioCtx.currentTime + 0.15);
-    gain2.gain.setValueAtTime(0.12, audioCtx.currentTime + 0.15);
-    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-    osc2.connect(gain2);
-    gain2.connect(audioCtx.destination);
-    osc2.start(audioCtx.currentTime + 0.15);
-    osc2.stop(audioCtx.currentTime + 0.4);
+    // Toca 3 bipes rápidos em sequência
+    playBeep(0, 987.77, 0.12);
+    playBeep(0.2, 987.77, 0.12);
+    playBeep(0.4, 987.77, 0.15);
   } catch (error) {
     console.warn('Falha ao reproduzir áudio de alerta:', error);
   }
+};
+
+let soundIntervalId: any = null;
+
+const verificarETocarSom = () => {
+  const temCirurgiaPendente = leitos.value.some(
+    (l) => l.proximoPaciente && l.cirurgiaFinalizada && !l.encaminhamentoLiberado
+  );
+  if (temCirurgiaPendente && authStore.isUTI) {
+    tocarAlertaSonoro();
+  }
+};
+
+const reiniciarSoundTimer = () => {
+  if (soundIntervalId) {
+    clearInterval(soundIntervalId);
+  }
+  soundIntervalId = setInterval(verificarETocarSom, 30000); // Executa o bipe a cada 30 segundos
 };
 
 const loadLeitos = async () => {
@@ -360,6 +372,7 @@ const loadLeitos = async () => {
     
     if (deveTocarSom && authStore.isUTI) {
       tocarAlertaSonoro();
+      reiniciarSoundTimer(); // Reinicia o timer para sincronizar com o bipe imediato
     }
 
     leitos.value = novosLeitos;
@@ -374,11 +387,15 @@ let leitosIntervalId: any = null;
 onMounted(() => {
   loadLeitos();
   leitosIntervalId = setInterval(loadLeitos, 120000);
+  reiniciarSoundTimer();
 });
 
 onUnmounted(() => {
   if (leitosIntervalId) {
     clearInterval(leitosIntervalId);
+  }
+  if (soundIntervalId) {
+    clearInterval(soundIntervalId);
   }
 });
 
