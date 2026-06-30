@@ -4,7 +4,8 @@
     :class="[
       temConflito ? 'border-red-500 ring-4 ring-red-500/10 shadow-red-100 bg-white/90' : 
       (sinalizacaoTransferencia ? 'border-rose-200 ring-4 ring-rose-500/5 shadow-rose-100 bg-white/90' : 
-      (proximoPaciente && cirurgiaFinalizada && !encaminhamentoLiberado) ? 'border-amber-300 bg-amber-50/60 ring-4 ring-amber-400/10 shadow-amber-100' :
+      (proximoPaciente && cirurgiaFinalizada && !encaminhamentoLiberado) ? 
+        (authStore.isUTI ? 'animate-pulse-warning border-amber-300' : 'border-amber-300 bg-amber-50/60 ring-4 ring-amber-400/10 shadow-amber-100') :
       (proximoPaciente && encaminhamentoLiberado) ? 'border-emerald-300 bg-emerald-50/60 ring-4 ring-emerald-400/10 shadow-emerald-100' :
       'border-slate-200 shadow-slate-100/50 bg-white/90')
     ]"

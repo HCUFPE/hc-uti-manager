@@ -87,3 +87,20 @@
     @apply absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none;
   }
 }
+
+@keyframes pulse-warning {
+  0%, 100% {
+    border-color: #fcd34d;
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.15), 0 2px 4px rgba(245, 158, 11, 0.05);
+    background-color: rgba(254, 243, 199, 0.4);
+  }
+  50% {
+    border-color: #f59e0b;
+    box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.35);
+    background-color: rgba(254, 243, 199, 0.85);
+  }
+}
+
+.animate-pulse-warning {
+  animation: pulse-warning 1.5s infinite ease-in-out;
+}

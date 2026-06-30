@@ -42,6 +42,26 @@
             {{ option.label }}
           </button>
         </TransitionGroup>
+        <button
+          v-if="authStore.isUTI"
+          class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition shadow-sm cursor-pointer select-none"
+          :class="isMuted ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+          @click="toggleMute"
+          :title="isMuted ? 'Ativar alerta sonoro' : 'Desativar alerta sonoro'"
+        >
+          <template v-if="isMuted">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 shrink-0 text-red-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+            </svg>
+            <span class="text-xs font-semibold">Som Mudo</span>
+          </template>
+          <template v-else>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 shrink-0 text-slate-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+            </svg>
+            <span class="text-xs font-semibold">Som Ativo</span>
+          </template>
+        </button>
         <UiButton
           variant="outline"
           size="sm"
@@ -202,6 +222,7 @@ import UiButton from '../components/ui/Button.vue';
 import { useToast } from 'vue-toastification';
 import api from '../services/api';
 import Modal from '../components/Modal.vue';
+import { useAuthStore } from '../stores/auth';
 
 type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
@@ -237,11 +258,56 @@ type Leito = {
 
 const leitos = ref<Leito[]>([]);
 const toast = useToast();
+const authStore = useAuthStore();
+
+const isMuted = ref(localStorage.getItem('hc_uti_som_alerta') === 'true');
+const leitosNotificados = ref<Set<string>>(new Set());
+
+const toggleMute = () => {
+  isMuted.value = !isMuted.value;
+  localStorage.setItem('hc_uti_som_alerta', String(isMuted.value));
+  toast.info(isMuted.value ? 'Alertas sonoros desativados.' : 'Alertas sonoros ativados.');
+};
+
+const tocarAlertaSonoro = () => {
+  if (isMuted.value) return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audioCtx = new AudioContextClass();
+    
+    // Primeiro bipe (Lá 5)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, audioCtx.currentTime);
+    gain1.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(audioCtx.currentTime);
+    osc1.stop(audioCtx.currentTime + 0.25);
+
+    // Segundo bipe (Dó 6)
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1046.5, audioCtx.currentTime + 0.15);
+    gain2.gain.setValueAtTime(0.12, audioCtx.currentTime + 0.15);
+    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(audioCtx.currentTime + 0.15);
+    osc2.stop(audioCtx.currentTime + 0.4);
+  } catch (error) {
+    console.warn('Falha ao reproduzir áudio de alerta:', error);
+  }
+};
 
 const loadLeitos = async () => {
   try {
     const response = await api.get('/api/leitos');
-    leitos.value = response.data.map((l: any) => ({
+    const novosLeitos = response.data.map((l: any) => ({
       leitoNumero: l.lto_lto_id,
       status: l.alta_solicitada ? 'alta' :
               (l.status || '').toLowerCase() === 'ocupado' ? 'ocupado' :
@@ -274,6 +340,29 @@ const loadLeitos = async () => {
       encaminhamentoLiberado: l.encaminhamento_liberado || false,
       solicitacaoId: l.solicitacao_id,
     }));
+
+    // Identificar leitos com cirurgia concluída e encaminhamento pendente de liberação
+    const leitosComCirurgiaConcluida = novosLeitos.filter(
+      (l: any) => l.proximoPaciente && l.cirurgiaFinalizada && !l.encaminhamentoLiberado
+    );
+    
+    let deveTocarSom = false;
+    const idsAtuais = new Set<string>();
+    
+    for (const leito of leitosComCirurgiaConcluida) {
+      idsAtuais.add(leito.leitoNumero);
+      if (!leitosNotificados.value.has(leito.leitoNumero)) {
+        deveTocarSom = true;
+      }
+    }
+    
+    leitosNotificados.value = idsAtuais;
+    
+    if (deveTocarSom && authStore.isUTI) {
+      tocarAlertaSonoro();
+    }
+
+    leitos.value = novosLeitos;
   } catch (error) {
     console.error('Erro ao buscar leitos:', error);
     toast.error('Falha ao carregar leitos. Verifique a conexao.');
