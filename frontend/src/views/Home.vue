@@ -289,10 +289,13 @@ const tocarAlertaSonoro = () => {
       osc.stop(audioCtx.currentTime + delay + duration);
     };
 
-    // Toca 3 bipes rápidos em sequência
+    // Toca 6 bipes rápidos em sequência
     playBeep(0, 987.77, 0.12);
-    playBeep(0.2, 987.77, 0.12);
-    playBeep(0.4, 987.77, 0.15);
+    playBeep(0.18, 987.77, 0.12);
+    playBeep(0.36, 987.77, 0.12);
+    playBeep(0.54, 987.77, 0.12);
+    playBeep(0.72, 987.77, 0.12);
+    playBeep(0.9, 987.77, 0.15);
   } catch (error) {
     console.warn('Falha ao reproduzir áudio de alerta:', error);
   }
