@@ -91,16 +91,16 @@
 @keyframes pulse-warning {
   0%, 100% {
     border-color: #fcd34d;
-    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.15), 0 2px 4px rgba(245, 158, 11, 0.05);
-    background-color: rgba(254, 243, 199, 0.4);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.2), 0 2px 4px rgba(245, 158, 11, 0.05);
+    background-color: rgba(254, 243, 199, 0.3);
   }
   50% {
-    border-color: #f59e0b;
-    box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.35);
-    background-color: rgba(254, 243, 199, 0.85);
+    border-color: #d97706;
+    box-shadow: 0 0 18px 8px rgba(217, 119, 6, 0.5);
+    background-color: rgba(254, 243, 199, 0.95);
   }
 }
 
 .animate-pulse-warning {
-  animation: pulse-warning 1.5s infinite ease-in-out;
+  animation: pulse-warning 0.8s infinite ease-in-out;
 }
