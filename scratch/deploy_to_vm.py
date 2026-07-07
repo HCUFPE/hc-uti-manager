@@ -23,7 +23,9 @@ def deploy():
         
         commands = [
             "cd /var/app/hc-uti-manager && git pull origin master",
-            "systemctl restart hc-uti.service"
+            "systemctl restart hc-uti.service",
+            "sleep 8",  # Aguarda a inicialização do container
+            "podman exec hc-uti-backend alembic upgrade head"
         ]
         
         for cmd in commands:
