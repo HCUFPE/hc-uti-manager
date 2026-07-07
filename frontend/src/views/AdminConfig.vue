@@ -11,7 +11,7 @@
           class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           <PlusIcon class="h-4 w-4" />
-          + Novo Usuário
+          Novo Usuário
         </button>
       </div>
 
