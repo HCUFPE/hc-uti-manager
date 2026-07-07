@@ -14,6 +14,8 @@ interface User {
   displayName?: string[];
   title?: string[];
   department?: string[];
+  cn?: string[];
+  mail?: string[];
   employeeNumber?: string[];
 }
 

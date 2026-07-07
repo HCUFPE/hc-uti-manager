@@ -1,5 +1,15 @@
 <template>
-  <div class="relative">
+  <div class="flex items-center gap-3 relative">
+    <!-- Nome Completo e Setor antes do Bonequinho -->
+    <div class="text-right hidden sm:block">
+      <div class="text-sm font-semibold text-slate-700 leading-tight">
+        {{ fullName }}
+      </div>
+      <div class="text-xs text-slate-400 leading-none mt-0.5">
+        {{ department }}
+      </div>
+    </div>
+
     <button
       @click.stop="isOpen = !isOpen"
       class="relative z-10 inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors duration-150 hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -20,7 +30,7 @@
             <UserCircle class="h-8 w-8 text-slate-600" />
           </div>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-base font-semibold text-slate-900">{{ displayName }}</p>
+            <p class="truncate text-base font-semibold text-slate-900">{{ fullName }}</p>
             <p class="truncate text-sm text-slate-500">{{ displayEmail }}</p>
             <p class="truncate text-xs text-slate-500">{{ displayRole }}</p>
           </div>
@@ -57,8 +67,13 @@ const authStore = useAuthStore();
 const isOpen = ref(false);
 const toast = useToast();
 
-const displayName = computed(() => authStore.user?.givenName?.[0] || authStore.user?.username || 'Usuário');
-const displayEmail = computed(() => authStore.user?.userPrincipalName?.[0] || `${authStore.user?.username}@hc.ebserh.gov.br`);
+const fullName = computed(() => {
+  return authStore.user?.displayName?.[0] || authStore.user?.cn?.[0] || authStore.user?.givenName?.[0] || authStore.user?.username || 'Usuário';
+});
+const department = computed(() => {
+  return authStore.user?.department?.[0] || 'UTI';
+});
+const displayEmail = computed(() => authStore.user?.mail?.[0] || authStore.user?.userPrincipalName?.[0] || `${authStore.user?.username}@hc.ebserh.gov.br`);
 const displayRole = computed(() => authStore.user?.perfil || 'Perfil não informado');
 
 const handleLogout = async () => {

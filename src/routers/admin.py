@@ -21,6 +21,65 @@ async def verify_admin_group(current_user: dict = Depends(auth_handler.decode_to
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito a administradores")
     return current_user
 
+@router.get("/admin/ad-search/{username}")
+async def buscar_usuario_ad(
+    username: str,
+    current_user: dict = Depends(verify_admin_group)
+):
+    """Consulta detalhes de um usuário no Active Directory (AD)."""
+    from starlette.concurrency import run_in_threadpool
+    try:
+        user_info = await run_in_threadpool(
+            auth_handler.authenticate_user, 
+            username.strip().lower(), 
+            None
+        )
+        
+        # Mapear os atributos retornados pelo AD
+        display_name = user_info.get("displayName", [""])
+        if isinstance(display_name, list) and display_name:
+            display_name = display_name[0]
+        elif not display_name:
+            display_name = user_info.get("cn", [""])[0] if user_info.get("cn") else username
+            
+        department = user_info.get("department", [""])
+        if isinstance(department, list) and department:
+            department = department[0]
+        elif not department:
+            # Fallback para provedor mock
+            mock_departments = {
+                "admin": "USID / Tecnologia",
+                "uti": "Unidade de Terapia Intensiva",
+                "nir": "Núcleo Interno de Regulação",
+                "cob": "Centro Obstétrico",
+                "bloco": "Bloco Cirúrgico",
+                "comum": "Enfermarias"
+            }
+            clean_user = username.strip().lower()
+            department = mock_departments.get(clean_user, "Não Informado")
+            
+        mail = user_info.get("mail", [""])
+        if isinstance(mail, list) and mail:
+            mail = mail[0]
+        elif not mail:
+            upn = user_info.get("userPrincipalName", [""])
+            if isinstance(upn, list) and upn:
+                mail = upn[0]
+            else:
+                mail = f"{username.strip().lower()}@mock.com"
+                
+        return {
+            "username": username.strip().lower(),
+            "nome_completo": display_name,
+            "lotacao": department,
+            "email": mail
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Usuário '{username}' não localizado no Active Directory."
+        )
+
 from models.usuario_perfil import UsuarioPerfil
 from resources.database import get_app_db_session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,10 +132,26 @@ async def salvar_perfil(
     result = await db.execute(stmt)
     usuario = result.scalar_one_or_none()
 
+    nome_completo = payload.get("nome_completo")
+    lotacao = payload.get("lotacao")
+    email = payload.get("email")
+
     if usuario:
         usuario.perfil = perfil
+        if nome_completo is not None:
+            usuario.nome_completo = nome_completo
+        if lotacao is not None:
+            usuario.lotacao = lotacao
+        if email is not None:
+            usuario.email = email
     else:
-        novo_usuario = UsuarioPerfil(username=username, perfil=perfil)
+        novo_usuario = UsuarioPerfil(
+            username=username, 
+            perfil=perfil,
+            nome_completo=nome_completo,
+            lotacao=lotacao,
+            email=email
+        )
         db.add(novo_usuario)
     
     await db.commit()

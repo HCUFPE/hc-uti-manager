@@ -30,6 +30,9 @@ from models.leito_estado import LeitoEstado
 from models.solicitacao_alta import SolicitacaoAlta
 from models.solicitacao_leito import SolicitacaoLeito
 from models.refresh_token import RefreshToken
+from models.alerta import Alerta
+from models.historico_acao import HistoricoAcao
+from models.usuario_perfil import UsuarioPerfil
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

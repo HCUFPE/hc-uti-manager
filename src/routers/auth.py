@@ -50,6 +50,51 @@ async def login(
         else:
             user["perfil"] = perfil_obj.perfil if perfil_obj else "Comum"
 
+        # Sincronizar dados do AD para a tabela local se o perfil existir
+        if perfil_obj:
+            display_name = user.get("displayName", [""])
+            if isinstance(display_name, list) and display_name:
+                display_name = display_name[0]
+            elif not display_name:
+                display_name = user.get("cn", [""])[0] if user.get("cn") else user["username"]
+                
+            department = user.get("department", [""])
+            if isinstance(department, list) and department:
+                department = department[0]
+            elif not department:
+                mock_departments = {
+                    "admin": "USID / Tecnologia",
+                    "uti": "Unidade de Terapia Intensiva",
+                    "nir": "Núcleo Interno de Regulação",
+                    "cob": "Centro Obstétrico",
+                    "bloco": "Bloco Cirúrgico",
+                    "comum": "Enfermarias"
+                }
+                department = mock_departments.get(user["username"].strip().lower(), "Não Informado")
+
+            mail = user.get("mail", [""])
+            if isinstance(mail, list) and mail:
+                mail = mail[0]
+            elif not mail:
+                upn = user.get("userPrincipalName", [""])
+                if isinstance(upn, list) and upn:
+                    mail = upn[0]
+                else:
+                    mail = f"{user['username']}@mock.com"
+
+            updated = False
+            if display_name and perfil_obj.nome_completo != display_name:
+                perfil_obj.nome_completo = display_name
+                updated = True
+            if department and perfil_obj.lotacao != department:
+                perfil_obj.lotacao = department
+                updated = True
+            if mail and perfil_obj.email != mail:
+                perfil_obj.email = mail
+                updated = True
+            if updated:
+                await db.commit()
+
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -121,6 +166,51 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
             user_full_info["perfil"] = "Administrador"
         else:
             user_full_info["perfil"] = perfil_obj.perfil if perfil_obj else "Comum"
+
+        # Sincronizar dados do AD para a tabela local se o perfil existir no refresh também
+        if perfil_obj:
+            display_name = user_full_info.get("displayName", [""])
+            if isinstance(display_name, list) and display_name:
+                display_name = display_name[0]
+            elif not display_name:
+                display_name = user_full_info.get("cn", [""])[0] if user_full_info.get("cn") else user_full_info["username"]
+                
+            department = user_full_info.get("department", [""])
+            if isinstance(department, list) and department:
+                department = department[0]
+            elif not department:
+                mock_departments = {
+                    "admin": "USID / Tecnologia",
+                    "uti": "Unidade de Terapia Intensiva",
+                    "nir": "Núcleo Interno de Regulação",
+                    "cob": "Centro Obstétrico",
+                    "bloco": "Bloco Cirúrgico",
+                    "comum": "Enfermarias"
+                }
+                department = mock_departments.get(user_full_info["username"].strip().lower(), "Não Informado")
+
+            mail = user_full_info.get("mail", [""])
+            if isinstance(mail, list) and mail:
+                mail = mail[0]
+            elif not mail:
+                upn = user_full_info.get("userPrincipalName", [""])
+                if isinstance(upn, list) and upn:
+                    mail = upn[0]
+                else:
+                    mail = f"{user_full_info['username']}@mock.com"
+
+            updated = False
+            if display_name and perfil_obj.nome_completo != display_name:
+                perfil_obj.nome_completo = display_name
+                updated = True
+            if department and perfil_obj.lotacao != department:
+                perfil_obj.lotacao = department
+                updated = True
+            if mail and perfil_obj.email != mail:
+                perfil_obj.email = mail
+                updated = True
+            if updated:
+                await db.commit()
 
     except HTTPException as e:
         # Handle cases where the user might not exist in AD anymore

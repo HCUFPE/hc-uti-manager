@@ -11,7 +11,7 @@
           class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           <PlusIcon class="h-4 w-4" />
-          Novo Perfil
+          + Novo Usuário
         </button>
       </div>
 
@@ -19,17 +19,24 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="text-xs uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-200">
-              <th class="px-6 py-3 font-semibold">Login (AD)</th>
+              <th class="px-6 py-3 font-semibold">Usuário (Nome/Login)</th>
+              <th class="px-6 py-3 font-semibold">Lotação</th>
+              <th class="px-6 py-3 font-semibold">E-mail</th>
               <th class="px-6 py-3 font-semibold">Perfil Atribuído</th>
               <th class="px-6 py-3 font-semibold text-right">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr v-if="loading" class="animate-pulse">
-              <td colspan="3" class="px-6 py-8 text-center text-slate-400">Carregando perfis...</td>
+              <td colspan="5" class="px-6 py-8 text-center text-slate-400">Carregando perfis...</td>
             </tr>
             <tr v-else v-for="item in perfis" :key="item.username" class="hover:bg-slate-50 transition">
-              <td class="px-6 py-4 font-medium text-slate-700">{{ item.username }}</td>
+              <td class="px-6 py-4">
+                <div class="font-semibold text-slate-800">{{ item.nome_completo || 'Sem Nome' }}</div>
+                <div class="text-xs text-slate-400">{{ item.username }}</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-600">{{ item.lotacao || 'N/D' }}</td>
+              <td class="px-6 py-4 text-sm text-slate-500">{{ item.email || 'N/D' }}</td>
               <td class="px-6 py-4">
                 <span 
                   class="px-2.5 py-1 rounded-full text-xs font-bold border"
@@ -58,7 +65,7 @@
               </td>
             </tr>
             <tr v-if="!loading && perfis.length === 0">
-              <td colspan="3" class="px-6 py-12 text-center">
+              <td colspan="5" class="px-6 py-12 text-center">
                 <div class="flex flex-col items-center gap-2 text-slate-400">
                   <ShieldExclamationIcon class="h-12 w-12 opacity-20" />
                   <p>Nenhum perfil customizado cadastrado.</p>
@@ -83,14 +90,51 @@
         <div class="p-6 space-y-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Login da Rede (AD)</label>
+            <div class="relative">
+              <input 
+                v-model="form.username"
+                type="text" 
+                placeholder="ex: daniel.turmina"
+                :disabled="isEditing"
+                @blur="buscarUsuarioAD"
+                class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition disabled:bg-slate-100 disabled:text-slate-500"
+              />
+              <span v-if="searchingAD" class="absolute right-3 top-2.5 flex h-5 w-5 items-center justify-center">
+                <span class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></span>
+              </span>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
             <input 
-              v-model="form.username"
+              v-model="form.nome_completo"
               type="text" 
-              placeholder="ex: daniel.turmina"
-              :disabled="isEditing"
-              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition disabled:bg-slate-100 disabled:text-slate-500"
+              placeholder="Nome retornado do AD"
+              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
             />
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Lotação (Setor)</label>
+            <input 
+              v-model="form.lotacao"
+              type="text" 
+              placeholder="Lotação do AD"
+              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
+            <input 
+              v-model="form.email"
+              type="email" 
+              placeholder="email@ebserh.gov.br"
+              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
+            />
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Perfil de Acesso</label>
             <select 
@@ -138,13 +182,33 @@ const showAddModal = ref(false);
 const isEditing = ref(false);
 const perfis = ref<any[]>([]);
 
+const searchingAD = ref(false);
 const form = ref({
   username: '',
-  perfil: 'Comum'
+  perfil: 'Comum',
+  nome_completo: '',
+  lotacao: '',
+  email: ''
 });
 
+async function buscarUsuarioAD() {
+  if (!form.value.username || isEditing.value) return;
+  searchingAD.value = true;
+  try {
+    const { data } = await api.get(`/api/admin/ad-search/${form.value.username}`);
+    form.value.nome_completo = data.nome_completo;
+    form.value.lotacao = data.lotacao;
+    form.value.email = data.email;
+    toast.success('Usuário localizado no Active Directory!');
+  } catch (err: any) {
+    toast.warning(err.response?.data?.detail || 'Não foi possível consultar os dados no AD. Insira manualmente.');
+  } finally {
+    searchingAD.value = false;
+  }
+}
+
 function abrirModalNovo() {
-  form.value = { username: '', perfil: 'Comum' };
+  form.value = { username: '', perfil: 'Comum', nome_completo: '', lotacao: '', email: '' };
   isEditing.value = false;
   showAddModal.value = true;
 }
@@ -152,6 +216,9 @@ function abrirModalNovo() {
 function abrirModalEdicao(item: any) {
   form.value.username = item.username;
   form.value.perfil = item.perfil;
+  form.value.nome_completo = item.nome_completo || '';
+  form.value.lotacao = item.lotacao || '';
+  form.value.email = item.email || '';
   isEditing.value = true;
   showAddModal.value = true;
 }
@@ -174,7 +241,7 @@ async function salvar() {
     await api.post('/api/admin/perfis', form.value);
     toast.success('Perfil atualizado com sucesso!');
     showAddModal.value = false;
-    form.value = { username: '', perfil: 'Comum' };
+    form.value = { username: '', perfil: 'Comum', nome_completo: '', lotacao: '', email: '' };
     await carregarPerfis();
   } catch (error) {
     toast.error('Erro ao salvar perfil.');
