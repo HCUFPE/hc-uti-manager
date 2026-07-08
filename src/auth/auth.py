@@ -56,16 +56,17 @@ class MockAuthProvider(AuthProviderInterface):
             "comum": "comum"
         }
 
-        # Se password for None, estamos apenas buscando info (ex: refresh token)
+        # Se password for None, estamos apenas buscando info (ex: refresh token ou pesquisa do AD)
         if password is None:
-            if username in mock_users:
-                return {
-                    "username": username,
-                    "displayName": [f"Mock {username.upper()}"],
-                    "groups": ["Users"],
-                    "email": f"{username}@mock.com"
-                }
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+            # Transforma "daniel.turmina" em "Mock DANIEL TURMINA"
+            parts = username.split(".")
+            display_name_formatted = " ".join([p.capitalize() for p in parts])
+            return {
+                "username": username,
+                "displayName": [f"Mock {display_name_formatted}"],
+                "groups": ["Users"],
+                "email": f"{username}@mock.com"
+            }
 
         if username in mock_users and password == mock_users[username]:
             logger.info(f"SECURITY: Mock Authentication SUCCESSFUL for user: {username}")
