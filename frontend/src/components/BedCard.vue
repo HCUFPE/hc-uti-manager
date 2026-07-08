@@ -233,8 +233,9 @@ const formatarDataHoraCirurgia = (dataStr?: string, horaStr?: string) => {
 
 const formatarNascimento = (dataStr?: string) => {
   if (!dataStr) return '';
-  if (dataStr.includes('-')) {
-    const parts = dataStr.split('-');
+  const dataApenas = dataStr.split('T')[0];
+  if (dataApenas.includes('-')) {
+    const parts = dataApenas.split('-');
     if (parts.length === 3) {
       if (parts[0].length === 4) {
         return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -243,7 +244,7 @@ const formatarNascimento = (dataStr?: string) => {
       }
     }
   }
-  return dataStr;
+  return dataApenas;
 };
 
 const currentTime = ref(new Date());
