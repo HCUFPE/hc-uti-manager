@@ -168,7 +168,7 @@ const isEditing = ref(false);
 const perfis = ref<any[]>([]);
 
 const expandedGroups = ref<Record<string, boolean>>({
-  nir: true,
+  nir: false,
   uti: false,
   bc: false,
   hem: false,
