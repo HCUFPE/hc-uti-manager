@@ -15,4 +15,4 @@
 ## 4. Testes e Publicação
 
 - [x] 4.1 Validar a inicialização do banco SQLite localmente e verificar que a nova tabela é criada automaticamente.
-- [ ] 4.2 Commit, push e deploy com rebuild na VM.
+- [x] 4.2 Commit, push e deploy com rebuild na VM.
