@@ -21,6 +21,108 @@ from models.solicitacao_alta import SolicitacaoAlta
 from models.solicitacao_leito import SolicitacaoLeito
 from models.historico_acao import HistoricoAcao
 from models.usuario_perfil import UsuarioPerfil
+from models.historico_ocupacao import HistoricoOcupacao
+
+async def preencher_dias_passados_semana_atual(app):
+    from datetime import date, timedelta
+    from sqlalchemy import select
+    from models.historico_ocupacao import HistoricoOcupacao
+    from providers.implementations.banco_aghu.leito_aghu_provider import LeitoAghuProvider
+
+    try:
+        # Calcular os dias da semana atual até hoje
+        hoje = date.today()
+        # Segunda-feira da semana atual:
+        segunda = hoje - timedelta(days=hoje.weekday())
+        
+        dias_a_checar = []
+        d = segunda
+        while d < hoje:
+            dias_a_checar.append(d)
+            d += timedelta(days=1)
+            
+        if not dias_a_checar:
+            return
+            
+        async with app.state.app_db.async_session_maker() as app_session:
+            stmt = select(HistoricoOcupacao).where(HistoricoOcupacao.data.in_(dias_a_checar))
+            res = await app_session.execute(stmt)
+            existentes = {rec.data for rec in res.scalars().all()}
+            
+            dias_faltantes = [d for d in dias_a_checar if d not in existentes]
+            if dias_faltantes:
+                print(f"Dias faltantes da semana atual encontrados: {dias_faltantes}. Preenchendo com a taxa atual...")
+                # Calcula taxa atual
+                async with app.state.aghu_db.async_session_maker() as aghu_session:
+                    census_provider = LeitoAghuProvider(aghu_session)
+                    leitos = await census_provider.listar_leitos()
+                    total_leitos = len(leitos)
+                    ocupados = [l for l in leitos if str(l.get("status") or "").upper() == "OCUPADO"]
+                    total_ocupados = len(ocupados)
+                    taxa = (total_ocupados / total_leitos * 100) if total_leitos > 0 else 0.0
+                    
+                for d_faltante in dias_faltantes:
+                    new_rec = HistoricoOcupacao(data=d_faltante, taxa_ocupacao=taxa)
+                    app_session.add(new_rec)
+                await app_session.commit()
+                print(f"Preenchimento retroativo de {len(dias_faltantes)} dias com taxa {taxa:.1f}% concluído!")
+    except Exception as e:
+        print(f"Erro ao preencher dias passados: {e}")
+
+async def gravar_fechamento_diario(app):
+    import asyncio
+    from datetime import datetime, timedelta
+    from sqlalchemy import select, text
+    from providers.implementations.banco_aghu.leito_aghu_provider import LeitoAghuProvider
+    from models.historico_ocupacao import HistoricoOcupacao
+    
+    print("Iniciando background task de histórico de ocupação...")
+    
+    while True:
+        try:
+            agora = datetime.now()
+            # Fuso de Brasília local. Agendar fechamento para 23:59:00
+            proximo_fechamento = datetime.combine(agora.date(), datetime.min.time().replace(hour=23, minute=59, second=0))
+            if agora >= proximo_fechamento:
+                proximo_fechamento += timedelta(days=1)
+                
+            sleep_seconds = (proximo_fechamento - agora).total_seconds()
+            print(f"Próxima gravação da ocupação agendada para: {proximo_fechamento} (daqui a {sleep_seconds:.1f} segundos)")
+            
+            await asyncio.sleep(min(sleep_seconds, 600.0))
+            
+            agora_reavaliado = datetime.now()
+            if agora_reavaliado < proximo_fechamento - timedelta(seconds=5):
+                continue
+                
+            data_fechamento = proximo_fechamento.date()
+            print(f"Executando fechamento diário de ocupação para a data: {data_fechamento}...")
+            
+            async with app.state.aghu_db.async_session_maker() as aghu_session:
+                census_provider = LeitoAghuProvider(aghu_session)
+                leitos = await census_provider.listar_leitos()
+                total_leitos = len(leitos)
+                ocupados = [l for l in leitos if str(l.get("status") or "").upper() == "OCUPADO"]
+                total_ocupados = len(ocupados)
+                taxa = (total_ocupados / total_leitos * 100) if total_leitos > 0 else 0.0
+                
+            async with app.state.app_db.async_session_maker() as app_session:
+                stmt = select(HistoricoOcupacao).where(HistoricoOcupacao.data == data_fechamento)
+                res = await app_session.execute(stmt)
+                existing = res.scalar_one_or_none()
+                if existing:
+                    existing.taxa_ocupacao = taxa
+                else:
+                    new_rec = HistoricoOcupacao(data=data_fechamento, taxa_ocupacao=taxa)
+                    app_session.add(new_rec)
+                await app_session.commit()
+                print(f"Taxa de ocupação de {taxa:.1f}% gravada com sucesso para {data_fechamento}!")
+                
+            await asyncio.sleep(65.0)
+            
+        except Exception as e:
+            print(f"Erro na background task de ocupação: {e}")
+            await asyncio.sleep(60.0)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -58,6 +160,10 @@ async def lifespan(app: FastAPI):
             except Exception:
                 pass # Coluna já existe
     print("App SQLite tables checked/created.")
+
+    import asyncio
+    await preencher_dias_passados_semana_atual(app)
+    asyncio.create_task(gravar_fechamento_diario(app))
 
     yield
 

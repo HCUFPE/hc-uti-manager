@@ -388,20 +388,32 @@ class IndicadoresProvider:
         percentual_concluidas_por_solicitadas = (volume_concluidas / volume_solicitacoes * 100) if volume_solicitacoes > 0 else 0.0
         percentual_canceladas_por_solicitadas = (volume_cancelamentos_sol / volume_solicitacoes * 100) if volume_solicitacoes > 0 else 0.0
 
-        # Gráfico Ocupação Semanal: usar a taxa real e calcular variação
+        # Gráfico Ocupação Semanal: obter dados reais do banco
         ocupacao_semanal_dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"]
-        import random
-        # Seed constante para garantir determinismo por dia de execução
-        random.seed(date.today().toordinal())
         ocupacao_semanal_valores = []
-        base_ocupacao = taxa_ocupacao
-        for i in range(7):
-            if i == 6:
+        
+        # Calcular as datas de Segunda a Domingo da semana atual
+        hoje = date.today()
+        segunda = hoje - timedelta(days=hoje.weekday())
+        dias_semana = [segunda + timedelta(days=i) for i in range(7)]
+        
+        from models.historico_ocupacao import HistoricoOcupacao
+        
+        # Buscar os dados de histórico para estes dias no SQLite
+        stmt_hist = select(HistoricoOcupacao).where(HistoricoOcupacao.data.in_(dias_semana))
+        res_hist = await self.session.execute(stmt_hist)
+        mapa_historico = {rec.data: rec.taxa_ocupacao for rec in res_hist.scalars().all()}
+        
+        for d in dias_semana:
+            if d in mapa_historico:
+                # O registro diário existe, usar a taxa de ocupação real gravada
+                ocupacao_semanal_valores.append(round(mapa_historico[d], 1))
+            elif d == hoje:
+                # Se for hoje, usar a taxa instantânea do censo calculada nesta requisição
                 ocupacao_semanal_valores.append(round(taxa_ocupacao, 1))
             else:
-                variacao = random.uniform(-10.0, 10.0)
-                valor = min(max(base_ocupacao + variacao, 0), 100)
-                ocupacao_semanal_valores.append(round(valor, 1))
+                # Fallback em caso de dados vazios/incompletos no passado
+                ocupacao_semanal_valores.append(round(taxa_ocupacao, 1))
 
         # Reconstruir tempos de espera por tipo para o período
         espera_por_tipo = {}
