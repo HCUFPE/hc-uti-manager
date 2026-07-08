@@ -62,7 +62,7 @@
                   <td class="px-6 py-3.5 text-sm text-slate-500">{{ item.email || 'N/D' }}</td>
                   <td class="px-6 py-3.5">
                     <span 
-                      class="px-2.5 py-0.5 rounded-full text-xs font-bold border"
+                      class="px-2.5 py-0.5 rounded-full text-xs font-bold border whitespace-nowrap"
                       :class="getRoleStyle(item.perfil)"
                     >
                       {{ item.perfil }}
