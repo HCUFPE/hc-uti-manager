@@ -96,43 +96,9 @@
                 type="text" 
                 placeholder="ex: daniel.turmina"
                 :disabled="isEditing"
-                @blur="buscarUsuarioAD"
                 class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition disabled:bg-slate-100 disabled:text-slate-500"
               />
-              <span v-if="searchingAD" class="absolute right-3 top-2.5 flex h-5 w-5 items-center justify-center">
-                <span class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></span>
-              </span>
             </div>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
-            <input 
-              v-model="form.nome_completo"
-              type="text" 
-              placeholder="Nome retornado do AD"
-              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Lotação (Setor)</label>
-            <input 
-              v-model="form.lotacao"
-              type="text" 
-              placeholder="Lotação do AD"
-              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
-            <input 
-              v-model="form.email"
-              type="email" 
-              placeholder="email@ebserh.gov.br"
-              class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition"
-            />
           </div>
 
           <div>
@@ -157,7 +123,7 @@
             :disabled="submitting || !form.username"
             class="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition"
           >
-            {{ submitting ? 'Salvando...' : 'Salvar Perfil' }}
+            {{ submitting ? 'Salvando...' : 'Salvar Usuário' }}
           </button>
         </div>
       </div>
@@ -182,7 +148,6 @@ const showAddModal = ref(false);
 const isEditing = ref(false);
 const perfis = ref<any[]>([]);
 
-const searchingAD = ref(false);
 const form = ref({
   username: '',
   perfil: 'Comum',
@@ -190,22 +155,6 @@ const form = ref({
   lotacao: '',
   email: ''
 });
-
-async function buscarUsuarioAD() {
-  if (!form.value.username || isEditing.value) return;
-  searchingAD.value = true;
-  try {
-    const { data } = await api.get(`/api/admin/ad-search/${form.value.username}`);
-    form.value.nome_completo = data.nome_completo;
-    form.value.lotacao = data.lotacao;
-    form.value.email = data.email;
-    toast.success('Usuário localizado no Active Directory!');
-  } catch (err: any) {
-    toast.warning(err.response?.data?.detail || 'Não foi possível consultar os dados no AD. Insira manualmente.');
-  } finally {
-    searchingAD.value = false;
-  }
-}
 
 function abrirModalNovo() {
   form.value = { username: '', perfil: 'Comum', nome_completo: '', lotacao: '', email: '' };

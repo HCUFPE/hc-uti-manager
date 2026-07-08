@@ -136,6 +136,57 @@ async def salvar_perfil(
     lotacao = payload.get("lotacao")
     email = payload.get("email")
 
+    # Autocompleta dados do AD no salvamento se estiverem vazios/ausentes
+    if not nome_completo or not lotacao or not email:
+        from starlette.concurrency import run_in_threadpool
+        try:
+            user_info = await run_in_threadpool(
+                auth_handler.authenticate_user, 
+                username, 
+                None
+            )
+            
+            # Mapear os atributos do AD
+            display_name = user_info.get("displayName", [""])
+            if isinstance(display_name, list) and display_name:
+                display_name = display_name[0]
+            elif not display_name:
+                display_name = user_info.get("cn", [""])[0] if user_info.get("cn") else username
+                
+            department = user_info.get("department", [""])
+            if isinstance(department, list) and department:
+                department = department[0]
+            elif not department:
+                mock_departments = {
+                    "admin": "USID / Tecnologia",
+                    "uti": "Unidade de Terapia Intensiva",
+                    "nir": "Núcleo Interno de Regulação",
+                    "cob": "Centro Obstétrico",
+                    "bloco": "Bloco Cirúrgico",
+                    "comum": "Enfermarias"
+                }
+                department = mock_departments.get(username, "Não Informado")
+                
+            mail = user_info.get("mail", [""])
+            if isinstance(mail, list) and mail:
+                mail = mail[0]
+            elif not mail:
+                upn = user_info.get("userPrincipalName", [""])
+                if isinstance(upn, list) and upn:
+                    mail = upn[0]
+                else:
+                    mail = f"{username}@mock.com"
+            
+            if not nome_completo:
+                nome_completo = display_name
+            if not lotacao:
+                lotacao = department
+            if not email:
+                email = mail
+        except Exception:
+            # Fallback tolerante para evitar travar se o AD falhar
+            pass
+
     if usuario:
         usuario.perfil = perfil
         if nome_completo is not None:
