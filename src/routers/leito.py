@@ -114,6 +114,7 @@ async def listar_leitos(
 
 @router.get("/disponiveis")
 async def listar_leitos_disponiveis_para_reserva(
+    incluir_reservados: bool = Query(False, description="Incluir leitos com reserva ativa na listagem"),
     controller: LeitosController = Depends(get_leito_controller)
 ):
-    return await controller.listar_leitos_disponiveis_para_reserva()
+    return await controller.listar_leitos_disponiveis_para_reserva(incluir_reservados=incluir_reservados)

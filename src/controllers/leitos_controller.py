@@ -293,7 +293,7 @@ class LeitosController:
         
         await self.estado_provider.salvar_alta(leito_id, False) 
 
-    async def listar_leitos_disponiveis_para_reserva(self):
+    async def listar_leitos_disponiveis_para_reserva(self, incluir_reservados: bool = False):
         leitos = await self.listar_leitos()
         
         # Termos que o AGHU usa para leitos vazios
@@ -307,18 +307,20 @@ class LeitosController:
             proximo_paciente = l.get('prontuario_proximo')
             tem_alta = l.get('alta_solicitada', False)
             
-            # Um leito está disponível para reserva se:
-            # 1. Não tem reserva já feita (proximo_paciente é nulo ou vazio)
-            # 2. E (está fisicamente vago OU tem status de vazio OU tem alta solicitada)
-            
             if status == "DESATIVADO":
                 continue
                 
             ja_tem_reserva = proximo_paciente is not None and str(proximo_paciente).strip() != ""
             esta_fisicamente_vazio = (prontuario_atual is None or str(prontuario_atual).strip() in ["", "0", "N/D"])
             
-            if not ja_tem_reserva:
-                if esta_fisicamente_vazio or (status in status_vazios) or (status_local in status_vazios) or tem_alta:
-                    disponiveis.append(l)
+            pode_adicionar = False
+            if incluir_reservados:
+                pode_adicionar = esta_fisicamente_vazio or (status in status_vazios) or (status_local in status_vazios) or tem_alta
+            else:
+                pode_adicionar = not ja_tem_reserva and (esta_fisicamente_vazio or (status in status_vazios) or (status_local in status_vazios) or tem_alta)
+                
+            if pode_adicionar:
+                l["ja_tem_reserva"] = ja_tem_reserva
+                disponiveis.append(l)
         
         return disponiveis

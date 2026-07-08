@@ -553,6 +553,7 @@ class SolicitacaoLeitoController:
     async def remanejar_reserva(self, sol_id: int, novo_leito_id: str) -> dict:
         """
         Altera o leito de destino reservado de uma solicitação para um novo leito disponível.
+        Caso o leito destino já possua uma reserva, realiza a troca (swap) de leitos entre as solicitações.
         """
         solicitacao = await self.leito_provider.get_por_id(sol_id)
         if not solicitacao:
@@ -561,28 +562,82 @@ class SolicitacaoLeitoController:
         if solicitacao.status != "Reservado":
             raise HTTPException(status_code=400, detail="Apenas solicitações com status 'Reservado' podem ser remanejadas.")
             
+        # Obter estado de origem
+        result_origem = await self.estado_provider.session.execute(
+            select(LeitoEstado).where(LeitoEstado.solicitacao_id == sol_id)
+        )
+        estado_origem = result_origem.scalar_one_or_none()
+        if not estado_origem:
+            raise HTTPException(status_code=400, detail="Não foi possível encontrar a reserva de origem do paciente.")
+        old_lto_id = estado_origem.lto_id
+
         # Verificar se o leito de destino já tem uma reserva
         result_destino = await self.estado_provider.session.execute(
             select(LeitoEstado).where(LeitoEstado.lto_id == novo_leito_id)
         )
         estado_destino = result_destino.scalar_one_or_none()
-        if estado_destino and estado_destino.prontuario_proximo and estado_destino.solicitacao_id != sol_id:
-            raise HTTPException(status_code=400, detail=f"O leito {novo_leito_id} já possui uma reserva ativa.")
-            
-        # Realizar a transferência de reserva
-        old_lto_id = await self.estado_provider.transferir_reserva(sol_id, novo_leito_id)
-        if not old_lto_id:
-            raise HTTPException(status_code=400, detail="Não foi possível identificar o leito de origem da reserva atual.")
-            
-        # Atualizar o destino na solicitação original
-        await self.leito_provider.atualizar(sol_id, {"destino": f"Leito {novo_leito_id}"})
         
-        return {
-            "message": f"Reserva remanejada com sucesso do Leito {old_lto_id} para o Leito {novo_leito_id}.",
-            "leito_origem": old_lto_id,
-            "leito_destino": novo_leito_id,
-            "prontuario": solicitacao.prontuario
-        }
+        # Caso o leito destino tenha uma reserva de outro paciente, fazemos a troca (swap)
+        if estado_destino and estado_destino.prontuario_proximo and estado_destino.solicitacao_id != sol_id:
+            sol_destino_id = estado_destino.solicitacao_id
+            solicitacao_destino = await self.leito_provider.get_por_id(sol_destino_id)
+            if not solicitacao_destino:
+                raise HTTPException(status_code=400, detail="A solicitação associada à reserva de destino não foi encontrada.")
+                
+            # Guardamos temporariamente os dados do destino
+            dest_prontuario = estado_destino.prontuario_proximo
+            dest_idade = estado_destino.idade_proximo
+            dest_especialidade = estado_destino.especialidade_proximo
+            dest_sol_id = estado_destino.solicitacao_id
+
+            # Guardamos os dados da origem
+            orig_prontuario = estado_origem.prontuario_proximo
+            orig_idade = estado_origem.idade_proximo
+            orig_especialidade = estado_origem.especialidade_proximo
+            orig_sol_id = estado_origem.solicitacao_id
+
+            # Atribui dados da origem ao destino
+            estado_destino.prontuario_proximo = orig_prontuario
+            estado_destino.idade_proximo = orig_idade
+            estado_destino.especialidade_proximo = orig_especialidade
+            estado_destino.solicitacao_id = orig_sol_id
+
+            # Atribui dados do destino à origem
+            estado_origem.prontuario_proximo = dest_prontuario
+            estado_origem.idade_proximo = dest_idade
+            estado_origem.especialidade_proximo = dest_especialidade
+            estado_origem.solicitacao_id = dest_sol_id
+
+            await self.estado_provider.session.commit()
+
+            # Atualizar os destinos em ambas as solicitações no banco
+            await self.leito_provider.atualizar(sol_id, {"destino": f"Leito {novo_leito_id}"})
+            await self.leito_provider.atualizar(sol_destino_id, {"destino": f"Leito {old_lto_id}"})
+
+            return {
+                "message": f"Troca de reservas realizada com sucesso: Prontuário {solicitacao.prontuario} foi para o Leito {novo_leito_id} e Prontuário {solicitacao_destino.prontuario} foi para o Leito {old_lto_id}.",
+                "leito_origem": old_lto_id,
+                "leito_destino": novo_leito_id,
+                "prontuario": solicitacao.prontuario,
+                "prontuario_destino": solicitacao_destino.prontuario,
+                "sol_destino_id": sol_destino_id,
+                "swap_ocorreu": True
+            }
+        else:
+            # Caso comum: transferir para leito disponível
+            old_lto_id = await self.estado_provider.transferir_reserva(sol_id, novo_leito_id)
+            if not old_lto_id:
+                raise HTTPException(status_code=400, detail="Não foi possível identificar o leito de origem da reserva atual.")
+                
+            await self.leito_provider.atualizar(sol_id, {"destino": f"Leito {novo_leito_id}"})
+            
+            return {
+                "message": f"Reserva remanejada com sucesso do Leito {old_lto_id} para o Leito {novo_leito_id}.",
+                "leito_origem": old_lto_id,
+                "leito_destino": novo_leito_id,
+                "prontuario": solicitacao.prontuario,
+                "swap_ocorreu": False
+            }
 
     async def consultar_dados_aghu(self, prontuario: str) -> dict:
         """Consulta as informações do paciente e da cirurgia no AGHU.

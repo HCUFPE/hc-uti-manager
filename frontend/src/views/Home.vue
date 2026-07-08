@@ -198,8 +198,20 @@
             :class="leitoEscolhido === leito.lto_lto_id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:bg-slate-50'"
             @click="leitoEscolhido = leito.lto_lto_id"
           >
-            <span class="font-bold text-slate-900">Leito {{ leito.lto_lto_id }}</span>
-            <span class="text-xs text-slate-500 capitalize">{{ leito.status }} {{ leito.alta_solicitada ? '(Alta solicitada)' : '' }}</span>
+            <span class="font-bold text-slate-900 flex justify-between w-full items-center">
+              <span>Leito {{ leito.lto_lto_id }}</span>
+              <span v-if="leito.ja_tem_reserva" class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                Troca
+              </span>
+            </span>
+            <span class="text-xs text-slate-500">
+              <span v-if="leito.ja_tem_reserva" class="text-amber-600 font-medium">
+                Reservado (Pront. {{ leito.prontuario_proximo }})
+              </span>
+              <span v-else class="capitalize">
+                {{ leito.status }} {{ leito.alta_solicitada ? '(Alta solicitada)' : '' }}
+              </span>
+            </span>
           </button>
         </div>
       </div>
@@ -627,7 +639,7 @@ const submetendo = ref(false);
 const carregarLeitosDisponiveis = async () => {
   loadingLeitos.value = true;
   try {
-    const { data } = await api.get('/api/leitos/disponiveis');
+    const { data } = await api.get('/api/leitos/disponiveis?incluir_reservados=true');
     leitosDisponiveis.value = data;
   } catch (error) {
     console.error('Erro ao buscar leitos disponíveis:', error);
