@@ -213,7 +213,7 @@
                   @click="confirmarCirurgiaFinalizada(sol.id)"
                 >
                   <CheckIcon class="h-4 w-4 mr-1 text-white" />
-                  {{ sol.cirurgia_finalizada ? 'Cirurgia Concluída' : 'Cirurgia Finalizada' }}
+                  {{ sol.cirurgia_finalizada ? 'Cirurgia Concluída' : 'Finalizar Cirurgia' }}
                 </UiButton>
                 <UiButton
                   size="sm"

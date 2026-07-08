@@ -246,6 +246,19 @@ class LeitosController:
                 "destino": None
             })
             
+            # Sincroniza prioridades da fila de solicitações para esta data
+            if solicitacao and solicitacao.data_cirurgia:
+                from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
+                sol_controller = SolicitacaoLeitoController(
+                    leito_provider=solicitacao_provider,
+                    estado_provider=self.estado_provider
+                )
+                await sol_controller._sincronizar_prioridades(
+                    solicitacao.data_cirurgia,
+                    sol_id_foco=sol_id,
+                    prioridade_desejada=solicitacao.prioridade
+                )
+            
         return {
             "message": f"Reserva do leito {lto_id} cancelada.",
             "solicitacao": solicitacao,
