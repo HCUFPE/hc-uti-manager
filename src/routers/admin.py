@@ -178,16 +178,22 @@ async def salvar_perfil(
             display_name = " ".join([p.capitalize() for p in parts])
             
         if not department:
-            # Fallback padrão ou mapeamento básico para contas mock comuns
-            mock_departments = {
-                "admin": "USID / Tecnologia",
-                "uti": "Unidade de Terapia Intensiva",
-                "nir": "Núcleo Interno de Regulação",
-                "cob": "Centro Obstétrico",
-                "bloco": "Bloco Cirúrgico",
-                "comum": "Enfermarias"
+            # Tenta inferir o setor/lotação a partir do perfil atribuído
+            perfil_departments = {
+                "UTI": "Unidade de Terapia Intensiva",
+                "UTI-Admin": "Unidade de Terapia Intensiva",
+                "NIR": "Núcleo Interno de Regulação",
+                "NIR-Admin": "Núcleo Interno de Regulação",
+                "COB": "Centro Obstétrico",
+                "COB-Admin": "Centro Obstétrico",
+                "BC": "Bloco Cirúrgico",
+                "BC-Admin": "Bloco Cirúrgico",
+                "HEM": "Hemodinâmica",
+                "HEM-Admin": "Hemodinâmica",
+                "Admin": "USID / Tecnologia",
+                "Comum": "Enfermarias"
             }
-            department = mock_departments.get(username, "Não Informado")
+            department = perfil_departments.get(perfil, "Não Informado")
             
         if not mail:
             mail = f"{username}@ebserh.gov.br"
