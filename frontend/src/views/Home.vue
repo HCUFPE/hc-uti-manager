@@ -346,6 +346,7 @@ const loadLeitos = async () => {
       sinalizacaoTransferencia: l.alta_solicitada,
       pacienteAtual: l.prontuario_atual ? {
         prontuario: String(l.prontuario_atual),
+        nome: l.nome_paciente || undefined,
         idade: l.idade_atual || 0,
         especialidade: l.especialidade_atual || 'ND',
         dataNascimento: l.data_nascimento || undefined,

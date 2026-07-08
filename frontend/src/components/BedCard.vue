@@ -53,6 +53,9 @@
       <div v-if="pacienteAtual" class="space-y-1 border-l-4 border-blue-500 pl-4 bg-blue-50/30 py-1 rounded-r-lg">
         <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Paciente Atual</p>
         <p class="text-base font-bold text-slate-900">Prontuário: {{ pacienteAtual.prontuario }}</p>
+        <p v-if="pacienteAtual.nome" class="text-xs font-semibold text-slate-500 leading-none my-1">
+          {{ pacienteAtual.nome }}
+        </p>
         <p class="text-slate-600">
           {{ pacienteAtual.idade }} anos
           <span v-if="pacienteAtual.dataNascimento" class="text-xs text-slate-500">
