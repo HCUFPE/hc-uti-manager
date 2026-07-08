@@ -15,66 +15,85 @@
         </button>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="text-xs uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-200">
-              <th class="px-6 py-3 font-semibold">Usuário (Nome/Login)</th>
-              <th class="px-6 py-3 font-semibold">Lotação</th>
-              <th class="px-6 py-3 font-semibold">E-mail</th>
-              <th class="px-6 py-3 font-semibold">Perfil Atribuído</th>
-              <th class="px-6 py-3 font-semibold text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-if="loading" class="animate-pulse">
-              <td colspan="5" class="px-6 py-8 text-center text-slate-400">Carregando perfis...</td>
-            </tr>
-            <tr v-else v-for="item in perfis" :key="item.username" class="hover:bg-slate-50 transition">
-              <td class="px-6 py-4">
-                <div class="font-semibold text-slate-800">{{ item.nome_completo || 'Sem Nome' }}</div>
-                <div class="text-xs text-slate-400">{{ item.username }}</div>
-              </td>
-              <td class="px-6 py-4 text-sm text-slate-600">{{ item.lotacao || 'N/D' }}</td>
-              <td class="px-6 py-4 text-sm text-slate-500">{{ item.email || 'N/D' }}</td>
-              <td class="px-6 py-4">
-                <span 
-                  class="px-2.5 py-1 rounded-full text-xs font-bold border"
-                  :class="getRoleStyle(item.perfil)"
-                >
-                  {{ item.perfil }}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-right flex justify-end gap-2">
-                <button 
-                  v-if="authStore.canManageUser(item.perfil)"
-                  @click="abrirModalEdicao(item)"
-                  class="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition"
-                  title="Editar perfil"
-                >
-                  <PencilSquareIcon class="h-4 w-4" />
-                </button>
-                <button 
-                  v-if="authStore.canManageUser(item.perfil)"
-                  @click="removerPerfil(item.username)"
-                  class="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition"
-                  title="Remover perfil customizado"
-                >
-                  <TrashIcon class="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
-            <tr v-if="!loading && perfis.length === 0">
-              <td colspan="5" class="px-6 py-12 text-center">
-                <div class="flex flex-col items-center gap-2 text-slate-400">
-                  <ShieldExclamationIcon class="h-12 w-12 opacity-20" />
-                  <p>Nenhum perfil customizado cadastrado.</p>
-                  <p class="text-xs">Todos os demais usuários entram como "Comum".</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Loading Skeleton -->
+      <div v-if="loading" class="px-6 py-12 text-center text-slate-400 animate-pulse font-semibold">
+        Carregando perfis...
+      </div>
+
+      <!-- Collapsible Groups -->
+      <div v-else class="divide-y divide-slate-200/60">
+        <div v-for="(group, key) in groupedPerfis" :key="key" class="overflow-hidden">
+          <!-- Accordion Header -->
+          <button 
+            @click="expandedGroups[key] = !expandedGroups[key]" 
+            class="w-full flex items-center justify-between px-6 py-4 bg-slate-50/50 hover:bg-slate-50 transition text-left"
+          >
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-slate-700 text-sm md:text-base">{{ group.label }}</span>
+              <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+                {{ group.users.length }}
+              </span>
+            </div>
+            <ChevronDownIcon 
+              class="h-5 w-5 text-slate-400 transition-transform duration-200"
+              :class="{ 'rotate-180': expandedGroups[key] }"
+            />
+          </button>
+
+          <!-- Accordion Content -->
+          <div v-show="expandedGroups[key]" class="overflow-x-auto border-t border-slate-200/50">
+            <table class="w-full text-left border-collapse" v-if="group.users.length > 0">
+              <thead>
+                <tr class="text-xs uppercase tracking-wider text-slate-400 bg-slate-50/30 border-b border-slate-200/50">
+                  <th class="px-6 py-2.5 font-semibold">Usuário (Nome/Login)</th>
+                  <th class="px-6 py-2.5 font-semibold">Lotação</th>
+                  <th class="px-6 py-2.5 font-semibold">E-mail</th>
+                  <th class="px-6 py-2.5 font-semibold">Perfil</th>
+                  <th class="px-6 py-2.5 font-semibold text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="item in group.users" :key="item.username" class="hover:bg-slate-50/50 transition">
+                  <td class="px-6 py-3.5">
+                    <div class="font-semibold text-slate-800">{{ item.nome_completo || 'Sem Nome' }}</div>
+                    <div class="text-xs text-slate-400">{{ item.username }}</div>
+                  </td>
+                  <td class="px-6 py-3.5 text-sm text-slate-600">{{ item.lotacao || 'N/D' }}</td>
+                  <td class="px-6 py-3.5 text-sm text-slate-500">{{ item.email || 'N/D' }}</td>
+                  <td class="px-6 py-3.5">
+                    <span 
+                      class="px-2.5 py-0.5 rounded-full text-xs font-bold border"
+                      :class="getRoleStyle(item.perfil)"
+                    >
+                      {{ item.perfil }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-3.5 text-right flex justify-end gap-2">
+                    <button 
+                      v-if="authStore.canManageUser(item.perfil)"
+                      @click="abrirModalEdicao(item)"
+                      class="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition"
+                      title="Editar perfil"
+                    >
+                      <PencilSquareIcon class="h-4 w-4" />
+                    </button>
+                    <button 
+                      v-if="authStore.canManageUser(item.perfil)"
+                      @click="removerPerfil(item.username)"
+                      class="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition"
+                      title="Remover perfil customizado"
+                    >
+                      <TrashIcon class="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else class="px-6 py-6 text-center text-slate-400 text-sm italic">
+              Nenhum usuário cadastrado neste grupo.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -133,7 +152,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { PlusIcon, TrashIcon, XMarkIcon, ShieldExclamationIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, TrashIcon, XMarkIcon, PencilSquareIcon, ChevronDownIcon } from '@heroicons/vue/24/outline';
 import api from '../services/api';
 import { useToast } from 'vue-toastification';
 import { useAuthStore } from '../stores/auth';
@@ -147,6 +166,50 @@ const submitting = ref(false);
 const showAddModal = ref(false);
 const isEditing = ref(false);
 const perfis = ref<any[]>([]);
+
+const expandedGroups = ref<Record<string, boolean>>({
+  nir: true,
+  uti: false,
+  bc: false,
+  hem: false,
+  cob: false,
+  admin: false,
+  comum: false
+});
+
+const groupedPerfis = computed(() => {
+  const groups: Record<string, { label: string; roles: string[]; users: any[] }> = {
+    nir: { label: "NIR / NIR-Admin", roles: ["NIR", "NIR-Admin"], users: [] },
+    uti: { label: "UTI / UTI-Admin", roles: ["UTI", "UTI-Admin"], users: [] },
+    bc: { label: "Bloco Cirúrgico (BC) / BC-Admin", roles: ["BC", "BC-Admin"], users: [] },
+    hem: { label: "Hemodinâmica (HEM) / HEM-Admin", roles: ["HEM", "HEM-Admin"], users: [] },
+    cob: { label: "Centro Obstétrico (COB) / COB-Admin", roles: ["COB", "COB-Admin"], users: [] },
+    admin: { label: "Administrador", roles: ["Administrador"], users: [] },
+    comum: { label: "Comum", roles: ["Comum"], users: [] }
+  };
+  
+  perfis.value.forEach(user => {
+    const perfil = user.perfil;
+    for (const key in groups) {
+      if (groups[key].roles.includes(perfil)) {
+        groups[key].users.push(user);
+        return;
+      }
+    }
+    groups.comum.users.push(user);
+  });
+
+  // Alphabetical sort within each group by complex name or username
+  for (const key in groups) {
+    groups[key].users.sort((a, b) => {
+      const nameA = (a.nome_completo || a.username || "").toLowerCase();
+      const nameB = (b.nome_completo || b.username || "").toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  }
+
+  return groups;
+});
 
 const form = ref({
   username: '',
