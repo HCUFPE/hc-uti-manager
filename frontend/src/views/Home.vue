@@ -633,12 +633,10 @@ const showModalMudarLeito = ref(false);
 const solIdParaMudarLeito = ref<number | null>(null);
 const leitoEscolhido = ref<string | null>(null);
 const leitosDisponiveis = ref<any[]>([]);
+const leitoOrigemMudarLeito = ref<string | null>(null);
 const leitosDisponiveisFiltrados = computed(() => {
-  if (!solIdParaMudarLeito.value) return leitosDisponiveis.value;
-  const leitoAtualObj = leitos.value.find(l => l.solicitacaoId === solIdParaMudarLeito.value);
-  const leitoAtualNumero = leitoAtualObj ? leitoAtualObj.leitoNumero : null;
-  if (!leitoAtualNumero) return leitosDisponiveis.value;
-  return leitosDisponiveis.value.filter(l => l.lto_lto_id !== leitoAtualNumero);
+  if (!leitoOrigemMudarLeito.value) return leitosDisponiveis.value;
+  return leitosDisponiveis.value.filter(l => l.lto_lto_id !== leitoOrigemMudarLeito.value);
 });
 const loadingLeitos = ref(false);
 const submetendo = ref(false);
@@ -655,8 +653,9 @@ const carregarLeitosDisponiveis = async () => {
   }
 };
 
-const handleMudarLeito = (solicitacaoId: number) => {
+const handleMudarLeito = (solicitacaoId: number, leitoNumero: string) => {
   solIdParaMudarLeito.value = solicitacaoId;
+  leitoOrigemMudarLeito.value = leitoNumero;
   leitoEscolhido.value = null;
   showModalMudarLeito.value = true;
   carregarLeitosDisponiveis();

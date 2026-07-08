@@ -148,7 +148,7 @@
       <button
         v-if="proximoPaciente"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-        @click="emit('mudar-leito', solicitacaoId!)"
+        @click="emit('mudar-leito', solicitacaoId!, leitoNumero)"
       >
         Mudar Leito
       </button>
@@ -210,7 +210,7 @@ const emit = defineEmits<{
   'cancelar-reserva': [];
   'liberar-encaminhamento': [solicitacaoId: number];
   'cancelar-liberacao': [solicitacaoId: number];
-  'mudar-leito': [solicitacaoId: number];
+  'mudar-leito': [solicitacaoId: number, leitoNumero: string];
 }>();
 
 const tipoPalette: Record<BedType, { label: string; className: string }> = {

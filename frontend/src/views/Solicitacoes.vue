@@ -550,7 +550,7 @@ const solSelecionada = ref<Solicitacao | null>(null);
 const leitoEscolhido = ref<string | null>(null);
 const leitosDisponiveisFiltrados = computed(() => {
   if (!solSelecionada.value || !solSelecionada.value.destino) return leitosDisponiveis.value;
-  const leitoAtualNumero = solSelecionada.value.destino.replace(/^[Ll]eito\s+/, '').trim();
+  const leitoAtualNumero = solSelecionada.value.destino.replace(/^leito\s+/i, '').trim();
   if (!leitoAtualNumero) return leitosDisponiveis.value;
   return leitosDisponiveis.value.filter(l => l.lto_lto_id !== leitoAtualNumero);
 });
