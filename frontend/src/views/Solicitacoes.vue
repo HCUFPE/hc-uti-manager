@@ -323,12 +323,12 @@
         <div v-if="loadingLeitos" class="flex justify-center py-4">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
         </div>
-        <div v-else-if="leitosDisponiveis.length === 0" class="text-center py-4 text-slate-500 italic">
+        <div v-else-if="leitosDisponiveisFiltrados.length === 0" class="text-center py-4 text-slate-500 italic">
           Nenhum leito disponível para reserva no momento.
         </div>
         <div v-else class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
           <button
-            v-for="leito in leitosDisponiveis"
+            v-for="leito in leitosDisponiveisFiltrados"
             :key="leito.lto_lto_id"
             class="flex flex-col items-start rounded-lg border p-3 text-left transition"
             :class="leitoEscolhido === leito.lto_lto_id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:bg-slate-50'"
@@ -548,6 +548,12 @@ const showModalReserva = ref(false);
 const isRemanejamento = ref(false);
 const solSelecionada = ref<Solicitacao | null>(null);
 const leitoEscolhido = ref<string | null>(null);
+const leitosDisponiveisFiltrados = computed(() => {
+  if (!solSelecionada.value || !solSelecionada.value.destino) return leitosDisponiveis.value;
+  const leitoAtualNumero = solSelecionada.value.destino.replace(/^[Ll]eito\s+/, '').trim();
+  if (!leitoAtualNumero) return leitosDisponiveis.value;
+  return leitosDisponiveis.value.filter(l => l.lto_lto_id !== leitoAtualNumero);
+});
 const toast = useToast();
 
 const filtroData = ref('');

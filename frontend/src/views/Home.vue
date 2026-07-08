@@ -187,12 +187,12 @@
         <div v-if="loadingLeitos" class="flex justify-center py-4">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
         </div>
-        <div v-else-if="leitosDisponiveis.length === 0" class="text-center py-4 text-slate-500 italic">
+        <div v-else-if="leitosDisponiveisFiltrados.length === 0" class="text-center py-4 text-slate-500 italic">
           Nenhum leito disponível no momento.
         </div>
         <div v-else class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
           <button
-            v-for="leito in leitosDisponiveis"
+            v-for="leito in leitosDisponiveisFiltrados"
             :key="leito.lto_lto_id"
             class="flex flex-col items-start rounded-lg border p-3 text-left transition"
             :class="leitoEscolhido === leito.lto_lto_id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:bg-slate-50'"
@@ -633,6 +633,13 @@ const showModalMudarLeito = ref(false);
 const solIdParaMudarLeito = ref<number | null>(null);
 const leitoEscolhido = ref<string | null>(null);
 const leitosDisponiveis = ref<any[]>([]);
+const leitosDisponiveisFiltrados = computed(() => {
+  if (!solIdParaMudarLeito.value) return leitosDisponiveis.value;
+  const leitoAtualObj = leitos.value.find(l => l.solicitacaoId === solIdParaMudarLeito.value);
+  const leitoAtualNumero = leitoAtualObj ? leitoAtualObj.leitoNumero : null;
+  if (!leitoAtualNumero) return leitosDisponiveis.value;
+  return leitosDisponiveis.value.filter(l => l.lto_lto_id !== leitoAtualNumero);
+});
 const loadingLeitos = ref(false);
 const submetendo = ref(false);
 
