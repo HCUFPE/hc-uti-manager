@@ -315,7 +315,7 @@ class LeitosController:
             
             pode_adicionar = False
             if incluir_reservados:
-                pode_adicionar = esta_fisicamente_vazio or (status in status_vazios) or (status_local in status_vazios) or tem_alta
+                pode_adicionar = ja_tem_reserva or esta_fisicamente_vazio or (status in status_vazios) or (status_local in status_vazios) or tem_alta
             else:
                 pode_adicionar = not ja_tem_reserva and (esta_fisicamente_vazio or (status in status_vazios) or (status_local in status_vazios) or tem_alta)
                 
