@@ -179,13 +179,13 @@ const expandedGroups = ref<Record<string, boolean>>({
 
 const groupedPerfis = computed(() => {
   const groups: Record<string, { label: string; roles: string[]; users: any[] }> = {
-    nir: { label: "NIR / NIR-Admin", roles: ["NIR", "NIR-Admin"], users: [] },
-    uti: { label: "UTI / UTI-Admin", roles: ["UTI", "UTI-Admin"], users: [] },
-    bc: { label: "Bloco Cirúrgico (BC) / BC-Admin", roles: ["BC", "BC-Admin"], users: [] },
-    hem: { label: "Hemodinâmica (HEM) / HEM-Admin", roles: ["HEM", "HEM-Admin"], users: [] },
-    cob: { label: "Centro Obstétrico (COB) / COB-Admin", roles: ["COB", "COB-Admin"], users: [] },
     admin: { label: "Administrador", roles: ["Administrador"], users: [] },
-    comum: { label: "Comum", roles: ["Comum"], users: [] }
+    bc: { label: "Bloco Cirúrgico (BC) / BC-Admin", roles: ["BC", "BC-Admin"], users: [] },
+    cob: { label: "Centro Obstétrico (COB) / COB-Admin", roles: ["COB", "COB-Admin"], users: [] },
+    comum: { label: "Comum", roles: ["Comum"], users: [] },
+    hem: { label: "Hemodinâmica (HEM) / HEM-Admin", roles: ["HEM", "HEM-Admin"], users: [] },
+    nir: { label: "NIR / NIR-Admin", roles: ["NIR", "NIR-Admin"], users: [] },
+    uti: { label: "UTI / UTI-Admin", roles: ["UTI", "UTI-Admin"], users: [] }
   };
   
   perfis.value.forEach(user => {
