@@ -148,7 +148,7 @@
       <button
         v-if="proximoPaciente"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-        @click="emit('mudar-leito', solicitacaoId!, leitoNumero)"
+        @click="emit('mudar-leito', props.solicitacaoId!, props.leitoNumero)"
       >
         Mudar Leito
       </button>
