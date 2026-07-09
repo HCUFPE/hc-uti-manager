@@ -49,8 +49,8 @@ api.interceptors.response.use(
 
     uiStore.setLoading(false);
 
-    // Check if the error is 401 and it's not a retry request
-    if (error.response.status === 401 && !originalRequest._retry) {
+    // Check if the error is 401 and it's not a retry request, and not the login request
+    if (error.response.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/api/login')) {
       if (isRefreshing) {
         return new Promise(function(resolve, reject) {
           failedQueue.push({ resolve, reject });

@@ -1,4 +1,4 @@
-# versao para 09/06/2026 as 08:54h
+# versao para 09/07/2026 as 13:42h
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse

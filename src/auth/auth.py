@@ -80,7 +80,7 @@ class MockAuthProvider(AuthProviderInterface):
             logger.warning(f"SECURITY: Mock Authentication FAILED for user: {username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Invalid credentials (MOCK)"
+                detail="Usuário ou senha incorretos"
             )
 
 class ActiveDirectoryAuthProvider(AuthProviderInterface):
@@ -177,7 +177,7 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
 
         except LDAPBindError:
             logger.warning(f"SECURITY: AD Authentication FAILED (Invalid Credentials) for: {username}")
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário ou senha incorretos")
         except (LDAPSocketOpenError, LDAPException) as e:
             logger.error(f"AD System Error for user {username}: {e}")
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication server error")
