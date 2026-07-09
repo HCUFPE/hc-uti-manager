@@ -11,4 +11,4 @@
 ## 3. Testes e Publicação
 
 - [x] 3.1 Testar a autenticação com credenciais inválidas localmente e verificar se o erro real é impresso na tela.
-- [ ] 3.2 Commit, push e deploy com rebuild na VM.
+- [x] 3.2 Commit, push e deploy com rebuild na VM.
