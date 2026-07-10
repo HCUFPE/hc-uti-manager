@@ -4,5 +4,5 @@
 
 ## 2. Testes e Publicação
 
-- [ ] 2.1 Commit, push e deploy seguro com rebuild na VM usando `git_pull_and_rebuild.py` (sem tocar no banco de dados).
-- [ ] 2.2 Validar a contagem de cancelados no painel de indicadores.
+- [x] 2.1 Commit, push e deploy seguro com rebuild na VM usando `git_pull_and_rebuild.py` (sem tocar no banco de dados).
+- [x] 2.2 Validar a contagem de cancelados no painel de indicadores.
