@@ -22,7 +22,7 @@
 
     <div
       v-if="isOpen"
-      class="absolute right-0 mt-2 w-72 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-200 z-20"
+      class="absolute right-0 top-full mt-2 w-72 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-200 z-20"
     >
       <div class="p-4">
         <div class="flex items-center gap-3">
