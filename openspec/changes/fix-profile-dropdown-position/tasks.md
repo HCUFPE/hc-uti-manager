@@ -5,4 +5,4 @@
 ## 2. Testes e Publicação
 
 - [x] 2.1 Compilar o frontend localmente para garantir a integridade do build.
-- [ ] 2.2 Commit, push e deploy com rebuild na VM.
+- [x] 2.2 Commit, push e deploy com rebuild na VM.
