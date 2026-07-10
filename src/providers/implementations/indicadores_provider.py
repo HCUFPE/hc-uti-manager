@@ -248,7 +248,7 @@ class IndicadoresProvider:
             else:
                 # Checar se tem evento de conclusão ou cancelamento no período ou posterior para esta solicitação
                 tem_conclusao = any(self._parse_sol_id(ev.detalhes) == s.id for ev in historico_todos if ev.tipo == "conclusao")
-                tem_canc = any(self._parse_sol_id(ev.detalhes) == s.id for ev in historico_todos if ev.tipo == "cancelamento")
+                tem_canc = any(self._parse_sol_id(ev.detalhes) == s.id for ev in historico_todos if ev.tipo in ["cancelamento", "exclusao_solicitacao"])
                 if tem_conclusao:
                     sols_atendidas += 1
                 elif tem_canc:
@@ -374,8 +374,8 @@ class IndicadoresProvider:
         # Reservas concluídas no período
         reservas_concluidas_periodo = [ev for ev in historico_todos if ev.tipo == "conclusao" and in_period(ev.criado_em)]
         # Cancelamentos de solicitações e reservas no período
-        cancelamentos_sol_periodo = [ev for ev in historico_todos if ev.tipo == "cancelamento" and in_period(ev.criado_em) and "reserva" not in ev.acao.lower()]
-        cancelamentos_res_periodo = [ev for ev in historico_todos if ev.tipo == "cancelamento" and in_period(ev.criado_em) and "reserva" in ev.acao.lower()]
+        cancelamentos_sol_periodo = [ev for ev in historico_todos if ev.tipo in ["cancelamento", "exclusao_solicitacao"] and in_period(ev.criado_em) and "reserva" not in ev.acao.lower()]
+        cancelamentos_res_periodo = [ev for ev in historico_todos if ev.tipo in ["cancelamento_reserva"] and in_period(ev.criado_em)]
 
         volume_solicitacoes = total_sols_periodo
         volume_reservas = len(reservas_efetuadas_periodo)
