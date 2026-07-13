@@ -7,4 +7,4 @@
 
 ## 2. Validação Local
 
-- [ ] 2.1 Compilar e rodar a aplicação localmente para validar a responsividade e o comportamento das novas funções.
+- [x] 2.1 Compilar e rodar a aplicação localmente para validar a responsividade e o comportamento das novas funções.
