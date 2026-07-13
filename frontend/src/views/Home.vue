@@ -1,6 +1,6 @@
 <template>
   <section class="space-y-6">
-    <div class="space-y-3 mb-12">
+    <div v-if="!uiStore.isTvMode" class="space-y-3 mb-12">
       <div class="flex items-center justify-between">
         <h2 class="text-3xl font-bold text-slate-900">Resumo dos Leitos</h2>
       </div>
@@ -32,11 +32,11 @@
             :key="option.value"
             class="flex items-center gap-2 rounded-lg border px-3 py-1 text-sm font-medium transition"
             :class="
-              statusFilter === option.value
+              isFilterActive(option.value)
                 ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
                 : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
             "
-            @click="setStatusFilter(option.value)"
+            @click="toggleStatusFilter(option.value)"
           >
             <span class="h-2 w-2 rounded-full" :class="dotColor(option.value)" />
             {{ option.label }}
@@ -62,6 +62,15 @@
             <span class="text-xs font-semibold">Som Ativo</span>
           </template>
         </button>
+        <button
+          class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition shadow-sm cursor-pointer select-none"
+          :class="uiStore.isTvMode ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+          @click="uiStore.toggleTvMode"
+          :title="uiStore.isTvMode ? 'Sair do Modo TV' : 'Ativar Modo TV'"
+        >
+          <TvIcon class="h-5 w-5 shrink-0" :class="uiStore.isTvMode ? 'text-blue-600' : 'text-slate-500'" />
+          <span class="text-xs font-semibold">{{ uiStore.isTvMode ? 'Sair da TV' : 'Modo TV' }}</span>
+        </button>
         <UiButton
           variant="outline"
           size="sm"
@@ -80,7 +89,7 @@
     <TransitionGroup
       name="list"
       tag="div"
-      class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      :class="uiStore.isTvMode ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8' : 'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'"
     >
       <BedCard
         v-for="leito in leitosFiltrados"
@@ -227,7 +236,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { FunnelIcon } from '@heroicons/vue/24/outline';
+import { FunnelIcon, TvIcon } from '@heroicons/vue/24/outline';
 import { ChevronRightIcon } from '@heroicons/vue/20/solid';
 import BedCard from '../components/BedCard.vue';
 import UiButton from '../components/ui/Button.vue';
@@ -235,6 +244,7 @@ import { useToast } from 'vue-toastification';
 import api from '../services/api';
 import Modal from '../components/Modal.vue';
 import { useAuthStore } from '../stores/auth';
+import { useUiStore } from '../stores/ui';
 
 type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
@@ -271,6 +281,7 @@ type Leito = {
 const leitos = ref<Leito[]>([]);
 const toast = useToast();
 const authStore = useAuthStore();
+const uiStore = useUiStore();
 
 const isMuted = ref(localStorage.getItem('hc_uti_som_alerta') === 'true');
 const leitosNotificados = ref<Set<string>>(new Set());
@@ -445,17 +456,33 @@ const statusFilterOptions: { label: string; value: StatusFilter }[] = [
   { label: 'Reservado', value: 'reservado' },
 ];
 
-const statusFilter = ref<StatusFilter>('todos');
+const statusFilters = ref<StatusFilter[]>([]);
 const filtrosAbertos = ref(false);
 
-const leitosFiltrados = computed(() => {
-  if (statusFilter.value === 'todos') return leitos.value;
-  return leitos.value.filter(leito => leito.status === statusFilter.value);
-});
-
-const setStatusFilter = (valor: StatusFilter) => {
-  statusFilter.value = statusFilter.value === valor ? 'todos' : valor;
+const isFilterActive = (val: StatusFilter) => {
+  if (val === 'todos') {
+    return statusFilters.value.length === 0;
+  }
+  return statusFilters.value.includes(val);
 };
+
+const toggleStatusFilter = (val: StatusFilter) => {
+  if (val === 'todos') {
+    statusFilters.value = [];
+    return;
+  }
+  const idx = statusFilters.value.indexOf(val);
+  if (idx > -1) {
+    statusFilters.value.splice(idx, 1);
+  } else {
+    statusFilters.value.push(val);
+  }
+};
+
+const leitosFiltrados = computed(() => {
+  if (statusFilters.value.length === 0) return leitos.value;
+  return leitos.value.filter(leito => statusFilters.value.includes(leito.status));
+});
 
 const toggleFiltros = () => {
   filtrosAbertos.value = !filtrosAbertos.value;
