@@ -76,7 +76,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
 import {
   Bell,
   Clock3,
@@ -102,7 +101,7 @@ const fetchNotifications = async () => {
     const response = await api.get('/api/alertas');
     const alertas = response.data;
     
-    const allUnread = authStore.isAdmin ? [] : alertas.filter((a: any) => !a.lido);
+    const allUnread = alertas.filter((a: any) => !a.lido);
     totalUnreadCount.value = allUnread.length;
     
     // Pegamos apenas os não lidos para o popover, limitando a 5 recentes
@@ -157,7 +156,6 @@ const open = ref(false);
 const trigger = ref<HTMLElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const router = useRouter();
-const authStore = useAuthStore();
 
 
 const toggle = () => {
