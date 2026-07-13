@@ -71,6 +71,7 @@
           <TvIcon class="h-5 w-5 shrink-0" :class="uiStore.isTvMode ? 'text-blue-600' : 'text-slate-500'" />
           <span class="text-xs font-semibold">{{ uiStore.isTvMode ? 'Sair da TV' : 'Modo TV' }}</span>
         </button>
+        <NotificationsPopover v-if="uiStore.isTvMode" />
         <UiButton
           variant="outline"
           size="sm"
@@ -245,6 +246,7 @@ import api from '../services/api';
 import Modal from '../components/Modal.vue';
 import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
+import NotificationsPopover from '../components/NotificationsPopover.vue';
 
 type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
