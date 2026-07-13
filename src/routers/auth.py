@@ -37,6 +37,7 @@ async def login(
     """
     try:
         user = await run_in_threadpool(auth_handler.authenticate_user, form_data.username, form_data.password)
+        user["username"] = user["username"].strip().lower()
         
         # Consultar o perfil do usuário no banco de dados local
         stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == user["username"])
