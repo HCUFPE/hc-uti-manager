@@ -328,11 +328,25 @@ const tocarAlertaSonoro = () => {
 
 let soundIntervalId: any = null;
 
-const verificarETocarSom = () => {
+const unreadAlertsCount = ref(0);
+
+const fetchUnreadAlertsCount = async () => {
+  if (!authStore.isAuthenticated) return;
+  try {
+    const response = await api.get('/api/alertas/unread-count');
+    unreadAlertsCount.value = response.data.count;
+  } catch (error) {
+    console.error('Erro ao buscar quantidade de alertas nao lidos:', error);
+  }
+};
+
+const verificarETocarSom = async () => {
+  await fetchUnreadAlertsCount();
   const temCirurgiaPendente = leitos.value.some(
     (l) => l.proximoPaciente && l.cirurgiaFinalizada && !l.encaminhamentoLiberado
   );
-  if (temCirurgiaPendente && authStore.isUTI) {
+  const temAlertaUtiPendente = unreadAlertsCount.value > 0;
+  if ((temCirurgiaPendente || temAlertaUtiPendente) && authStore.isUTI) {
     tocarAlertaSonoro();
   }
 };
@@ -341,6 +355,7 @@ const reiniciarSoundTimer = () => {
   if (soundIntervalId) {
     clearInterval(soundIntervalId);
   }
+  verificarETocarSom();
   soundIntervalId = setInterval(verificarETocarSom, 30000); // Executa o bipe a cada 30 segundos
 };
 
