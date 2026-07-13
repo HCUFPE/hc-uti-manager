@@ -50,9 +50,18 @@
                   />
                 </div>
                 <p class="mt-1 text-xs text-slate-600 wrap-break-words">{{ notification.description }}</p>
-                <div class="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
-                  <Clock3 class="h-3 w-3" />
-                  <span>{{ notification.time }}</span>
+                <div class="mt-2 flex items-center justify-between">
+                  <div class="flex items-center gap-1 text-[11px] text-slate-500">
+                    <Clock3 class="h-3 w-3" />
+                    <span>{{ notification.time }}</span>
+                  </div>
+                  <button
+                    v-if="notification.unread"
+                    @click.stop="markAsRead(notification.id)"
+                    class="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-0.5 rounded transition cursor-pointer"
+                  >
+                    Ciente
+                  </button>
                 </div>
               </div>
             </div>
@@ -124,6 +133,16 @@ const fetchNotifications = async () => {
     });
   } catch (error) {
     console.error('Erro ao buscar notificacoes:', error);
+  }
+};
+
+const markAsRead = async (id: number) => {
+  try {
+    await api.put(`/api/alertas/${id}/lido`, { lido: true });
+    notifications.value = notifications.value.filter(n => n.id !== id);
+    totalUnreadCount.value = Math.max(0, totalUnreadCount.value - 1);
+  } catch (error) {
+    console.error('Erro ao marcar alerta como lido:', error);
   }
 };
 

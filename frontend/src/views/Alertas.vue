@@ -2,6 +2,13 @@
   <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-4 mb-6">
       <div class="flex items-center gap-4">
+        <router-link
+          to="/"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 cursor-pointer"
+        >
+          <ArrowLeftIcon class="h-4 w-4 text-slate-500" />
+          Voltar ao Painel
+        </router-link>
         <h2 class="text-3xl font-bold text-slate-900">Alertas do Sistema</h2>
         <UiButton v-if="alertasNaoLidos.length > 0" variant="outline" size="sm" @click="marcarTodosLidos" class="text-xs h-8">
           Marcar todos como lidos
@@ -143,6 +150,7 @@
 import {
   InformationCircleIcon,
   ClockIcon,
+  ArrowLeftIcon,
 } from '@heroicons/vue/24/outline';
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';
