@@ -1,5 +1,5 @@
 <template>
-  <div class="relative" ref="container">
+  <div class="relative z-50" ref="container">
     <button
       ref="trigger"
       @click.stop="toggle"
@@ -19,7 +19,7 @@
       <div
         v-if="open"
         ref="panel"
-        class="absolute right-0 mt-3 w-80 origin-top-right rounded-2xl border border-slate-200 bg-white shadow-xl"
+        class="absolute right-0 mt-3 w-80 origin-top-right rounded-2xl border border-slate-200 bg-white shadow-xl z-50"
       >
         <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <h3 class="font-semibold text-slate-900">Notificacoes</h3>
