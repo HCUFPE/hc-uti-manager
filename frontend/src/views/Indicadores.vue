@@ -156,58 +156,89 @@
           </article>
         </div>
 
-        <!-- Tabela Detalhada de Volumes no Período -->
-        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-          <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Resumo Volumétrico do Período</h3>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-slate-700">
-              <thead>
-                <tr class="bg-slate-50 text-slate-500 font-semibold border-b">
-                  <th class="px-4 py-3">Métrica / Ação Operacional</th>
-                  <th class="px-4 py-3 text-center">Volume Total</th>
-                  <th class="px-4 py-3 text-right">Proporção / Relação</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr>
-                  <td class="px-4 py-3 font-medium">Solicitações Criadas</td>
-                  <td class="px-4 py-3 text-center font-bold">{{ detalhado.volumes?.solicitacoes ?? 0 }}</td>
-                  <td class="px-4 py-3 text-right text-slate-500">-</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-3 font-medium">Solicitações Reservadas pela UTI</td>
-                  <td class="px-4 py-3 text-center font-bold text-blue-600">{{ detalhado.volumes?.reservadas ?? 0 }}</td>
-                  <td class="px-4 py-3 text-right text-slate-500">-</td>
-                </tr>
-                <tr class="bg-emerald-50/20">
-                  <td class="px-4 py-3 font-medium text-emerald-900">Solicitações Concluídas (Pacientes Admitidos)</td>
-                  <td class="px-4 py-3 text-center font-bold text-emerald-700">{{ detalhado.volumes?.concluidas ?? 0 }}</td>
-                  <td class="px-4 py-3 text-right font-bold text-emerald-600">{{ detalhado.volumes?.percentual_concluidas_por_solicitadas ?? 0 }}% das solicitadas</td>
-                </tr>
-                <tr class="bg-rose-50/20">
-                  <td class="px-4 py-3 font-medium text-rose-900">Solicitações Canceladas (Fila / Pendentes)</td>
-                  <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_solicitacoes ?? 0 }}</td>
-                  <td class="px-4 py-3 text-right font-bold text-rose-600">{{ detalhado.volumes?.percentual_canceladas_por_solicitadas ?? 0 }}% das solicitadas</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-3 font-medium">Reservas Canceladas pela UTI (Desfeitas)</td>
-                  <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_reservas ?? 0 }}</td>
-                  <td class="px-4 py-3 text-right text-slate-500">-</td>
-                </tr>
-                <tr class="border-t-2">
-                  <td class="px-4 py-3 font-medium">Altas Solicitadas pela UTI</td>
-                  <td class="px-4 py-3 text-center font-bold text-indigo-700">{{ detalhado.volumes?.altas ?? 0 }}</td>
-                  <td class="px-4 py-3 text-right text-slate-500">-</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-3 font-medium">Altas Concluídas (Transferências Físicas)</td>
-                  <td class="px-4 py-3 text-center font-bold text-indigo-900">{{ detalhado.volumes?.altas_concluidas ?? 0 }}</td>
-                  <td class="px-4 py-3 text-right text-slate-500">-</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </article>
+        <!-- Resumos Volumétricos e Ciclo de Vida -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Quadro 1: Ciclo de Vida das Solicitações -->
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Ciclo de Vida das Solicitações (Pacientes)</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm text-slate-700">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500 font-semibold border-b">
+                    <th class="px-4 py-3">Situação do Paciente / Solicitação</th>
+                    <th class="px-4 py-3 text-center">Volume Total</th>
+                    <th class="px-4 py-3 text-right">Proporção / Relação</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr class="font-semibold bg-slate-50/50">
+                    <td class="px-4 py-3">Solicitações Criadas (Demanda Total)</td>
+                    <td class="px-4 py-3 text-center">{{ detalhado.volumes?.solicitacoes ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right">100%</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 pl-8 font-medium">├─ Concluídas (Pacientes Admitidos)</td>
+                    <td class="px-4 py-3 text-center font-bold text-emerald-700">{{ detalhado.volumes?.concluidas_real ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right font-bold text-emerald-600">{{ detalhado.volumes?.percentual_concluidas ?? 0 }}% das criadas</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 pl-8 font-medium">├─ Canceladas (Fila / Desistências)</td>
+                    <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.canceladas_real ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right font-bold text-rose-600">{{ detalhado.volumes?.percentual_canceladas ?? 0 }}% das criadas</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 pl-8 font-medium">├─ Reservas Ativas (Aguardando Entrada)</td>
+                    <td class="px-4 py-3 text-center font-bold text-blue-700">{{ detalhado.volumes?.reservas_ativas ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right font-bold text-blue-600">{{ detalhado.volumes?.percentual_reservas_ativas ?? 0 }}% das criadas</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 pl-8 font-medium">└─ Pendentes na Fila (Aguardando Vaga)</td>
+                    <td class="px-4 py-3 text-center font-bold text-amber-700">{{ detalhado.volumes?.pendentes_fila ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right font-bold text-amber-600">{{ detalhado.volumes?.percentual_pendentes_fila ?? 0 }}% das criadas</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <!-- Quadro 2: Resumo de Ações da UTI e Altas -->
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Resumo de Ações da UTI e Altas (Trabalho)</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm text-slate-700">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500 font-semibold border-b">
+                    <th class="px-4 py-3">Ação Operacional Realizada</th>
+                    <th class="px-4 py-3 text-center">Volume Total</th>
+                    <th class="px-4 py-3 text-right">Descrição</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr>
+                    <td class="px-4 py-3 font-medium">Reservas Efetuadas pela UTI</td>
+                    <td class="px-4 py-3 text-center font-bold text-blue-600">{{ detalhado.volumes?.reservadas ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">Cliques em "Reservar Leito"</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-medium">Reservas Canceladas pela UTI (Desfeitas)</td>
+                    <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_reservas ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">Cliques em "Cancelar Reserva"</td>
+                  </tr>
+                  <tr class="border-t-2">
+                    <td class="px-4 py-3 font-medium">Altas Solicitadas pela UTI</td>
+                    <td class="px-4 py-3 text-center font-bold text-indigo-700">{{ detalhado.volumes?.altas ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">Solicitações de alta criadas</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-medium">Altas Concluídas (Transferências Físicas)</td>
+                    <td class="px-4 py-3 text-center font-bold text-indigo-950">{{ detalhado.volumes?.altas_concluidas ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">Pacientes que deixaram a UTI</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
       </div>
 
       <!-- Gráfico de Ocupação Semanal -->

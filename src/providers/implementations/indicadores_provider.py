@@ -385,6 +385,12 @@ class IndicadoresProvider:
         volume_altas = len(altas_criadas_periodo)
         volume_altas_concluidas = len([ev for ev in historico_todos if ev.tipo == "conclusao_alta" and in_period(ev.criado_em)])
 
+        # Sub-estados do ciclo de vida para as solicitações criadas no período
+        volume_concluidas_real = len([s for s in sols_criadas_periodo if s.status == "Concluída"])
+        volume_canceladas_real = len([s for s in sols_criadas_periodo if s.status == "Cancelada"])
+        volume_reservas_ativas_real = len([s for s in sols_criadas_periodo if s.status == "Reservado"])
+        volume_pendentes_fila_real = len([s for s in sols_criadas_periodo if s.status == "Pendente"])
+
         percentual_concluidas_por_solicitadas = (volume_concluidas / volume_solicitacoes * 100) if volume_solicitacoes > 0 else 0.0
         percentual_canceladas_por_solicitadas = (volume_cancelamentos_sol / volume_solicitacoes * 100) if volume_solicitacoes > 0 else 0.0
 
@@ -484,6 +490,16 @@ class IndicadoresProvider:
                 "tempo_liberacao_encaminhamento_minutos": round(tempo_medio_liberacao_encaminhamento, 1),
                 "volumes": {
                     "solicitacoes": volume_solicitacoes,
+                    "concluidas_real": volume_concluidas_real,
+                    "canceladas_real": volume_canceladas_real,
+                    "reservas_ativas": volume_reservas_ativas_real,
+                    "pendentes_fila": volume_pendentes_fila_real,
+                    "percentual_concluidas": round(volume_concluidas_real / volume_solicitacoes * 100, 1) if volume_solicitacoes > 0 else 0.0,
+                    "percentual_canceladas": round(volume_canceladas_real / volume_solicitacoes * 100, 1) if volume_solicitacoes > 0 else 0.0,
+                    "percentual_reservas_ativas": round(volume_reservas_ativas_real / volume_solicitacoes * 100, 1) if volume_solicitacoes > 0 else 0.0,
+                    "percentual_pendentes_fila": round(volume_pendentes_fila_real / volume_solicitacoes * 100, 1) if volume_solicitacoes > 0 else 0.0,
+
+                    # Acoes historicas
                     "reservadas": volume_reservas,
                     "concluidas": volume_concluidas,
                     "cancelamento_solicitacoes": volume_cancelamentos_sol,
