@@ -28,5 +28,10 @@ WHERE
   pac.prontuario = :prontuario
   AND cir.situacao <> 'CANC'
 
-ORDER BY cir.dthr_inicio_cirg DESC
+ORDER BY 
+  CASE WHEN cir.dthr_inicio_cirg >= CURRENT_DATE THEN 0 ELSE 1 END,
+  CASE WHEN cir.dthr_inicio_cirg >= CURRENT_DATE 
+       THEN (cir.dthr_inicio_cirg - CURRENT_DATE) 
+       ELSE (CURRENT_DATE - cir.dthr_inicio_cirg) 
+  END ASC
 LIMIT 1;
