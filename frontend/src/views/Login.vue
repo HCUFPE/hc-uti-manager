@@ -20,7 +20,7 @@
           </div>
           <!-- Versão e assinatura -->
           <div class="absolute bottom-4 left-6 text-xs text-slate-400 font-medium">
-            Versão: 01.01 atualizada em 13/07/2026 às 07:43h - SETISD HC-UFPE
+            Versão: 01.02 atualizada em 14/07/2026 às 14:18h - SETISD HC-UFPE
           </div>
         </div>
 

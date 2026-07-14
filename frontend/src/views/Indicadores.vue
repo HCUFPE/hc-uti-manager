@@ -154,9 +154,29 @@
               </tbody>
             </table>
           </article>
-        </div>
 
-        <!-- Resumos Volumétricos e Ciclo de Vida -->
+          <!-- Tabela de Motivos de Cancelamento -->
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Principais Motivos de Cancelamento</h3>
+            <div v-if="!detalhado.motivos_cancelamento || Object.keys(detalhado.motivos_cancelamento).length === 0" class="text-sm text-slate-500 py-4 text-center">
+              Nenhum cancelamento no período.
+            </div>
+            <table v-else class="w-full text-sm">
+              <thead>
+                <tr class="text-slate-400 border-b text-left">
+                  <th class="pb-2 font-semibold">Motivo</th>
+                  <th class="pb-2 font-semibold text-right">Qtd</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="(qtd, motivo) in detalhado.motivos_cancelamento" :key="motivo" class="text-slate-700">
+                  <td class="py-2 font-medium">{{ motivo }}</td>
+                  <td class="py-2 text-right font-bold text-slate-800">{{ qtd }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>        <!-- Resumos Volumétricos e Ciclo de Vida -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Quadro 1: Ciclo de Vida das Solicitações -->
           <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -257,8 +277,20 @@
           <header class="border-b border-slate-100 px-5 py-4">
             <h3 class="text-lg font-semibold text-slate-900">Distribuição por Especialidade (Pacientes Internados)</h3>
           </header>
-          <div class="p-5 h-80 flex justify-center">
-            <Pie v-if="graficosData.especialidade" :data="graficosData.especialidade" :options="pieOptions" />
+          <div class="p-5 flex flex-col md:flex-row items-center gap-6 justify-center">
+            <div class="h-60 w-60 flex-shrink-0">
+              <Pie v-if="graficosData.especialidade" :data="graficosData.especialidade" :options="pieOptions" />
+            </div>
+            <!-- Custom Legend with Numbers -->
+            <div class="flex-1 w-full space-y-2 text-sm text-slate-600 max-h-60 overflow-y-auto pr-2">
+              <div v-for="(label, idx) in graficosRaw.distribuicao_especialidade?.labels || []" :key="label" class="flex justify-between border-b pb-1">
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded-full flex-shrink-0" :style="{ backgroundColor: bgColors[idx % bgColors.length] }"></span>
+                  <span class="truncate max-w-[150px]" :title="label">{{ label }}</span>
+                </div>
+                <span class="font-bold text-slate-800">{{ graficosRaw.distribuicao_especialidade?.data?.[idx] ?? 0 }} leito(s)</span>
+              </div>
+            </div>
           </div>
         </article>
 
@@ -408,12 +440,12 @@ const indicadoresCalculados = computed(() => {
   }));
 });
 
+const bgColors = [
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'
+];
+
 const graficosData = computed(() => {
   if (!graficosRaw.value || Object.keys(graficosRaw.value).length === 0) return {};
-
-  const bgColors = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'
-  ];
 
   return {
     ocupacao: {
@@ -463,7 +495,7 @@ const pieOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: { position: 'right' as const }
+    legend: { display: false }
   }
 };
 

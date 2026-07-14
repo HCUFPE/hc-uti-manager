@@ -394,6 +394,17 @@ class IndicadoresProvider:
         percentual_concluidas_por_solicitadas = (volume_concluidas / volume_solicitacoes * 100) if volume_solicitacoes > 0 else 0.0
         percentual_canceladas_por_solicitadas = (volume_cancelamentos_sol / volume_solicitacoes * 100) if volume_solicitacoes > 0 else 0.0
 
+        # Extrair e contar os motivos de cancelamento no período
+        motivos_cancelamento = {}
+        for ev in cancelamentos_sol_periodo:
+            if ev.detalhes and " - Motivo: " in ev.detalhes:
+                partes = ev.detalhes.split(" - Motivo: ")
+                if len(partes) > 1:
+                    motivo = partes[1].strip()
+                    motivos_cancelamento[motivo] = motivos_cancelamento.get(motivo, 0) + 1
+            else:
+                motivos_cancelamento["Não Informado"] = motivos_cancelamento.get("Não Informado", 0) + 1
+
         # Gráfico Ocupação Semanal: obter dados reais do banco
         ocupacao_semanal_dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"]
         ocupacao_semanal_valores = []
@@ -465,6 +476,7 @@ class IndicadoresProvider:
                 }
             },
             "detalhado": {
+                "motivos_cancelamento": motivos_cancelamento,
                 "admissoes_semanais": {
                     "geral": round(int_semanal_geral, 2),
                     "demandantes": int_semanal_dem,
