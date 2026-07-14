@@ -273,11 +273,11 @@ class IndicadoresProvider:
         minutos_tarde = []
         for ev in reservas_periodo:
             sol = find_solicitacao(ev)
-            if sol and sol.turno in ["Manha", "Tarde"]:
+            if sol and sol.turno in ["Manhã", "Manha", "Tarde"]:
                 # Converter para local (Brasília UTC-3) para analisar a hora real do hospital
                 dt_local = ev.criado_em - timedelta(hours=3)
                 minutos_dia = dt_local.hour * 60 + dt_local.minute
-                if sol.turno == "Manha":
+                if sol.turno in ["Manhã", "Manha"]:
                     minutos_manha.append(minutos_dia)
                 else:
                     minutos_tarde.append(minutos_dia)
