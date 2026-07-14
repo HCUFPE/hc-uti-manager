@@ -268,10 +268,14 @@ class SolicitacaoLeitoController:
                     
                     # Cancela ou volta para pendente a solicitação original
                     status_antiga = "Cancelada" if payload.get("cancelar_antiga", True) else "Pendente"
-                    await self.leito_provider.atualizar(sol_id, {
+                    dados_antiga = {
                         "status": status_antiga,
                         "destino": None
-                    })
+                    }
+                    if status_antiga == "Pendente":
+                        dados_antiga["prioridade"] = "P1"
+                        dados_antiga["prioridade_manual"] = True
+                    await self.leito_provider.atualizar(sol_id, dados_antiga)
                     
                     # Registrar no histórico
                     if self.historico_provider:
@@ -301,7 +305,10 @@ class SolicitacaoLeitoController:
                         )
                     
                     # Sincroniza prioridades das filas (antiga e nova)
-                    await self._sincronizar_prioridades(alvo.data_cirurgia)
+                    if status_antiga == "Pendente":
+                        await self._sincronizar_prioridades(alvo.data_cirurgia, sol_id_foco=sol_id, prioridade_desejada="P1")
+                    else:
+                        await self._sincronizar_prioridades(alvo.data_cirurgia)
                     if sol_ativa.data_cirurgia != alvo.data_cirurgia:
                         await self._sincronizar_prioridades(sol_ativa.data_cirurgia)
                         
@@ -332,10 +339,14 @@ class SolicitacaoLeitoController:
             
             # 3. Cancelar ou retornar a solicitação original para a fila
             status_antiga = "Cancelada" if payload.get("cancelar_antiga", True) else "Pendente"
-            await self.leito_provider.atualizar(sol_id, {
+            dados_antiga = {
                 "status": status_antiga,
                 "destino": None
-            })
+            }
+            if status_antiga == "Pendente":
+                dados_antiga["prioridade"] = "P1"
+                dados_antiga["prioridade_manual"] = True
+            await self.leito_provider.atualizar(sol_id, dados_antiga)
             
             # 4. Registrar logs de histórico de cancelamento/retorno e nova criação
             if self.historico_provider:
@@ -387,7 +398,10 @@ class SolicitacaoLeitoController:
                         )
 
             # 6. Sincroniza prioridades das filas (antiga e nova)
-            await self._sincronizar_prioridades(alvo.data_cirurgia)
+            if status_antiga == "Pendente":
+                await self._sincronizar_prioridades(alvo.data_cirurgia, sol_id_foco=sol_id, prioridade_desejada="P1")
+            else:
+                await self._sincronizar_prioridades(alvo.data_cirurgia)
             if nova_sol.data_cirurgia != alvo.data_cirurgia:
                 await self._sincronizar_prioridades(nova_sol.data_cirurgia)
                 
