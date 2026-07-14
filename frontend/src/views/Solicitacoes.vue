@@ -503,6 +503,30 @@
         </UiButton>
       </template>
     </Modal>
+    <Modal :show="showModalConfirmacaoTrocaProntuario" @close="showModalConfirmacaoTrocaProntuario = false">
+      <template #header>Alteração de Paciente</template>
+      <div class="space-y-4 text-left">
+        <p class="text-sm text-slate-600">
+          Você está alterando o prontuário desta solicitação do paciente anterior <strong>{{ solSelecionada?.nome || 'N/D' }}</strong> (Prontuário {{ solSelecionada?.prontuario }}) para o novo paciente <strong>{{ dadosAghu?.nome }}</strong> (Prontuário {{ formNova.prontuario }}).
+        </p>
+        <p class="text-sm font-semibold text-slate-700">
+          O que deseja fazer com a solicitação do paciente anterior?
+        </p>
+        <div class="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-2 text-xs text-slate-500">
+          <p>• <strong>Cancelar Antiga:</strong> Remove o paciente anterior da fila / cancela sua solicitação.</p>
+          <p>• <strong>Voltar para a Fila:</strong> Mantém o paciente anterior ativo na lista de solicitações pendentes (voltando a aguardar reserva se ele estava reservado).</p>
+        </div>
+      </div>
+      <template #footer>
+        <UiButton variant="outline" @click="showModalConfirmacaoTrocaProntuario = false">Cancelar Alteração</UiButton>
+        <UiButton variant="outline" @click="confirmarSalvarEdicao(false)" class="text-blue-600 border-blue-200 hover:bg-blue-50">
+          Voltar para a Fila
+        </UiButton>
+        <UiButton @click="confirmarSalvarEdicao(true)" class="bg-red-600 text-white hover:bg-red-700 border-none">
+          Cancelar Antiga
+        </UiButton>
+      </template>
+    </Modal>
   </section>
 </template>
 
@@ -594,6 +618,7 @@ const showModalCancelamento = ref(false);
 const motivoCancelamento = ref('');
 const idCancelamento = ref('');
 const isCancelamentoReserva = ref(false);
+const showModalConfirmacaoTrocaProntuario = ref(false);
 
 const formNova = ref({
   prontuario: '',
@@ -865,6 +890,11 @@ function abrirModalEdicao(sol: Solicitacao) {
 }
 
 async function salvarNova() {
+  if (isEditing.value && solSelecionada.value && String(formNova.value.prontuario) !== String(solSelecionada.value.prontuario)) {
+    showModalConfirmacaoTrocaProntuario.value = true;
+    return;
+  }
+
   submetendoNova.value = true;
   try {
     if (isEditing.value && solSelecionada.value) {
@@ -879,6 +909,28 @@ async function salvarNova() {
   } catch (error: any) {
     console.error('Erro ao salvar:', error);
     toast.error(error.response?.data?.detail || 'Erro ao salvar solicitação.');
+  } finally {
+    submetendoNova.value = false;
+  }
+}
+
+async function confirmarSalvarEdicao(cancelarAntiga: boolean) {
+  showModalConfirmacaoTrocaProntuario.value = false;
+  submetendoNova.value = true;
+  try {
+    if (solSelecionada.value) {
+      const payload = {
+        ...formNova.value,
+        cancelar_antiga: cancelarAntiga
+      };
+      await api.patch(`/api/solicitacoes/${solSelecionada.value.id}`, payload);
+      toast.success('Solicitação atualizada e paciente alterado!');
+      fecharModalNova();
+      carregarSolicitacoes();
+    }
+  } catch (error: any) {
+    console.error('Erro ao salvar edição com troca de paciente:', error);
+    toast.error(error.response?.data?.detail || 'Erro ao atualizar solicitação.');
   } finally {
     submetendoNova.value = false;
   }

@@ -266,22 +266,31 @@ class SolicitacaoLeitoController:
                             estado_reserva.especialidade_proximo = sol_ativa.especialidade
                             await self.estado_provider.session.commit()
                     
-                    # Cancela a solicitação original
+                    # Cancela ou volta para pendente a solicitação original
+                    status_antiga = "Cancelada" if payload.get("cancelar_antiga", True) else "Pendente"
                     await self.leito_provider.atualizar(sol_id, {
-                        "status": "Cancelada",
+                        "status": status_antiga,
                         "destino": None
                     })
                     
                     # Registrar no histórico
                     if self.historico_provider:
-                        # Cancelamento do anterior
-                        await self.historico_provider.registrar(
-                            operador=username,
-                            tipo="exclusao_solicitacao",
-                            acao="Cancelou solicitação de vaga",
-                            detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito (Mesclado)",
-                            prontuario=str(alvo.prontuario)
-                        )
+                        if status_antiga == "Cancelada":
+                            await self.historico_provider.registrar(
+                                operador=username,
+                                tipo="exclusao_solicitacao",
+                                acao="Cancelou solicitação de vaga",
+                                detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito (Mesclado)",
+                                prontuario=str(alvo.prontuario)
+                            )
+                        else:
+                            await self.historico_provider.registrar(
+                                operador=username,
+                                tipo="cancelamento_reserva" if alvo_status_orig == "Reservado" else "status",
+                                acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito",
+                                detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente (Mesclado)",
+                                prontuario=str(alvo.prontuario)
+                            )
                         # Promoção da existente do novo
                         await self.historico_provider.registrar(
                             operador=username,
@@ -321,22 +330,31 @@ class SolicitacaoLeitoController:
             }
             nova_sol = await self.leito_provider.criar(nova_solicitacao_data)
             
-            # 3. Cancelar a solicitação original
+            # 3. Cancelar ou retornar a solicitação original para a fila
+            status_antiga = "Cancelada" if payload.get("cancelar_antiga", True) else "Pendente"
             await self.leito_provider.atualizar(sol_id, {
-                "status": "Cancelada",
+                "status": status_antiga,
                 "destino": None
             })
             
-            # 4. Registrar logs de histórico de cancelamento e nova criação
+            # 4. Registrar logs de histórico de cancelamento/retorno e nova criação
             if self.historico_provider:
-                # Cancelamento
-                await self.historico_provider.registrar(
-                    operador=username,
-                    tipo="exclusao_solicitacao",
-                    acao="Cancelou solicitação de vaga",
-                    detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito",
-                    prontuario=str(alvo.prontuario)
-                )
+                if status_antiga == "Cancelada":
+                    await self.historico_provider.registrar(
+                        operador=username,
+                        tipo="exclusao_solicitacao",
+                        acao="Cancelou solicitação de vaga",
+                        detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito",
+                        prontuario=str(alvo.prontuario)
+                    )
+                else:
+                    await self.historico_provider.registrar(
+                        operador=username,
+                        tipo="cancelamento_reserva" if alvo_status_orig == "Reservado" else "status",
+                        acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito",
+                        detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente",
+                        prontuario=str(alvo.prontuario)
+                    )
                 # Criação
                 await self.historico_provider.registrar(
                     operador=username,
