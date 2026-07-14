@@ -70,7 +70,12 @@ class HistoricoProvider:
         stmt = select(HistoricoAcao)
 
         if tipo:
-            stmt = stmt.where(HistoricoAcao.tipo == tipo)
+            if tipo == "destino":
+                stmt = stmt.where(HistoricoAcao.tipo.in_(["destino", "alteracao_destino", "destino_disponivel", "destino_pendente"]))
+            elif tipo == "alta":
+                stmt = stmt.where(HistoricoAcao.tipo.in_(["alta", "conclusao_alta"]))
+            else:
+                stmt = stmt.where(HistoricoAcao.tipo == tipo)
         if operador:
             stmt = stmt.where(HistoricoAcao.operador.ilike(f"%{operador}%"))
         if prontuario:
