@@ -8,4 +8,4 @@
 
 ## 3. Validação
 
-- [ ] 3.1 Validar se as somas do ciclo de vida fecham perfeitamente no dashboard de indicadores.
+- [x] 3.1 Validar se as somas do ciclo de vida fecham perfeitamente no dashboard de indicadores.
