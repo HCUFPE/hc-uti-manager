@@ -75,7 +75,7 @@ class HistoricoProvider:
             elif tipo == "alta":
                 stmt = stmt.where(HistoricoAcao.tipo.in_(["alta", "conclusao_alta"]))
             elif tipo == "solicitacao":
-                stmt = stmt.where(HistoricoAcao.tipo.in_(["solicitacao", "nova_solicitacao", "conclusao"]))
+                stmt = stmt.where(HistoricoAcao.tipo.in_(["solicitacao", "nova_solicitacao", "conclusao", "edicao"]))
             elif tipo == "cancelamento":
                 stmt = stmt.where(HistoricoAcao.tipo.in_(["cancelamento", "exclusao_solicitacao", "cancelamento_reserva"]))
             else:
