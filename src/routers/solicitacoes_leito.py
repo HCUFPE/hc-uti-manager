@@ -168,7 +168,7 @@ async def cancelar_solicitacao(
     if user_perfil != Role.ADMIN:
         is_uti = user_perfil in [Role.UTI, Role.UTI_ADMIN]
         is_sol_pendente = solicitacao.status == "Pendente"
-        is_motivo_valido = motivo == "Falta de vaga de UTI"
+        is_motivo_valido = motivo in ["Falta de vaga de UTI", "Paciente já ocupa um leito na UTI"]
         
         if is_uti and is_sol_pendente and is_motivo_valido:
             pass # Permitido para a UTI

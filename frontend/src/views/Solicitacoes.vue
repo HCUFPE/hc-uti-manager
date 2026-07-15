@@ -588,7 +588,8 @@ const isEditing = ref(false);
 const MOTIVOS_CANCELAMENTO = [
   'Cirurgia suspensa por outros motivos',
   'Paciente encaminhado para enfermaria de origem após a cirurgia',
-  'Alteração do mapa cirúrgico'
+  'Alteração do mapa cirúrgico',
+  'Paciente já ocupa um leito na UTI'
 ];
 const MOTIVOS_CANCELAMENTO_RESERVA = [
   'Pedido de vaga clínica (emergência)',
@@ -603,9 +604,9 @@ const motivosAtuais = computed(() => {
   if (isCancelamentoReserva.value) {
     return MOTIVOS_CANCELAMENTO_RESERVA;
   }
-  // Se for UTI (e não admin), o motivo único de cancelamento da solicitação deve ser "Falta de vaga de UTI"
+  // Se for UTI (e não admin), os motivos permitidos são Falta de vaga de UTI ou Paciente já ocupa leito
   if (authStore.isUTI && !authStore.isAdmin) {
-    return ['Falta de vaga de UTI'];
+    return ['Falta de vaga de UTI', 'Paciente já ocupa um leito na UTI'];
   }
   // Se for Administrador, pode escolher tanto os normais quanto o de UTI
   if (authStore.isAdmin) {
