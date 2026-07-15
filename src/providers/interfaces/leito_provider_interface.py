@@ -25,3 +25,6 @@ class LeitoProviderInterface(ABC):
     @abstractmethod
     async def listar_leitos_disponiveis_para_reserva(self) -> List[Dict[str, Any]]:
         pass
+
+    async def obter_historico_higienizacao(self) -> List[Dict[str, Any]]:
+        return []

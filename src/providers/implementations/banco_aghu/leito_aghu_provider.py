@@ -58,3 +58,17 @@ class LeitoAghuProvider(LeitoProviderInterface):
     async def cancelar_alta(self, leito_id: str) -> None:
         """Operação de escrita será gerenciada pelo Local State Provider."""
         pass
+
+    async def obter_historico_higienizacao(self) -> List[Dict[str, Any]]:
+        """Busca o histórico de higienização de leitos da UTI no AGHU."""
+        if not self.session:
+            return []
+        try:
+            query_text = get_sql_query('tempo_higienizacao.sql')
+            result = await self.session.execute(text(query_text))
+            rows = result.mappings().all()
+            return [dict(r) for r in rows]
+        except Exception as e:
+            print(f"Erro ao consultar tempo de higienização no AGHU: {e}")
+            return []
+

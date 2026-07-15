@@ -71,7 +71,7 @@
       </div>
 
       <!-- Nova Seção: Tempos Médios de Processo e Fluxo (Gargalos) -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Solicitação a Ocupação</p>
           <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_solicitacao_ocupacao_horas ?? 0 }}h</p>
@@ -100,6 +100,12 @@
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Liberação de Leito de Acomodação</p>
           <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_liberacao_leito_horas ?? 0 }}h</p>
           <p class="mt-1 text-xs text-slate-500">Tempo desde a indicação do destino até a efetiva saída da UTI.</p>
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tempo de Higienização</p>
+          <p class="mt-2 text-3xl font-extrabold text-slate-800 text-slate-800">{{ detalhado.tempo_higienizacao_minutos ?? 0 }} min</p>
+          <p class="mt-1 text-xs text-slate-500">Tempo médio em que o leito da UTI fica com status de higienização.</p>
         </article>
       </div>
 

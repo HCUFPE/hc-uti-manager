@@ -432,6 +432,31 @@ class IndicadoresProvider:
                 # Fallback em caso de dados vazios/incompletos no passado
                 ocupacao_semanal_valores.append(round(taxa_ocupacao, 1))
 
+        # 8b. Tempo Médio de Higienização de Leitos (limpeza -> próximo status)
+        tempo_medio_higienizacao = 0.0
+        if os.getenv("MOCK_BEDS") == "true":
+            tempo_medio_higienizacao = 45.0
+        else:
+            try:
+                historico_higienizacao = await self.census_provider.obter_historico_higienizacao()
+                tempos_higienizacao = []
+                for h in historico_higienizacao:
+                    inicio = h.get("inicio_higienizacao")
+                    fim = h.get("fim_higienizacao")
+                    if inicio and fim:
+                        if isinstance(inicio, str):
+                            inicio = datetime.fromisoformat(inicio)
+                        if isinstance(fim, str):
+                            fim = datetime.fromisoformat(fim)
+                        if in_period(fim):
+                            diff_minutos = (fim - inicio).total_seconds() / 60.0
+                            if diff_minutos >= 0:
+                                tempos_higienizacao.append(diff_minutos)
+                if tempos_higienizacao:
+                    tempo_medio_higienizacao = sum(tempos_higienizacao) / len(tempos_higienizacao)
+            except Exception as e:
+                logger.error(f"Erro ao calcular tempo médio de higienização: {e}")
+
         # Reconstruir tempos de espera por tipo para o período
         espera_por_tipo = {}
         for sol in sols_criadas_periodo:
@@ -500,6 +525,7 @@ class IndicadoresProvider:
                 "tempo_acomodacao_alta_horas": round(tempo_medio_acomodacao_alta, 1),
                 "tempo_liberacao_leito_horas": round(tempo_medio_liberacao_leito, 1),
                 "tempo_liberacao_encaminhamento_minutos": round(tempo_medio_liberacao_encaminhamento, 1),
+                "tempo_higienizacao_minutos": round(tempo_medio_higienizacao, 1),
                 "volumes": {
                     "solicitacoes": volume_solicitacoes,
                     "concluidas_real": volume_concluidas_real,
