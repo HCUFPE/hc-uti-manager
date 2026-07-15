@@ -89,6 +89,14 @@ Adicionalmente, o sistema MUST registrar no histórico de ações:
 - **WHEN** um usuário logado realiza qualquer operação de mudança de estado (criação, edição, reserva, remanejamento, liberação de encaminhamento ou cancelamento)
 - **THEN** o sistema grava um registro de histórico contendo a data/hora atual, o nome do usuário operador e os detalhes descritivos da ação
 
+#### Scenario: Gravação de log de ocupação física de leito
+- **WHEN** o sistema detecta (durante listagem/sincronização de leitos) que o paciente reservado ocupou o leito correspondente e atualiza a solicitação para "Concluída"
+- **THEN** o sistema registra no histórico de ações um evento do tipo "conclusao" descrevendo a admissão do paciente
+
+#### Scenario: Gravação de log de saída física de alta de leito
+- **WHEN** o sistema detecta (durante listagem/sincronização de leitos) que um leito com alta ativa foi liberado (o prontuário atual no censo difere da alta)
+- **THEN** o sistema atualiza o status da alta para "concluida" e grava no histórico um evento de tipo "conclusao_alta"
+
 #### Scenario: Filtro por solicitação retorna registros corretos
 - **WHEN** o usuário seleciona o filtro "Solicitação" na tela de histórico
 - **THEN** o backend executa a busca mapeando para os registros de tipo "solicitacao", "nova_solicitacao" e "conclusao" e retorna o resultado para o frontend
