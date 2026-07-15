@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from datetime import timedelta
+from datetime import timedelta, datetime, date
 from fastapi import HTTPException
 from providers.implementations.solicitacao_leito_provider import SolicitacaoLeitoProvider
 from providers.implementations.leito_estado_provider import LeitoEstadoProvider
@@ -153,6 +153,17 @@ class SolicitacaoLeitoController:
         dados_aghu = await self.consultar_dados_aghu(str(prontuario))
 
         dt = dados_aghu["data_cirurgia"]
+        if dt:
+            try:
+                cirurgia_date = datetime.strptime(dt, "%Y-%m-%d").date()
+                if cirurgia_date < date.today():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Paciente não possui cirurgia agendada no AGHU"
+                    )
+            except ValueError:
+                pass
+
         trn = dados_aghu["turno"]
         nome = dados_aghu["nome"]
         idade = dados_aghu["idade"]
@@ -280,11 +291,12 @@ class SolicitacaoLeitoController:
                     # Registrar no histórico
                     if self.historico_provider:
                         if status_antiga == "Cancelada":
+                            motivo_cancel = "Alteração de Prioridade pós Reserva de Leito" if alvo_status_orig == "Reservado" else "Alteração de Prioridade pós Solicitação"
                             await self.historico_provider.registrar(
                                 operador=username,
                                 tipo="exclusao_solicitacao",
                                 acao="Cancelou solicitação de vaga",
-                                detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito (Mesclado)",
+                                detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: {motivo_cancel} (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {sol_ativa.prontuario}) (Mesclado)",
                                 prontuario=str(alvo.prontuario)
                             )
                         else:
@@ -292,15 +304,16 @@ class SolicitacaoLeitoController:
                                 operador=username,
                                 tipo="cancelamento_reserva" if alvo_status_orig == "Reservado" else "status",
                                 acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito",
-                                detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente (Mesclado)",
+                                detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {sol_ativa.prontuario}) (Mesclado)",
                                 prontuario=str(alvo.prontuario)
                             )
-                        # Promoção da existente do novo
+                        # Promoção da existente do novo (se reservado, a ação automática da reserva é registrada como do Sistema)
+                        operador_promocao = "Sistema" if alvo_status_orig == "Reservado" else username
                         await self.historico_provider.registrar(
-                            operador=username,
+                            operador=operador_promocao,
                             tipo="reserva" if alvo_status_orig == "Reservado" else "status",
                             acao=f"Atualizou status para {alvo_status_orig}" if alvo_status_orig != "Reservado" else "Reservou leito para solicitação",
-                            detalhes=f"Solicitação #{sol_id} mesclada com solicitação #{sol_ativa.id} existente do Paciente {sol_ativa.nome} - Status: {alvo_status_orig} " + (f"para {alvo_destino_orig}" if alvo_status_orig == "Reservado" else ""),
+                            detalhes=f"Solicitação #{sol_id} mesclada com solicitação #{sol_ativa.id} existente do Paciente {sol_ativa.nome} - Status: {alvo_status_orig} " + (f"para {alvo_destino_orig}" if alvo_status_orig == "Reservado" else "") + f" (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {sol_ativa.prontuario})",
                             prontuario=str(sol_ativa.prontuario)
                         )
                     
@@ -318,6 +331,19 @@ class SolicitacaoLeitoController:
             # 1. Consultar dados do novo prontuário no AGHU
             dados_aghu = await self.consultar_dados_aghu(novo_prontuario)
             
+            # Valida se a cirurgia tem data no passado
+            dt_nova = dados_aghu.get("data_cirurgia")
+            if dt_nova:
+                try:
+                    cirurgia_date = datetime.strptime(dt_nova, "%Y-%m-%d").date()
+                    if cirurgia_date < date.today():
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Paciente não possui cirurgia agendada no AGHU"
+                        )
+                except ValueError:
+                    pass
+
             # 2. Criar a nova solicitação
             nova_solicitacao_data = {
                 "prontuario": novo_prontuario,
@@ -351,11 +377,12 @@ class SolicitacaoLeitoController:
             # 4. Registrar logs de histórico de cancelamento/retorno e nova criação
             if self.historico_provider:
                 if status_antiga == "Cancelada":
+                    motivo_cancel = "Alteração de Prioridade pós Reserva de Leito" if alvo_status_orig == "Reservado" else "Alteração de Prioridade pós Solicitação"
                     await self.historico_provider.registrar(
                         operador=username,
                         tipo="exclusao_solicitacao",
                         acao="Cancelou solicitação de vaga",
-                        detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: Alteração de Prioridade pós Reserva de Leito",
+                        detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: {motivo_cancel} (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {nova_sol.prontuario})",
                         prontuario=str(alvo.prontuario)
                     )
                 else:
@@ -363,7 +390,7 @@ class SolicitacaoLeitoController:
                         operador=username,
                         tipo="cancelamento_reserva" if alvo_status_orig == "Reservado" else "status",
                         acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito",
-                        detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente",
+                        detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {nova_sol.prontuario})",
                         prontuario=str(alvo.prontuario)
                     )
                 # Criação
@@ -371,7 +398,7 @@ class SolicitacaoLeitoController:
                     operador=username,
                     tipo="nova_solicitacao",
                     acao="Nova solicitação de vaga",
-                    detalhes=f"Solicitação #{nova_sol.id} - Prontuário {nova_sol.prontuario} — {nova_sol.especialidade} ({nova_sol.tipo}) - Data: {nova_sol.data_cirurgia} (Gerada via troca de paciente)",
+                    detalhes=f"Solicitação #{nova_sol.id} - Prontuário {nova_sol.prontuario} — {nova_sol.especialidade} ({nova_sol.tipo}) - Data: {nova_sol.data_cirurgia} (Gerada via troca de paciente) (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {nova_sol.prontuario})",
                     prontuario=str(nova_sol.prontuario)
                 )
             
@@ -390,7 +417,7 @@ class SolicitacaoLeitoController:
                     
                     if self.historico_provider:
                         await self.historico_provider.registrar(
-                            operador=username,
+                            operador="Sistema",
                             tipo="reserva",
                             acao="Reservou leito para solicitação",
                             detalhes=f"Solicitação #{nova_sol.id} (Prontuário {nova_sol.prontuario}) para {nova_sol.destino}",

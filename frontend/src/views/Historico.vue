@@ -40,8 +40,8 @@
             @change="aplicarFiltros"
           >
             <option value="">Todos os tipos</option>
-            <option v-for="(cfg, key) in tipoConfig" :key="key" :value="key">
-              {{ cfg.label }}
+            <option v-for="opt in filtroTipos" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
             </option>
           </select>
 
@@ -155,13 +155,39 @@ type HistoricoItem = {
 };
 
 const tipoConfig: Record<string, { color: string; label: string }> = {
-  alta:         { color: 'border border-rose-300 bg-rose-500/80 text-rose-100',     label: 'Alta' },
-  reserva:      { color: 'border border-emerald-300 bg-emerald-500/80 text-emerald-100', label: 'Reserva' },
-  destino:      { color: 'border border-blue-300 bg-blue-500/80 text-blue-100',     label: 'Destino' },
-  cancelamento: { color: 'border border-red-300 bg-red-500/80 text-red-100',        label: 'Cancelamento' },
-  solicitacao:  { color: 'border border-amber-300 bg-amber-500/80 text-amber-800',  label: 'Solicitação' },
-  status:       { color: 'border border-slate-300 bg-slate-500/80 text-slate-100',  label: 'Status' },
+  // Solicitações
+  solicitacao:          { color: 'border border-amber-300 bg-amber-500/80 text-amber-100',  label: 'Solicitação' },
+  nova_solicitacao:     { color: 'border border-amber-300 bg-amber-500/80 text-amber-100',  label: 'Solicitação' },
+  conclusao:            { color: 'border border-emerald-300 bg-emerald-500/80 text-emerald-100', label: 'Admissão' },
+  
+  // Reservas
+  reserva:              { color: 'border border-emerald-300 bg-emerald-500/80 text-emerald-100', label: 'Reserva' },
+  cancelamento_reserva: { color: 'border border-red-300 bg-red-500/80 text-red-100',        label: 'Cancelamento' },
+  
+  // Destinos
+  destino:              { color: 'border border-blue-300 bg-blue-500/80 text-blue-100',     label: 'Destino' },
+  alteracao_destino:    { color: 'border border-blue-300 bg-blue-500/80 text-blue-100',     label: 'Destino' },
+  destino_disponivel:   { color: 'border border-blue-300 bg-blue-500/80 text-blue-100',     label: 'Destino' },
+  destino_pendente:     { color: 'border border-blue-300 bg-blue-500/80 text-blue-100',     label: 'Destino' },
+
+  // Altas / Cancelamentos de Alta
+  alta:                 { color: 'border border-rose-300 bg-rose-500/80 text-rose-100',     label: 'Alta' },
+  conclusao_alta:       { color: 'border border-rose-300 bg-rose-500/80 text-rose-100',     label: 'Alta' },
+  cancelamento:         { color: 'border border-red-300 bg-red-500/80 text-red-100',        label: 'Cancelamento' },
+  exclusao_solicitacao: { color: 'border border-red-300 bg-red-500/80 text-red-100',        label: 'Cancelamento' },
+
+  // Outros
+  status:               { color: 'border border-slate-300 bg-slate-500/80 text-slate-100',  label: 'Status' },
+  edicao:               { color: 'border border-slate-300 bg-slate-500/80 text-slate-100',  label: 'Edição' },
 };
+
+const filtroTipos = [
+  { value: 'solicitacao', label: 'Solicitação' },
+  { value: 'reserva', label: 'Reserva' },
+  { value: 'destino', label: 'Destino' },
+  { value: 'cancelamento', label: 'Cancelamento' },
+  { value: 'alta', label: 'Alta' },
+];
 
 const historico = ref<HistoricoItem[]>([]);
 const loading = ref(true);
