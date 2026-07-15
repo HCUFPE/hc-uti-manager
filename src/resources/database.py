@@ -39,7 +39,14 @@ async def get_aghu_db_session(request: Request) -> AsyncGenerator[AsyncSession, 
     """
     Dependency for FastAPI to get an AGHU database session from the app state.
     """
-    aghu_db_manager: DatabaseManager = request.app.state.aghu_db
+    aghu_db_manager = getattr(request.app.state, "aghu_db", None)
+    if not aghu_db_manager:
+        import os
+        from fastapi import HTTPException
+        if os.getenv("ENV") == "production":
+            raise HTTPException(status_code=500, detail="Conexão com AGHU não inicializada.")
+        yield None
+        return
     async for session in aghu_db_manager.get_session():
         yield session
 

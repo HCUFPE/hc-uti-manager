@@ -152,10 +152,12 @@ class LeitosController:
                 if prontuario_reserva and prontuario_reserva in census_map:
                     try:
                         lto_aghu_real = census_map[prontuario_reserva]
+                        # Captura o sol_id ANTES de limpar a reserva no banco
+                        sol_id = getattr(est, 'solicitacao_id', None)
+                        
                         # Se ele chegou, não importa o leito, limpamos a reserva deste leito (lto_id)
                         await self.estado_provider.limpar_reserva(lto_id)
                         
-                        sol_id = getattr(est, 'solicitacao_id', None)
                         if sol_id and self.solicitacao_provider:
                             sol = await self.solicitacao_provider.get_por_id(sol_id)
                             if sol and sol.status != "Concluída":
