@@ -92,6 +92,9 @@
               </div>
               <p class="text-sm text-slate-600">{{ item.detalhes }}</p>
               <div class="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-500">
+                <div v-if="item.prontuario && item.prontuario !== 'N/D'" class="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-slate-700 font-semibold">
+                  <span>Prontuário: {{ item.prontuario }}</span>
+                </div>
                 <div class="flex items-center gap-1">
                   <UserIcon class="h-3 w-3" />
                   <span>{{ item.operador }}</span>
@@ -148,6 +151,7 @@ type HistoricoItem = {
   acao: string;
   detalhes: string;
   dataHora: string;
+  prontuario?: string;
 };
 
 const tipoConfig: Record<string, { color: string; label: string }> = {
