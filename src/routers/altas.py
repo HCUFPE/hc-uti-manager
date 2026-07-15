@@ -28,11 +28,18 @@ async def solicitar_alta(
 ):
     """Registra uma nova solicitação de alta para o leito especificado."""
     result = await controller.solicitar_alta(lto_id, payload)
+    
+    # Obtém o prontuário do ocupante atual para o histórico
+    leitos_censo = await controller.leitos_controller.listar_leitos()
+    leito_info = next((l for l in leitos_censo if l['lto_lto_id'] == lto_id), None)
+    prontuario = str(leito_info['prontuario_atual']) if leito_info and leito_info.get('prontuario_atual') else "N/D"
+
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="alta",
         acao="Solicitou alta",
         detalhes=f"Leito {lto_id}",
+        prontuario=prontuario,
     )
     return result
 

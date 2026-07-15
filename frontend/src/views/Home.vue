@@ -140,9 +140,9 @@
       </div>
       
       <template #footer>
-        <UiButton variant="outline" @click="showModalAlta = false">Cancelar</UiButton>
-        <UiButton class="bg-blue-600 hover:bg-blue-700" @click="confirmarSolicitacaoAlta">
-          Confirmar Solicitação
+        <UiButton :disabled="submetendoAlta" variant="outline" @click="showModalAlta = false">Cancelar</UiButton>
+        <UiButton :disabled="submetendoAlta" class="bg-blue-600 hover:bg-blue-700" @click="confirmarSolicitacaoAlta">
+          {{ submetendoAlta ? 'Enviando...' : 'Confirmar Solicitação' }}
         </UiButton>
       </template>
     </Modal>
@@ -525,6 +525,7 @@ const dotColor = (valor: StatusFilter) => {
 };
 
 const showModalAlta = ref(false);
+const submetendoAlta = ref(false);
 const leitoSelecionado = ref<Leito | null>(null);
 const formAlta = ref({ necessidadesEspeciais: '' });
 const selectedNecessidades = ref<string[]>([]);
@@ -579,6 +580,7 @@ const handleSolicitarAlta = (leito: Leito) => {
 
 const confirmarSolicitacaoAlta = async () => {
   if (!leitoSelecionado.value) return;
+  submetendoAlta.value = true;
   
   // Serializa a lista de necessidades selecionadas
   const selecionadas = selectedNecessidades.value.filter(n => n !== 'Nenhum');
@@ -596,6 +598,8 @@ const confirmarSolicitacaoAlta = async () => {
   } catch (e: any) {
     console.error(e);
     toast.error('Erro ao solicitar alta.');
+  } finally {
+    submetendoAlta.value = false;
   }
 };
 

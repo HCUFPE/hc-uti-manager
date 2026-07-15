@@ -97,12 +97,18 @@ async def cancelar_alta(
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
 ):
+    # Busca o prontuário para o histórico antes do cancelamento
+    leitos_censo = await controller.census_provider.listar_leitos()
+    leito_info = next((l for l in leitos_censo if l['lto_lto_id'] == leito_id), None)
+    prontuario = str(leito_info['prontuario_atual']) if leito_info and leito_info.get('prontuario_atual') else None
+
     await controller.cancelar_alta(leito_id)
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="cancelamento",
         acao="Cancelou alta",
         detalhes=f"Leito {leito_id}",
+        prontuario=prontuario
     )
 
 @router.get("", response_model=List[Dict[str, Any]])
