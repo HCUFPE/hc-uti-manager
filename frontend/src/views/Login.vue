@@ -20,7 +20,7 @@
           </div>
           <!-- Versão e assinatura -->
           <div class="absolute bottom-4 left-6 text-xs text-slate-400 font-medium">
-            Versão: 01.02 atualizada em 14/07/2026 às 14:18h - SETISD HC-UFPE
+            Versão: {{ APP_VERSION }} atualizada em {{ LAST_UPDATE }} - SETISD HC-UFPE
           </div>
         </div>
 
@@ -142,6 +142,7 @@ import Button from '../components/Button.vue';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import { z } from 'zod';
+import { APP_VERSION, LAST_UPDATE } from '../config/version';
 
 const username = ref('');
 const password = ref('');
