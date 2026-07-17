@@ -401,6 +401,9 @@ class IndicadoresProvider:
                 partes = ev.detalhes.split(" - Motivo: ")
                 if len(partes) > 1:
                     motivo = partes[1].strip()
+                    # Limpa qualquer sufixo de prontuário ou mesclagem
+                    if " (Prontuário" in motivo:
+                        motivo = motivo.split(" (Prontuário")[0].strip()
                     motivos_cancelamento[motivo] = motivos_cancelamento.get(motivo, 0) + 1
             else:
                 motivos_cancelamento["Não Informado"] = motivos_cancelamento.get("Não Informado", 0) + 1
