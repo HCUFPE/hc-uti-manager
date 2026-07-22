@@ -13,19 +13,6 @@
               <h1 class="text-xl font-semibold text-slate-900">{{ headerTitle }}</h1>
             </div>
             <div class="flex items-center gap-3">
-              <!-- Botão de Som Mute/Unmute para perfis com alertas sonoros -->
-              <button
-                v-if="authStore.isAuthenticated && (authStore.isNIR || authStore.isUTI)"
-                @click="uiStore.toggleMute"
-                class="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 focus:outline-none"
-                :title="uiStore.isMuted ? 'Ativar alertas sonoros' : 'Silenciar alertas sonoros'"
-              >
-                <component
-                  :is="uiStore.isMuted ? SpeakerXMarkIcon : SpeakerWaveIcon"
-                  class="h-5 w-5"
-                />
-              </button>
-
               <ProfileDropdown v-if="authStore.isAuthenticated" />
               <router-link
                 v-else
@@ -55,7 +42,6 @@ import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
 import api from '../services/api';
 import { useToast } from 'vue-toastification';
-import { SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/vue/24/outline';
 
 const route = useRoute();
 const authStore = useAuthStore();

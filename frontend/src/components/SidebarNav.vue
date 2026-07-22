@@ -53,6 +53,24 @@
         </span>
       </div>
     </nav>
+
+    <!-- Seção Inferior do Sidebar (Botão de Som Mute/Unmute) -->
+    <div class="border-t border-slate-200 p-2">
+      <button
+        v-if="authStore.isAuthenticated && (authStore.isNIR || authStore.isUTI)"
+        @click="uiStore.toggleMute"
+        class="group flex w-full items-center gap-3 rounded-lg px-4 py-3 font-semibold text-slate-700 transition hover:bg-white hover:text-slate-900 focus:outline-none"
+        :class="collapsed ? 'justify-center px-0' : ''"
+        :title="uiStore.isMuted ? 'Ativar alertas sonoros' : 'Silenciar alertas sonoros'"
+      >
+        <component
+          :is="uiStore.isMuted ? VolumeX : Volume2"
+          class="h-5 w-5 shrink-0"
+          :class="uiStore.isMuted ? 'text-red-500' : 'text-slate-600'"
+        />
+        <span v-if="!collapsed" class="text-sm">{{ uiStore.isMuted ? 'Som Mudo' : 'Som Ativo' }}</span>
+      </button>
+    </div>
   </aside>
 </template>
 
@@ -61,6 +79,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
+import { useUiStore } from '../stores/ui';
 import {
   Bed,
   FileText,
@@ -70,6 +89,8 @@ import {
   History,
   Lock,
   Settings,
+  Volume2,
+  VolumeX,
 } from 'lucide-vue-next';
 
 defineProps<{
@@ -82,6 +103,7 @@ defineEmits<{
 
 const route = useRoute();
 const authStore = useAuthStore();
+const uiStore = useUiStore();
 const isActive = (path: string) => route.path === path;
 
 const activeItems = computed(() => {
