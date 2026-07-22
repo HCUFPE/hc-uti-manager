@@ -71,12 +71,7 @@
       </div>
 
       <!-- Nova Seção: Tempos Médios de Processo e Fluxo (Gargalos) -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Solicitação a Ocupação</p>
-          <p class="mt-2 text-3xl font-extrabold text-slate-800">{{ detalhado.tempo_solicitacao_ocupacao_horas ?? 0 }}h</p>
-          <p class="mt-1 text-xs text-slate-500">Espera média da criação da vaga até a entrada física no leito.</p>
-        </article>
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
 
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Recepção Pós-Cirúrgico (BC)</p>
@@ -113,33 +108,6 @@
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Taxas de Fluxo e Horário de Reserva -->
         <div class="space-y-6">
-          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-            <h3 class="text-base font-bold text-slate-900 border-b pb-2">Métricas de Sucesso e Horários</h3>
-            
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <p class="text-xs font-semibold text-slate-400">Taxa de Atendimento</p>
-                <p class="text-2xl font-bold text-emerald-600">{{ detalhado.taxas?.atendimento ?? 0 }}%</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold text-slate-400">Taxa de Cancelamento</p>
-                <p class="text-2xl font-bold text-rose-600">{{ detalhado.taxas?.cancelamento ?? 0 }}%</p>
-              </div>
-            </div>
-
-            <div class="border-t pt-3 space-y-2">
-              <p class="text-xs font-semibold text-slate-500">Horário Médio de Reserva de Leito:</p>
-              <div class="flex justify-between text-sm">
-                <span class="text-slate-600 font-medium">Turno Manhã:</span>
-                <span class="font-bold text-slate-800">{{ detalhado.horario_reserva_turno?.manha ?? 'N/D' }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-slate-600 font-medium">Turno Tarde:</span>
-                <span class="font-bold text-slate-800">{{ detalhado.horario_reserva_turno?.tarde ?? 'N/D' }}</span>
-              </div>
-            </div>
-          </article>
-
           <!-- Tabela Comparativa de Demandantes (Admissões vs Ocupação) -->
           <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Métricas por Demandante (Setor)</h3>
@@ -147,7 +115,7 @@
               <thead>
                 <tr class="text-slate-400 border-b text-left">
                   <th class="pb-2 font-semibold">Demandante</th>
-                  <th class="pb-2 font-semibold text-center">Int. Semanal</th>
+                  <th class="pb-2 font-semibold text-center">Internações</th>
                   <th class="pb-2 font-semibold text-right">Ocupação Média</th>
                 </tr>
               </thead>
@@ -163,7 +131,7 @@
 
           <!-- Tabela de Motivos de Cancelamento -->
           <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Principais Motivos de Cancelamento</h3>
+            <h3 class="text-base font-bold text-slate-900 border-b pb-2 mb-3">Principais motivos de cancelamento de solicitações</h3>
             <div v-if="!detalhado.motivos_cancelamento || Object.keys(detalhado.motivos_cancelamento).length === 0" class="text-sm text-slate-500 py-4 text-center">
               Nenhum cancelamento no período.
             </div>
@@ -256,9 +224,19 @@
                     <td class="px-4 py-3 text-right text-slate-500">Solicitações de alta criadas</td>
                   </tr>
                   <tr>
+                    <td class="px-4 py-3 font-medium">Altas Pendentes (Aguardando Destino)</td>
+                    <td class="px-4 py-3 text-center font-bold text-indigo-500">{{ detalhado.volumes?.altas_pendentes ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">Solicitações de alta ativas/pendentes</td>
+                  </tr>
+                  <tr>
                     <td class="px-4 py-3 font-medium">Altas Concluídas (Transferências Físicas)</td>
                     <td class="px-4 py-3 text-center font-bold text-indigo-950">{{ detalhado.volumes?.altas_concluidas ?? 0 }}</td>
                     <td class="px-4 py-3 text-right text-slate-500">Pacientes que deixaram a UTI</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-medium">Altas Canceladas pela UTI / NIR</td>
+                    <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.altas_canceladas ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">Solicitações de alta canceladas</td>
                   </tr>
                 </tbody>
               </table>

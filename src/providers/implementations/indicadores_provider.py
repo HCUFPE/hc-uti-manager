@@ -166,7 +166,7 @@ class IndicadoresProvider:
             else:
                 num_semanas = 1.0
 
-        int_semanal_geral = len(novas_internacoes_periodo) / num_semanas
+        int_semanal_geral = len(novas_internacoes_periodo)
 
         int_semanal_dem = {"BC": 0, "HEM": 0, "COB": 0, "CLI": 0}
         int_semanal_esp = {}
@@ -177,10 +177,7 @@ class IndicadoresProvider:
             int_semanal_dem[dem] = int_semanal_dem.get(dem, 0) + 1
             int_semanal_esp[esp] = int_semanal_esp.get(esp, 0) + 1
 
-        # Dividir os counts por semana
-        for k in int_semanal_dem:
-            int_semanal_dem[k] = round(int_semanal_dem[k] / num_semanas, 2)
-        int_semanal_esp_avg = {esp: round(qtd / num_semanas, 2) for esp, qtd in int_semanal_esp.items()}
+        int_semanal_esp_avg = {esp: qtd for esp, qtd in int_semanal_esp.items()}
 
         # 2. Tempo Médio de Ocupação de Leitos (conclusao -> conclusao_alta)
         # Pareamento de admissões e altas por prontuário
@@ -374,7 +371,7 @@ class IndicadoresProvider:
         # Reservas concluídas no período
         reservas_concluidas_periodo = [ev for ev in historico_todos if ev.tipo == "conclusao" and in_period(ev.criado_em)]
         # Cancelamentos de solicitações e reservas no período
-        cancelamentos_sol_periodo = [ev for ev in historico_todos if ev.tipo in ["cancelamento", "exclusao_solicitacao"] and in_period(ev.criado_em) and "reserva" not in ev.acao.lower()]
+        cancelamentos_sol_periodo = [ev for ev in historico_todos if ev.tipo == "exclusao_solicitacao" and in_period(ev.criado_em)]
         cancelamentos_res_periodo = [ev for ev in historico_todos if ev.tipo in ["cancelamento_reserva"] and in_period(ev.criado_em)]
 
         volume_solicitacoes = total_sols_periodo
@@ -384,6 +381,8 @@ class IndicadoresProvider:
         volume_cancelamentos_res = len(cancelamentos_res_periodo)
         volume_altas = len(altas_criadas_periodo)
         volume_altas_concluidas = len([ev for ev in historico_todos if ev.tipo == "conclusao_alta" and in_period(ev.criado_em)])
+        volume_altas_pendentes = len([a for a in altas_criadas_periodo if a.status in ["pendente", "definida"]])
+        volume_altas_canceladas = len([ev for ev in historico_todos if ev.tipo == "cancelamento" and in_period(ev.criado_em)])
 
         # Sub-estados do ciclo de vida para as solicitações criadas no período
         volume_concluidas_real = len([s for s in sols_criadas_periodo if s.status == "Concluída"])
@@ -547,6 +546,8 @@ class IndicadoresProvider:
                     "cancelamento_reservas": volume_cancelamentos_res,
                     "altas": volume_altas,
                     "altas_concluidas": volume_altas_concluidas,
+                    "altas_pendentes": volume_altas_pendentes,
+                    "altas_canceladas": volume_altas_canceladas,
                     "percentual_concluidas_por_solicitadas": round(percentual_concluidas_por_solicitadas, 1),
                     "percentual_canceladas_por_solicitadas": round(percentual_canceladas_por_solicitadas, 1)
                 }
