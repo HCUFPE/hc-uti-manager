@@ -224,7 +224,7 @@
                     <td class="px-4 py-3 text-right text-slate-500">Solicitações de alta criadas</td>
                   </tr>
                   <tr>
-                    <td class="px-4 py-3 font-medium">Altas Pendentes (Aguardando Destino)</td>
+                    <td class="px-4 py-3 font-medium">Altas Pendentes (Aguardando Transferência)</td>
                     <td class="px-4 py-3 text-center font-bold text-indigo-500">{{ detalhado.volumes?.altas_pendentes ?? 0 }}</td>
                     <td class="px-4 py-3 text-right text-slate-500">Solicitações de alta ativas/pendentes</td>
                   </tr>

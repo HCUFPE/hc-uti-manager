@@ -182,11 +182,9 @@ const tipoConfig: Record<string, { color: string; label: string }> = {
 };
 
 const filtroTipos = [
-  { value: 'solicitacao', label: 'Solicitação' },
-  { value: 'reserva', label: 'Reserva' },
-  { value: 'destino', label: 'Destino' },
-  { value: 'cancelamento', label: 'Cancelamento' },
-  { value: 'alta', label: 'Alta' },
+  { value: 'alta', label: 'Altas' },
+  { value: 'solicitacao', label: 'Solicitações' },
+  { value: 'reserva', label: 'Reservas' },
 ];
 
 const historico = ref<HistoricoItem[]>([]);

@@ -70,14 +70,12 @@ class HistoricoProvider:
         stmt = select(HistoricoAcao)
 
         if tipo:
-            if tipo == "destino":
-                stmt = stmt.where(HistoricoAcao.tipo.in_(["destino", "alteracao_destino", "destino_disponivel", "destino_pendente"]))
-            elif tipo == "alta":
-                stmt = stmt.where(HistoricoAcao.tipo.in_(["alta", "conclusao_alta"]))
+            if tipo == "alta":
+                stmt = stmt.where(HistoricoAcao.tipo.in_(["alta", "conclusao_alta", "destino", "alteracao_destino", "destino_disponivel", "destino_pendente", "cancelamento"]))
             elif tipo == "solicitacao":
-                stmt = stmt.where(HistoricoAcao.tipo.in_(["solicitacao", "nova_solicitacao", "conclusao", "edicao"]))
-            elif tipo == "cancelamento":
-                stmt = stmt.where(HistoricoAcao.tipo.in_(["cancelamento", "exclusao_solicitacao", "cancelamento_reserva"]))
+                stmt = stmt.where(HistoricoAcao.tipo.in_(["solicitacao", "nova_solicitacao", "conclusao", "edicao", "alteracao_prioridade", "cirurgia_finalizada", "encaminhamento_liberado", "encaminhamento_cancelado", "exclusao_solicitacao"]))
+            elif tipo == "reserva":
+                stmt = stmt.where(HistoricoAcao.tipo.in_(["reserva", "remanejamento_reserva", "cancelamento_reserva"]))
             else:
                 stmt = stmt.where(HistoricoAcao.tipo == tipo)
         if operador:
