@@ -345,8 +345,12 @@ const verificarETocarSom = async () => {
   const temCirurgiaPendente = leitos.value.some(
     (l) => l.proximoPaciente && l.cirurgiaFinalizada && !l.encaminhamentoLiberado
   );
-  const temAlertaUtiPendente = unreadAlertsCount.value > 0;
-  if ((temCirurgiaPendente || temAlertaUtiPendente) && authStore.isUTI) {
+  const temAlertaPendente = unreadAlertsCount.value > 0;
+  
+  const utiDeveTocar = authStore.isUTI && (temCirurgiaPendente || temAlertaPendente);
+  const nirDeveTocar = authStore.isNIR && temAlertaPendente;
+
+  if (utiDeveTocar || nirDeveTocar) {
     tocarAlertaSonoro();
   }
 };
