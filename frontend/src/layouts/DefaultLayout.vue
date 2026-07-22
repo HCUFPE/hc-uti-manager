@@ -13,6 +13,19 @@
               <h1 class="text-xl font-semibold text-slate-900">{{ headerTitle }}</h1>
             </div>
             <div class="flex items-center gap-3">
+              <!-- Botão de Som Mute/Unmute para perfis com alertas sonoros -->
+              <button
+                v-if="authStore.isAuthenticated && (authStore.isNIR || authStore.isUTI)"
+                @click="uiStore.toggleMute"
+                class="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 focus:outline-none"
+                :title="uiStore.isMuted ? 'Ativar alertas sonoros' : 'Silenciar alertas sonoros'"
+              >
+                <component
+                  :is="uiStore.isMuted ? SpeakerXMarkIcon : SpeakerWaveIcon"
+                  class="h-5 w-5"
+                />
+              </button>
+
               <ProfileDropdown v-if="authStore.isAuthenticated" />
               <router-link
                 v-else
@@ -42,6 +55,7 @@ import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
 import api from '../services/api';
 import { useToast } from 'vue-toastification';
+import { SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/vue/24/outline';
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -49,6 +63,9 @@ const uiStore = useUiStore();
 const toast = useToast();
 const sidebarCollapsed = ref(false);
 const unreadCount = ref(0);
+
+let backgroundInterval: any = null;
+let soundInterval: any = null;
 
 const fetchBackgroundAlerts = async () => {
   if (authStore.isAuthenticated) {
@@ -70,14 +87,37 @@ const fetchBackgroundAlerts = async () => {
   }
 };
 
+const verificarETocarSomGlobal = async () => {
+  if (!authStore.isAuthenticated) return;
+  try {
+    const response = await api.get('/api/alertas/unread-count');
+    unreadCount.value = response.data.count;
+
+    const temAlertaPendente = unreadCount.value > 0;
+    const utiDeveTocar = authStore.isUTI && temAlertaPendente;
+    const nirDeveTocar = authStore.isNIR && temAlertaPendente;
+
+    if (utiDeveTocar || nirDeveTocar) {
+      uiStore.tocarAlertaSonoro();
+    }
+  } catch (error) {
+    console.error('Erro ao verificar som de alertas globalmente:', error);
+  }
+};
+
 onMounted(() => {
   fetchBackgroundAlerts();
-  // Atualiza alertas em background a cada 2 minutos
-  const interval = setInterval(fetchBackgroundAlerts, 120000);
-  
-  onUnmounted(() => {
-    clearInterval(interval);
-  });
+  verificarETocarSomGlobal();
+
+  // Sincroniza alertas no background a cada 2 minutos
+  backgroundInterval = setInterval(fetchBackgroundAlerts, 120000);
+  // Checa e toca som se houver alertas não lidos a cada 30 segundos
+  soundInterval = setInterval(verificarETocarSomGlobal, 30000);
+});
+
+onUnmounted(() => {
+  if (backgroundInterval) clearInterval(backgroundInterval);
+  if (soundInterval) clearInterval(soundInterval);
 });
 
 const toggleSidebar = () => {

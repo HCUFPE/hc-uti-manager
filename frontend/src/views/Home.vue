@@ -285,73 +285,17 @@ const toast = useToast();
 const authStore = useAuthStore();
 const uiStore = useUiStore();
 
-const isMuted = ref(localStorage.getItem('hc_uti_som_alerta') === 'true');
 const leitosNotificados = ref<Set<string>>(new Set());
-
-const toggleMute = () => {
-  isMuted.value = !isMuted.value;
-  localStorage.setItem('hc_uti_som_alerta', String(isMuted.value));
-  toast.info(isMuted.value ? 'Alertas sonoros desativados.' : 'Alertas sonoros ativados.');
-};
-
-const tocarAlertaSonoro = () => {
-  if (isMuted.value) return;
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const audioCtx = new AudioContextClass();
-    
-    const playBeep = (delay: number, freq: number, duration: number) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'triangle'; // Mais perceptível e adequado para alertas que a onda senoidal pura
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime + delay); // Volume mais evidente (0.3)
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + duration);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(audioCtx.currentTime + delay);
-      osc.stop(audioCtx.currentTime + delay + duration);
-    };
-
-    // Toca 6 bipes rápidos em sequência
-    playBeep(0, 987.77, 0.12);
-    playBeep(0.18, 987.77, 0.12);
-    playBeep(0.36, 987.77, 0.12);
-    playBeep(0.54, 987.77, 0.12);
-    playBeep(0.72, 987.77, 0.12);
-    playBeep(0.9, 987.77, 0.15);
-  } catch (error) {
-    console.warn('Falha ao reproduzir áudio de alerta:', error);
-  }
-};
-
 let soundIntervalId: any = null;
 
-const unreadAlertsCount = ref(0);
-
-const fetchUnreadAlertsCount = async () => {
-  if (!authStore.isAuthenticated) return;
-  try {
-    const response = await api.get('/api/alertas/unread-count');
-    unreadAlertsCount.value = response.data.count;
-  } catch (error) {
-    console.error('Erro ao buscar quantidade de alertas nao lidos:', error);
-  }
-};
-
-const verificarETocarSom = async () => {
-  await fetchUnreadAlertsCount();
-  const temCirurgiaPendente = leitos.value.some(
-    (l) => l.proximoPaciente && l.cirurgiaFinalizada && !l.encaminhamentoLiberado
-  );
-  const temAlertaPendente = unreadAlertsCount.value > 0;
-  
-  const utiDeveTocar = authStore.isUTI && (temCirurgiaPendente || temAlertaPendente);
-  const nirDeveTocar = authStore.isNIR && temAlertaPendente;
-
-  if (utiDeveTocar || nirDeveTocar) {
-    tocarAlertaSonoro();
+const verificarETocarSomCirurgias = () => {
+  if (authStore.isUTI) {
+    const temCirurgiaPendente = leitos.value.some(
+      (l) => l.proximoPaciente && l.cirurgiaFinalizada && !l.encaminhamentoLiberado
+    );
+    if (temCirurgiaPendente) {
+      uiStore.tocarAlertaSonoro();
+    }
   }
 };
 
@@ -359,8 +303,8 @@ const reiniciarSoundTimer = () => {
   if (soundIntervalId) {
     clearInterval(soundIntervalId);
   }
-  verificarETocarSom();
-  soundIntervalId = setInterval(verificarETocarSom, 30000); // Executa o bipe a cada 30 segundos
+  verificarETocarSomCirurgias();
+  soundIntervalId = setInterval(verificarETocarSomCirurgias, 30000); // Executa o bipe a cada 30 segundos se houver cirurgia pendente
 };
 
 const loadLeitos = async () => {
@@ -419,7 +363,7 @@ const loadLeitos = async () => {
     leitosNotificados.value = idsAtuais;
     
     if (deveTocarSom && authStore.isUTI) {
-      tocarAlertaSonoro();
+      uiStore.tocarAlertaSonoro();
       reiniciarSoundTimer(); // Reinicia o timer para sincronizar com o bipe imediato
     }
 
