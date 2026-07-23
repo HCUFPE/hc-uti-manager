@@ -7,6 +7,8 @@ from providers.implementations.historico_provider import HistoricoProvider
 from sqlalchemy import select
 from models.leito_estado import LeitoEstado
 
+from providers.interfaces.leito_provider_interface import LeitoProviderInterface
+
 class SolicitacaoLeitoController:
     """
     Controller para gerenciar solicitações de vaga/leito na UTI.
@@ -17,12 +19,14 @@ class SolicitacaoLeitoController:
         leito_provider: SolicitacaoLeitoProvider, 
         estado_provider: LeitoEstadoProvider | None = None,
         historico_provider: HistoricoProvider | None = None,
-        aghu_cirurgia_provider: Any = None
+        aghu_cirurgia_provider: Any = None,
+        census_provider: LeitoProviderInterface | None = None
     ):
         self.leito_provider = leito_provider
         self.estado_provider = estado_provider
         self.historico_provider = historico_provider
         self.aghu_cirurgia_provider = aghu_cirurgia_provider
+        self.census_provider = census_provider
 
     async def _sincronizar_prioridades(self, data_cirurgia: str, turno: str | None = None, sol_id_foco: int | None = None, prioridade_desejada: str | None = None):
         """
@@ -149,6 +153,22 @@ class SolicitacaoLeitoController:
                 detail="Solicitação para este prontuário já inserida."
             )
 
+        # Verificar se o paciente já ocupa um leito físico na UTI
+        if self.census_provider:
+            try:
+                leitos = await self.census_provider.listar_leitos()
+                ocupado = next((l for l in leitos if l.get("prontuario_atual") is not None and str(l.get("prontuario_atual")) == str(prontuario)), None)
+                if ocupado:
+                    leito_id = ocupado.get("lto_lto_id") or "?"
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"O paciente deste prontuário já ocupa o Leito {leito_id} da UTI! A solicitação não poderá ser criada."
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                print(f"Erro ao verificar censo físico de leitos: {e}")
+
         # 1. Consultar dados do paciente/cirurgia no AGHU
         dados_aghu = await self.consultar_dados_aghu(str(prontuario))
 
@@ -243,6 +263,22 @@ class SolicitacaoLeitoController:
             novo_prontuario = str(payload["prontuario"])
             alvo_status_orig = alvo.status
             alvo_destino_orig = alvo.destino
+            
+            # Verificar se o novo prontuário já ocupa um leito físico na UTI
+            if self.census_provider:
+                try:
+                    leitos = await self.census_provider.listar_leitos()
+                    ocupado = next((l for l in leitos if l.get("prontuario_atual") is not None and str(l.get("prontuario_atual")) == str(novo_prontuario)), None)
+                    if ocupado:
+                        leito_id = ocupado.get("lto_lto_id") or "?"
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"O paciente deste prontuário já ocupa o Leito {leito_id} da UTI! A solicitação não poderá ser criada."
+                        )
+                except HTTPException:
+                    raise
+                except Exception as e:
+                    print(f"Erro ao verificar censo físico de leitos na edição: {e}")
             
             # 1. Verificar se o novo prontuário já possui alguma solicitação ativa ('Pendente' ou 'Reservado')
             todas_sols = await self.leito_provider.get_todas()
