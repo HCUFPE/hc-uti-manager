@@ -13,8 +13,8 @@
             <div class="text-center space-y-2">
               <h2 class="text-3xl font-bold text-slate-900">UTI Manager</h2>
               <p class="text-base text-slate-700">
-                Sistema de Gestao de Leitos de Terapia Intensiva <br/>
-                do Hospital das Clinicas da UFPE
+                Sistema de Gestão de Leitos de Terapia Intensiva <br/>
+                do Hospital das Clínicas da UFPE
               </p>
             </div>
           </div>
@@ -28,7 +28,6 @@
         <div class="p-8 md:p-12 bg-white lg:col-span-2 flex flex-col justify-center">
           <div class="flex flex-col items-center mb-8 space-y-3">
             <img src="/logo2.png" alt="UTI Manager" class="h-32 w-auto object-contain" />
-            <h1 class="text-3xl font-bold text-slate-900">Bem-vindo de Volta</h1>
             <p class="text-center text-slate-600">
               Acesse o sistema
             </p>
@@ -37,13 +36,13 @@
           <form @submit.prevent="handleLogin" class="space-y-6">
             <div class="space-y-2">
               <label class="block text-sm font-medium text-slate-700" for="username">
-                Usuario
+                Usuário
               </label>
               <input
                 v-model="username"
                 id="username"
                 type="text"
-                placeholder="Seu usuario"
+                placeholder="Seu usuário"
                 class="h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-slate-800 shadow-inner transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 :disabled="loading"
               />
@@ -83,9 +82,6 @@
                 <input type="checkbox" v-model="rememberMe" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                 <span>Lembrar de mim</span>
               </label>
-              <button type="button" class="text-sm font-semibold text-blue-600 hover:text-blue-700">
-                Esqueceu a senha?
-              </button>
             </div>
 
             <div class="space-y-3">
@@ -114,7 +110,7 @@
             </div>
 
             <p class="text-center text-sm text-slate-500">
-              Utilize Login e Senha de Rede
+              Utilize login e senha de rede
             </p>
           </form>
 
@@ -165,8 +161,8 @@ const passwordFieldType = computed(() => passwordVisible.value ? 'text' : 'passw
 
 const loginSchema = z.object({
   username: z.string().trim()
-    .min(3, 'Informe um usuario valido (minimo de 3 caracteres)')
-    .regex(/^\S+$/, 'Usuario nao deve conter espacos'),
+    .min(3, 'Informe um usuário válido (mínimo de 3 caracteres)')
+    .regex(/^\S+$/, 'Usuário não deve conter espaços'),
   password: z.string().min(4, 'Senha deve ter pelo menos 4 caracteres'),
 });
 
