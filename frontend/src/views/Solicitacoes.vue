@@ -571,6 +571,7 @@ type Solicitacao = {
   perfil_solicitante?: string;
   cirurgia_finalizada?: boolean;
   encaminhamento_liberado?: boolean;
+  atualizado_em?: string;
 };
 
 const solicitacoes = ref<Solicitacao[]>([]);
