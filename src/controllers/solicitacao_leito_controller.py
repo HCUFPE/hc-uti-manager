@@ -134,6 +134,7 @@ class SolicitacaoLeitoController:
                 "cirurgia_finalizada": bool(s.cirurgia_finalizada),
                 "encaminhamento_liberado": bool(s.encaminhamento_liberado),
                 "dataHora": (s.criado_em - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
+                "atualizado_em": (s.atualizado_em - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M") if s.atualizado_em else "",
             }
             for s in solicitacoes
         ]

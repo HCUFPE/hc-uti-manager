@@ -280,15 +280,22 @@
 
       <!-- SEÇÃO 3: SOLICITAÇÕES CONCLUÍDAS -->
       <section v-if="solicitacoesConcluidas.length > 0">
-        <div class="mb-6 flex items-center gap-3">
-          <div class="h-8 w-1 rounded bg-blue-500"></div>
-          <h2 class="text-xl font-bold text-slate-800">Solicitações Concluídas (Paciente no Leito)</h2>
-          <span class="rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-600">
-            {{ solicitacoesConcluidas.length }}
-          </span>
-        </div>
+        <button 
+          @click="concluidaExpandida = !concluidaExpandida"
+          class="mb-6 flex items-center justify-between w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 transition hover:bg-slate-100/50 focus:outline-none"
+        >
+          <div class="flex items-center gap-3">
+            <div class="h-8 w-1 rounded bg-blue-500"></div>
+            <h2 class="text-xl font-bold text-slate-800">Solicitações Concluídas (Paciente no Leito)</h2>
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-600">
+              {{ solicitacoesConcluidas.length }}
+            </span>
+          </div>
+          <ChevronUpIcon v-if="concluidaExpandida" class="h-5 w-5 text-slate-500 mr-2" />
+          <ChevronDownIcon v-else class="h-5 w-5 text-slate-500 mr-2" />
+        </button>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-if="concluidaExpandida" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <article
             v-for="sol in solicitacoesConcluidas"
             :key="sol.id"
@@ -307,6 +314,9 @@
               <div class="text-right">
                 <span class="rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase text-blue-700">Concluída</span>
                 <p class="text-[10px] text-slate-400 mt-1">Sincronizado com AGHU</p>
+                <p v-if="sol.atualizado_em" class="text-[10px] text-slate-500 mt-1 font-medium">
+                  Concluído em: {{ formatarDataHoraBR(sol.atualizado_em) }}
+                </p>
               </div>
             </div>
           </article>
@@ -532,7 +542,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon, CheckIcon, ClockIcon, CheckCircleIcon, MagnifyingGlassIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, ClipboardIcon, CheckIcon, ClockIcon, CheckCircleIcon, MagnifyingGlassIcon, ExclamationTriangleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiButton from '../components/ui/Button.vue';
 import Modal from '../components/Modal.vue';
@@ -620,6 +630,7 @@ const motivoCancelamento = ref('');
 const idCancelamento = ref('');
 const isCancelamentoReserva = ref(false);
 const showModalConfirmacaoTrocaProntuario = ref(false);
+const concluidaExpandida = ref(false);
 
 const formNova = ref({
   prontuario: '',
