@@ -1,25 +1,26 @@
 ## Context
 
-O usuário quer manter a alteração visual e semântica no histórico de ações ("Alterou destino de alta" vs "Definiu destino de alta"), mas deseja manter os alertas da UTI com o título padrão "Destino de Alta Definido" para evitar ruído.
-Também é necessário corrigir a base de dados SQLite histórica na VM.
+O usuário deseja manter o comportamento implementado onde novas alterações de destino geram históricos com "Alterou destino de alta" e alertas com o título "Alterou o Destino de Alta". No entanto, para a base de dados histórica (registros antigos):
+- Devemos rodar um script retroativo para corrigir os registros da tabela `historico_acoes` (histórico antigo).
+- NÃO é necessário fazer nenhum ajuste ou migração para os alertas antigos salvos no banco.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Reverter o mapeamento customizado de títulos na engine de alertas (mantendo "Destino de Alta Definido" para todos).
-- Escrever um script em `scratch/fix_historical_actions.py` que execute a correção retroativa e possa ser rodado na VM via SSH.
+- Manter a diferenciação semântica tanto no histórico quanto nos alertas para novos eventos.
+- Escrever um script em `scratch/fix_historical_actions.py` que execute a correção retroativa dos históricos antigos na base SQLite da VM.
 
 **Non-Goals:**
-- Não reverter a lógica em `AltasController` (a diferenciação de escrita de novas ações no histórico de ações continua ativa).
+- Não alterar registros de alertas antigos já persistidos na base de dados.
 
 ## Decisions
 
-### Reversão do Título no Alerta Controller
-Em `AlertaController._gerar_alerta_por_tipo`, removeremos o bloco condicional que verificava `acao == "Alterou destino de alta"` para alterar o título, fazendo com que a chave `alteracao_destino` sempre aponte para `"Destino de Alta Definido"`.
+### Manutenção da Engine de Alertas
+Decidido manter as alterações na `AlertaController` e `AltasController` de forma que os novos alertas e novos históricos sigam a regra de diferenciação de leito de destino definida vs leito de destino alterado.
 
 ### Script de Correção Retroativa
 Criar um script em `scratch/fix_historical_actions.py` utilizando SQLAlchemy para buscar todos os registros com `tipo = 'alteracao_destino'` agrupados por prontuário e ordenados por data. Para cada prontuário, a partir do segundo registro cronológico em diante, atualizamos `acao = 'Alterou destino de alta'` e salvamos.
-Este script lerá as variáveis do `.env` local para saber qual banco conectar (na VM, conectará no SQLite local).
+Este script é executado dentro do container na VM de produção para atuar diretamente na base local SQLite real.
 
 ## Risks / Trade-offs
 
