@@ -1,4 +1,4 @@
-# versao para 24/07/2026 as 10:45h
+# versao para 24/07/2026 as 11:00h
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
@@ -179,7 +179,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="HC-UTI Manager",
     description="Aplicação Backend monolítica (API REST) em Python/FastAPI.",
-    version="1.4.5",
+    version="1.4.6",
     lifespan=lifespan,
 )
 

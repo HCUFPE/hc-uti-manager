@@ -98,12 +98,14 @@ class AltasController:
             dados["leito_destino"] = payload["leitoDestino"]
             dados["status"] = "definida"
             
+            acao_hist = "Alterou destino de alta" if (alvo.leito_destino and str(alvo.leito_destino).strip()) else "Definiu destino de alta"
+            
             # Registra no histórico para gerar alerta automático
             if self.historico_provider:
                 await self.historico_provider.registrar(
                     operador=operador,
                     tipo="alteracao_destino",
-                    acao="Definiu destino de alta",
+                    acao=acao_hist,
                     detalhes=f"Leito {alvo.lto_id}: Destino {payload['leitoDestino']}",
                     prontuario=str(alvo.prontuario)
                 )

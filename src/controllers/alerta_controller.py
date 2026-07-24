@@ -138,6 +138,7 @@ class AlertaController:
 
     def _processar_evento_historico(self, ev, vagas, novos_alertas, hoje_bsb):
         tipo = ev.get("tipo")
+        acao = ev.get("acao", "")
         detalhes = ev.get("detalhes", "")
         operador = ev.get("operador", "Sistema")
         criado_em_evento = ev.get("criado_em")
@@ -171,7 +172,7 @@ class AlertaController:
             perfil_vaga = None
 
         # Lógica de Alertas por Tipo
-        self._gerar_alerta_por_tipo(tipo, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas)
+        self._gerar_alerta_por_tipo(tipo, acao, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas)
 
     def _normalizar_data(self, d_str: str) -> str:
         if not d_str:
@@ -204,7 +205,7 @@ class AlertaController:
         
         return self._normalizar_data(d_sol) == hoje_bsb
 
-    def _gerar_alerta_por_tipo(self, tipo, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas):
+    def _gerar_alerta_por_tipo(self, tipo, acao, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas):
         # 1. UTI <-> SOLICITANTE
         if tipo in ["reserva", "cancelamento_reserva"]:
             op_clean = operador.replace("-Admin", "").strip().upper()
@@ -271,8 +272,12 @@ class AlertaController:
 
         # 4. NIR -> UTI (Destino)
         elif tipo in ["alteracao_destino", "destino_disponivel", "destino_pendente"]:
+            titulo_destino = "Destino de Alta Definido"
+            if tipo == "alteracao_destino" and acao == "Alterou destino de alta":
+                titulo_destino = "Alterou o Destino de Alta"
+
             titulos = {
-                "alteracao_destino": "Destino de Alta Definido",
+                "alteracao_destino": titulo_destino,
                 "destino_disponivel": "Leito de Destino LIBERADO",
                 "destino_pendente": "Liberação de Destino CANCELADA"
             }
