@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
 # Configura sys.path para conseguir importar os modelos da pasta src
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 from models.historico_acao import HistoricoAcao
 
