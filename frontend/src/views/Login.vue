@@ -115,9 +115,8 @@
           </form>
 
           <!-- Rodapé Institucional -->
-          <div class="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-6">
-            <img src="/hc_ufpe_icon.jpeg" alt="Hospital das Clinicas UFPE" class="h-10 w-10 rounded-lg object-cover" />
-            <img src="/HU Brasil - transparente.png" alt="HU Ebserh Brasil" class="h-10 object-contain" />
+          <div class="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center">
+            <img src="/hc-ufpe.png" alt="Hospital das Clínicas da UFPE" class="h-10 object-contain" />
           </div>
 
           <div v-if="error" class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
