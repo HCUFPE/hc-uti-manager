@@ -21,7 +21,7 @@ def main():
         print("STDERR:", stderr.read().decode('utf-8', errors='ignore'))
         
         # 2. Verificar espaço em disco da VM
-        cmd_df = "df -h /var/app/hc-uti-manager/data"
+        cmd_df = "df -h /var/app/hc-uti-manager/data && ls -la /var/app/hc-uti-manager/data"
         print(f"Executing: {cmd_df}")
         stdin, stdout, stderr = ssh.exec_command(cmd_df)
         print("STDOUT:", stdout.read().decode('utf-8', errors='ignore'))
