@@ -95,3 +95,32 @@ O deployment da aplicação na máquina virtual de produção (`10.34.0.192`) é
 
 1. **Build Multi-stage (`Dockerfile`):** O build compila o frontend Vue, copia os arquivos otimizados gerados para o diretório `/src/static/dist` do FastAPI, e empacota o backend Python em uma imagem de runtime leve.
 2. **Serviço do Systemd (`hc-uti.service`):** Configura a inicialização automática do container no boot da máquina virtual e facilita os comandos de reinício e monitoramento de logs (`systemctl restart hc-uti`).
+
+---
+
+## 💾 Backups
+
+A aplicação conta com dois mecanismos de backup para o banco de dados SQLite local (`app.db`):
+
+### 1. Backup Preventivo (Automático no Deploy)
+Durante a execução do script `scratch/git_pull_and_rebuild.py`, um backup a quente consistente é feito automaticamente antes de aplicar novas migrations e reiniciar os containers:
+- Arquivo gerado: `/var/app/hc-uti-manager/data/backup_pre_deploy.db`
+
+### 2. Backup Diário Rotativo (Cron Job na VM)
+Existe um script em `scratch/backup_db.sh` preparado para rodar rotineiramente.
+
+Para cadastrá-lo como cron diário no Linux do host da VM:
+1. Acesse a VM via SSH.
+2. Dê permissão de execução ao script:
+   ```bash
+   chmod +x /var/app/hc-uti-manager/scratch/backup_db.sh
+   ```
+3. Abra o agendador de tarefas cron do usuário root:
+   ```bash
+   crontab -e
+   ```
+4. Adicione a linha abaixo no final do arquivo para rodar o backup todos os dias às 02:00 da manhã (mantendo o histórico rotativo dos últimos 7 dias compactados em `.gz`):
+   ```cron
+   0 2 * * * /var/app/hc-uti-manager/scratch/backup_db.sh > /dev/null 2>&1
+   ```
+5. Salve e saia do editor.

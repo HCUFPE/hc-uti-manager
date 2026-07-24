@@ -14,6 +14,7 @@ def main():
         ssh.connect(host, username=user, password=secret, timeout=15)
         
         commands = [
+            "podman exec hc-uti-backend sqlite3 /app/data/app.db \".backup '/app/data/backup_pre_deploy.db'\"",
             "cd /var/app/hc-uti-manager && git pull origin master",
             "cd /var/app/hc-uti-manager && podman build --no-cache -t localhost/hc-uti-manager_backend:latest .",
             "systemctl restart hc-uti.service",
