@@ -286,11 +286,15 @@ class AlertaController:
                 "destino_disponivel": "aviso",
                 "destino_pendente": "critico"
             }
+            msg_alerta = detalhes
+            if pront_alerta and pront_alerta != "Desconhecido" and "Prontu" not in detalhes:
+                msg_alerta = f"{detalhes} (Prontuário {pront_alerta})"
+
             novos_alertas.append({
                 "tipo": tipos_alerta.get(tipo, "info"), 
                 "categoria": "Gargalo", 
                 "titulo": titulos.get(tipo),
-                "mensagem": detalhes, 
+                "mensagem": msg_alerta, 
                 "prontuario": pront_alerta, 
                 "perfil_alvo": None, # Alvo: UTI
                 "criado_em": criado_em_evento
