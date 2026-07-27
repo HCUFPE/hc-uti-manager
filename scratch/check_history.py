@@ -18,7 +18,7 @@ def main():
               "import sqlite3; " \
               "conn = sqlite3.connect('/app/data/app.db'); " \
               "cursor = conn.cursor(); " \
-              "cursor.execute('SELECT id, operador, tipo, acao, detalhes, prontuario, criado_em FROM historico_acoes WHERE prontuario = \"22226740\" ORDER BY criado_em ASC;'); " \
+              "cursor.execute('SELECT id, operador, tipo, acao, detalhes, prontuario, criado_em FROM historico_acoes WHERE prontuario = \"22341010\" ORDER BY criado_em ASC;'); " \
               "rows = cursor.fetchall(); " \
               "print(list(rows))\""
         print(f"Executing: {cmd}")
