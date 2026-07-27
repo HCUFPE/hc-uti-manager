@@ -13,12 +13,12 @@ def main():
     try:
         ssh.connect(host, username=user, password=secret, timeout=15)
         
-        # Query matching alerts via Python inside the container
+        # Query matching history actions via Python inside the container
         cmd = "podman exec hc-uti-backend python -c \"" \
               "import sqlite3; " \
               "conn = sqlite3.connect('/app/data/app.db'); " \
               "cursor = conn.cursor(); " \
-              "cursor.execute('SELECT id, tipo, categoria, titulo, mensagem, criado_em FROM alertas ORDER BY criado_em DESC LIMIT 45;'); " \
+              "cursor.execute('SELECT id, operador, tipo, acao, detalhes, prontuario, criado_em FROM historico_acoes WHERE prontuario = \"22226740\" ORDER BY criado_em ASC;'); " \
               "rows = cursor.fetchall(); " \
               "print(list(rows))\""
         print(f"Executing: {cmd}")
