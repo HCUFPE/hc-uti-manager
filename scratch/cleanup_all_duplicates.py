@@ -41,10 +41,23 @@ def main():
                 for it in sorted_items[1:]:
                     to_delete.append(it[0])
                     
-    # Além disso, o ID 272 é um "Alterou o Destino de Alta" que virou "Definiu" no histórico, então deve ser deletado
-    # ID 272: (272, 'info', 'Gargalo', 'Alterou o Destino de Alta', 'Leito 0502F: Destino 807A (Prontuário 22341010)', '2026-07-27 10:44:33.257460')
-    if 272 not in to_delete:
-        to_delete.append(272)
+    # Além disso, se houver um alerta com título "Alterou o Destino de Alta" e outro com "Destino de Alta Definido"
+    # para o mesmo prontuário e data, nós deletamos o de "Alterou..." (pois o histórico foi corrigido para "Definiu...")
+    alt_alerts = [r for r in rows if r[3] == "Alterou o Destino de Alta"]
+    def_alerts = [r for r in rows if r[3] == "Destino de Alta Definido"]
+    
+    for alt in alt_alerts:
+        alt_id, _, _, _, _, alt_date, alt_pront = alt
+        alt_date_sec = str(alt_date)[:19]
+        
+        # Procura se há um "Definiu" correspondente
+        for defe in def_alerts:
+            def_id, _, _, _, _, def_date, def_pront = defe
+            def_date_sec = str(def_date)[:19]
+            
+            if alt_pront == def_pront and alt_date_sec == def_date_sec:
+                to_delete.append(alt_id)
+                print(f"Marcado para deletar alerta de alteração sobressalente: ID {alt_id} (Data: {alt_date})")
         
     # Remover duplicatas da lista de exclusão
     to_delete = list(set(to_delete))
