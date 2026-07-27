@@ -68,6 +68,16 @@ def main():
         cursor.execute("DELETE FROM alertas WHERE id = ?;", (d_id,))
         print(f"Alerta ID {d_id} deletado.")
         
+    # 3. Atualizar mensagens antigas que não contêm o prontuário
+    titulos_alvo = ["Destino de Alta Definido", "Alterou o Destino de Alta", "Leito de Destino LIBERADO", "Liberação de Destino CANCELADA"]
+    for r in rows:
+        id_val, tipo, cat, tit, msg, date, pront = r
+        if id_val not in to_delete: # Se não foi deletado
+            if tit in titulos_alvo and pront and pront != "Desconhecido" and "(Prontuário" not in msg:
+                nova_msg = f"{msg} (Prontuário {pront})"
+                cursor.execute("UPDATE alertas SET mensagem = ? WHERE id = ?;", (nova_msg, id_val))
+                print(f"Alerta ID {id_val} atualizado para incluir prontuário: '{nova_msg}'")
+        
     conn.commit()
     conn.close()
 
