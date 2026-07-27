@@ -19,8 +19,7 @@ def main():
             "cd /var/app/hc-uti-manager && podman build --no-cache -t localhost/hc-uti-manager_backend:latest .",
             "systemctl restart hc-uti.service",
             "sleep 15",
-            "podman exec hc-uti-backend alembic upgrade head",
-            "podman exec hc-uti-backend python /app/scratch/fix_historical_actions.py"
+            "podman exec hc-uti-backend alembic upgrade head"
         ]
         
         for cmd in commands:
