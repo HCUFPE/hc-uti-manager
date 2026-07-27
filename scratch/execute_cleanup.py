@@ -13,10 +13,17 @@ def main():
     try:
         ssh.connect(host, username=user, password=secret, timeout=15)
         
+        # 0. Puxar as últimas alterações na VM
+        cmd_pull = "cd /var/app/hc-uti-manager && git pull origin master"
+        print(f"Executing: {cmd_pull}")
+        stdin, stdout, stderr = ssh.exec_command(cmd_pull)
+        print("STDOUT:", stdout.read().decode('utf-8', errors='ignore'))
+
         # 1. Copiar o script para dentro do container
         cmd_cp = "podman cp /var/app/hc-uti-manager/scratch/cleanup_db_vm.py hc-uti-backend:/app/cleanup_db_vm.py"
         print(f"Executing: {cmd_cp}")
-        ssh.exec_command(cmd_cp)
+        stdin, stdout, stderr = ssh.exec_command(cmd_cp)
+        print("STDERR (copy):", stderr.read().decode('utf-8', errors='ignore'))
         
         # 2. Executar o script no container
         cmd_run = "podman exec hc-uti-backend python /app/cleanup_db_vm.py"
