@@ -1,4 +1,4 @@
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Record User Read Receipt for Alerts
 When a user marks an alert as read, the system MUST record the current timestamp and the username of the active user.
