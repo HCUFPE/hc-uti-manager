@@ -42,19 +42,32 @@ class AlertaController:
             
         return [a.to_dict() for a in alertas if a.perfil_alvo == user_grupo]
 
-    async def atualizar_status_leitura(self, alerta_id: int, lido: bool) -> dict:
+    async def atualizar_status_leitura(self, alerta_id: int, lido: bool, username: str = None) -> dict:
         """Atualiza o status de leitura de um alerta."""
-        alerta = await self.alerta_provider.atualizar(alerta_id, {"lido": lido})
+        dados = {"lido": lido}
+        if lido:
+            dados["lido_em"] = datetime.utcnow()
+            dados["lido_por"] = username
+        else:
+            dados["lido_em"] = None
+            dados["lido_por"] = None
+
+        alerta = await self.alerta_provider.atualizar(alerta_id, dados)
         if not alerta:
             raise HTTPException(status_code=404, detail="Alerta não encontrado.")
         return {"message": "Status do alerta atualizado com sucesso."}
 
-    async def marcar_todos_como_lidos(self, perfil_usuario: str) -> dict:
+    async def marcar_todos_como_lidos(self, perfil_usuario: str, username: str = None) -> dict:
         """Marca todos os alertas do perfil como lidos no banco de dados."""
         alertas_atuais = await self.listar_alertas(perfil_usuario)
+        dados = {
+            "lido": True,
+            "lido_em": datetime.utcnow(),
+            "lido_por": username
+        }
         for a in alertas_atuais:
             if not a.get("lido"):
-                await self.alerta_provider.atualizar(int(a["id"]), {"lido": True})
+                await self.alerta_provider.atualizar(int(a["id"]), dados)
         return {"message": "Todos os alertas marcados como lidos"}
 
     async def gerar_alertas(self) -> dict:

@@ -34,10 +34,12 @@ async def get_unread_count(
 async def atualizar_status_leitura(
     alerta_id: int,
     payload: AtualizarLeituraInput,
-    controller: AlertaController = Depends(get_alerta_controller)
+    controller: AlertaController = Depends(get_alerta_controller),
+    current_user: dict = Depends(auth_handler.decode_token)
 ):
     """Atualiza o status de leitura de um alerta."""
-    return await controller.atualizar_status_leitura(alerta_id, payload.lido)
+    username = current_user.get("username", "Sistema")
+    return await controller.atualizar_status_leitura(alerta_id, payload.lido, username)
 
 @router.put("/lidos")
 async def marcar_todos_como_lidos(
@@ -46,7 +48,8 @@ async def marcar_todos_como_lidos(
 ):
     """Marca todos os alertas visíveis para o usuário como lidos."""
     perfil = current_user.get("perfil", "Comum")
-    return await controller.marcar_todos_como_lidos(perfil)
+    username = current_user.get("username", "Sistema")
+    return await controller.marcar_todos_como_lidos(perfil, username)
 
 @router.post("/gerar", status_code=status.HTTP_201_CREATED)
 async def gerar_alertas(

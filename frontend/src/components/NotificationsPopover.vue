@@ -51,9 +51,12 @@
                 </div>
                 <p class="mt-1 text-xs text-slate-600 wrap-break-words">{{ notification.description }}</p>
                 <div class="mt-2 flex items-center justify-between">
-                  <div class="flex items-center gap-1 text-[11px] text-slate-500">
+                  <div class="flex items-center gap-1 text-[11px] text-slate-500 flex-wrap">
                     <Clock3 class="h-3 w-3" />
-                    <span>{{ notification.time }}</span>
+                    <span>Emitido em: {{ notification.time }}</span>
+                    <span v-if="!notification.unread && notification.lido_em" class="ml-1 font-medium text-slate-500">
+                      | Lido em: {{ notification.lido_em }} ({{ notification.lido_por }})
+                    </span>
                   </div>
                   <button
                     v-if="notification.unread"
@@ -100,6 +103,8 @@ type NotificationItem = {
   description: string;
   time: string;
   unread: boolean;
+  lido_em?: string | null;
+  lido_por?: string | null;
 };
 
 const notifications = ref<NotificationItem[]>([]);
@@ -128,7 +133,9 @@ const fetchNotifications = async () => {
         title: a.titulo,
         description: a.mensagem.substring(0, 50) + (a.mensagem.length > 50 ? '...' : ''),
         time: a.dataHora,
-        unread: !a.lido
+        unread: !a.lido,
+        lido_em: a.lido_em,
+        lido_por: a.lido_por
       };
     });
   } catch (error) {

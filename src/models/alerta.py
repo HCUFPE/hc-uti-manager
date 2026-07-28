@@ -20,12 +20,16 @@ class Alerta(Base):
     prontuario = Column(String(50), nullable=True)
     perfil_alvo = Column(String(50), nullable=True) # Se nulo, visível para UTI/NIR/Admin
 
+    lido_em = Column(DateTime, nullable=True)
+    lido_por = Column(String(100), nullable=True)
+
     criado_em = Column(DateTime, default=datetime.utcnow)
     atualizado_em = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         # Ajuste para horário de Brasília (-3h)
         data_local = (self.criado_em - timedelta(hours=3)) if self.criado_em else None
+        lido_em_local = (self.lido_em - timedelta(hours=3)) if self.lido_em else None
         
         return {
             "id": str(self.id),
@@ -37,5 +41,7 @@ class Alerta(Base):
             "lido": self.lido,
             "lto_id": self.lto_id,
             "prontuario": self.prontuario,
-            "perfil_alvo": self.perfil_alvo
+            "perfil_alvo": self.perfil_alvo,
+            "lido_em": lido_em_local.strftime("%d/%m/%Y %H:%M") if lido_em_local else None,
+            "lido_por": self.lido_por
         }

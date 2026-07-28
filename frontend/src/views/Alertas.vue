@@ -67,11 +67,14 @@
                 </div>
               </div>
               <div
-                class="flex items-center gap-2 text-xs"
+                class="flex items-center gap-2 text-xs flex-wrap"
                 :class="alerta.lido ? 'text-slate-400' : 'text-slate-500'"
               >
                 <ClockIcon class="h-3 w-3" />
-                <span>{{ alerta.dataHora }}</span>
+                <span>Emitido em: {{ alerta.dataHora }}</span>
+                <span v-if="alerta.lido && alerta.lido_em" class="ml-1 font-medium text-slate-500">
+                  | Lido em: {{ alerta.lido_em }} ({{ alerta.lido_por }})
+                </span>
               </div>
             </div>
           </div>
@@ -125,11 +128,14 @@
                 </UiBadge>
               </div>
               <div
-                class="flex items-center gap-2 text-[11px]"
+                class="flex items-center gap-2 text-[11px] flex-wrap"
                 :class="selectedAlert.lido ? 'text-slate-400' : 'text-slate-500'"
               >
                 <ClockIcon class="h-3 w-3" />
-                <span>{{ selectedAlert.dataHora }}</span>
+                <span>Emitido em: {{ selectedAlert.dataHora }}</span>
+                <span v-if="selectedAlert.lido && selectedAlert.lido_em" class="ml-1 font-medium text-slate-500">
+                  | Lido em: {{ selectedAlert.lido_em }} ({{ selectedAlert.lido_por }})
+                </span>
               </div>
             </div>
           </div>
@@ -170,6 +176,8 @@ type Alert = {
   mensagem: string;
   dataHora: string;
   lido?: boolean;
+  lido_em?: string | null;
+  lido_por?: string | null;
 };
 
 const alertas = ref<Alert[]>([]);
@@ -264,10 +272,7 @@ const primaryActionLabel = computed(() =>
 const marcarComoLido = async (alerta: Alert) => {
   try {
     await api.put(`/api/alertas/${alerta.id}/lido`, { lido: true });
-    const idx = alertas.value.findIndex(a => a.id === alerta.id);
-    if (idx >= 0) {
-      alertas.value[idx].lido = true;
-    }
+    await fetchAlertas();
     toast.success('Alerta arquivado.');
   } catch (error) {
     console.error('Erro ao marcar como lido:', error);
@@ -278,12 +283,7 @@ const marcarComoLido = async (alerta: Alert) => {
 const marcarTodosLidos = async () => {
   try {
     await api.put('/api/alertas/lidos');
-    alertas.value.forEach(a => {
-      // Se estiver nos filtrados, marca como lido
-      if (alertasFiltrados.value.some(f => f.id === a.id)) {
-        a.lido = true;
-      }
-    });
+    await fetchAlertas();
     toast.success('Todos os alertas foram marcados como lidos.');
   } catch (error) {
     console.error('Erro ao marcar todos como lidos:', error);
@@ -298,9 +298,8 @@ const toggleRead = async () => {
     const nextStatus = !alertas.value[idx].lido;
     try {
       await api.put(`/api/alertas/${selectedAlert.value.id}/lido`, { lido: nextStatus });
-      const updated = { ...alertas.value[idx], lido: nextStatus };
-      alertas.value[idx] = updated;
-      selectedAlert.value = updated;
+      await fetchAlertas();
+      selectedAlert.value = alertas.value.find(a => a.id === selectedAlert.value?.id) || null;
       toast.success(nextStatus ? 'Alerta marcado como lido/resolvido.' : 'Alerta marcado como não lido.');
     } catch (error) {
       console.error('Erro ao atualizar alerta:', error);
