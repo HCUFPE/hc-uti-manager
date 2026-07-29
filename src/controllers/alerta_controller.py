@@ -252,7 +252,7 @@ class AlertaController:
 
         # 2. SOLICITANTE -> UTI
         elif tipo in ["nova_solicitacao", "exclusao_solicitacao", "alteracao_prioridade"]:
-            if tipo == "nova_solicitacao" and "troca de paciente" in detalhes.lower():
+            if tipo in ["nova_solicitacao", "exclusao_solicitacao"] and "troca de paciente" in detalhes.lower():
                 pass
             else:
                 hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
