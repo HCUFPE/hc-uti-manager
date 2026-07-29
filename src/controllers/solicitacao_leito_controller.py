@@ -343,7 +343,7 @@ class SolicitacaoLeitoController:
                                     operador=username,
                                     tipo="cancelamento_solicitante",
                                     acao="Cancelou reserva de leito (Troca de Paciente)",
-                                    detalhes=f"Solicitação #{sol_id} ({alvo.nome}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente (Mesclado).",
+                                    detalhes=f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente (Mesclado).",
                                     prontuario=str(alvo.prontuario)
                                 )
                         else:
@@ -437,7 +437,7 @@ class SolicitacaoLeitoController:
                             operador=username,
                             tipo="cancelamento_solicitante",
                             acao="Cancelou reserva de leito (Troca de Paciente)",
-                            detalhes=f"Solicitação #{sol_id} ({alvo.nome}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente.",
+                            detalhes=f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente.",
                             prontuario=str(alvo.prontuario)
                         )
                 else:
