@@ -4,7 +4,7 @@ from sqlalchemy import select, update
 from datetime import datetime
 
 # Importar o gerenciador de banco de dados da aplicação
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, '/app')
 from resources.database import DatabaseManager
 from models.historico_acao import HistoricoAcao
 from models.alerta import Alerta
