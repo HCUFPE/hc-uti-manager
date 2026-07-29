@@ -341,7 +341,7 @@ class SolicitacaoLeitoController:
                                 operador=username,
                                 tipo="cancelamento_solicitante" if alvo_status_orig == "Reservado" else "status",
                                 acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito (Troca de Paciente)",
-                                detalhes=f"Solicitação #{sol_id} (Paciente A) voltou para a fila (Pendente). Motivo: Leito {alvo_destino_orig} foi remanejado para o Paciente B (Prontuário {sol_ativa.prontuario}) via troca de paciente.",
+                                detalhes=f"Solicitação #{sol_id} ({alvo.nome}) voltou para a fila (Pendente). Motivo: Leito {alvo_destino_orig} foi remanejado para {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente.",
                                 prontuario=str(alvo.prontuario)
                             )
                         # Promoção da existente do novo (se reservado, a ação automática da reserva é registrada como do Sistema)
@@ -350,7 +350,7 @@ class SolicitacaoLeitoController:
                             operador=operador_promocao,
                             tipo="reserva" if alvo_status_orig == "Reservado" else "status",
                             acao=f"Atualizou status para {alvo_status_orig}" if alvo_status_orig != "Reservado" else "Reservou leito para solicitação",
-                            detalhes=f"Solicitação #{sol_ativa.id} (Paciente B) foi reservada para o Leito {alvo_destino_orig}. Motivo: Recebeu a vaga do Paciente A (Prontuário {alvo.prontuario}) via troca de paciente.",
+                            detalhes=f"Solicitação #{sol_ativa.id} ({sol_ativa.nome}) foi reservada para o Leito {alvo_destino_orig}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente.",
                             prontuario=str(sol_ativa.prontuario)
                         )
                     
