@@ -13,7 +13,7 @@ async def adjust():
     dsn = os.getenv("SQLITE_DSN") or "sqlite+aiosqlite:////app/data/app.db"
     db = DatabaseManager(dsn)
     
-    async with db.get_session() as session:
+    async for session in db.get_session():
         # 1. Atualizar o histórico de ações
         print("Buscando histórico de trocas de paciente antigas...")
         res_hist = await session.execute(
