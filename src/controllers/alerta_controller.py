@@ -226,7 +226,8 @@ class AlertaController:
             
             if perfil_vaga:
                 if tipo == "reserva":
-                    if "troca de paciente" not in detalhes.lower():
+                    detalhes_lower = detalhes.lower()
+                    if "troca de paciente" not in detalhes_lower and "substitu" not in detalhes_lower:
                         novos_alertas.append({
                             "tipo": "info", "categoria": "Gargalo", "titulo": "Vaga Reservada pela UTI",
                             "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": perfil_vaga, "criado_em": criado_em_evento
