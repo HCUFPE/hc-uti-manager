@@ -47,7 +47,7 @@ async def run_process():
         
         # 1. Executar a rotina de novos alertas
         print("Executando o motor de geração de alertas...")
-        await controller.gerar_novos_alertas()
+        await controller.gerar_alertas()
         
         # 2. Buscar o alerta gerado para a troca do Damião e marcar como lido
         from sqlalchemy import select
