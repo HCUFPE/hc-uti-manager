@@ -12,7 +12,6 @@ from models.alerta import Alerta
 async def adjust():
     dsn = os.getenv("SQLITE_DSN") or "sqlite+aiosqlite:////app/data/app.db"
     db = DatabaseManager(dsn)
-    await db.initialize()
     
     async with db.get_session() as session:
         # 1. Atualizar o histórico de ações
