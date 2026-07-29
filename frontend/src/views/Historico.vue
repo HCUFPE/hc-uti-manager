@@ -163,7 +163,7 @@ const tipoConfig: Record<string, { color: string; label: string }> = {
   // Reservas
   reserva:                  { color: 'border border-emerald-300 bg-emerald-500/80 text-emerald-100', label: 'Reserva' },
   cancelamento_reserva:     { color: 'border border-red-300 bg-red-500/80 text-red-100',        label: 'Cancelamento' },
-  cancelamento_solicitante: { color: 'border border-red-300 bg-red-500/80 text-red-100',        label: 'Reserva' },
+  cancelamento_solicitante: { color: 'border border-red-300 bg-red-500/80 text-red-100',        label: 'Cancelamento' },
   
   // Destinos
   destino:              { color: 'border border-blue-300 bg-blue-500/80 text-blue-100',     label: 'Destino' },
