@@ -264,6 +264,9 @@ class SolicitacaoLeitoController:
             novo_prontuario = str(payload["prontuario"])
             alvo_status_orig = alvo.status
             alvo_destino_orig = alvo.destino
+            leito_orig_str = ""
+            if alvo_destino_orig:
+                leito_orig_str = alvo_destino_orig if alvo_destino_orig.lower().startswith("leito") else f"Leito {alvo_destino_orig}"
             
             # Verificar se o novo prontuário já ocupa um leito físico na UTI
             if self.census_provider:
@@ -341,7 +344,7 @@ class SolicitacaoLeitoController:
                                 operador=username,
                                 tipo="cancelamento_solicitante" if alvo_status_orig == "Reservado" else "status",
                                 acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito (Troca de Paciente)",
-                                detalhes=f"Solicitação #{sol_id} ({alvo.nome}) voltou para a fila (Pendente). Motivo: Leito {alvo_destino_orig} foi remanejado para {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente.",
+                                detalhes=f"Solicitação #{sol_id} ({alvo.nome}) voltou para a fila (Pendente). Motivo: {leito_orig_str} foi remanejado para {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente.",
                                 prontuario=str(alvo.prontuario)
                             )
                         # Promoção da existente do novo (se reservado, a ação automática da reserva é registrada como do Sistema)
@@ -350,7 +353,7 @@ class SolicitacaoLeitoController:
                             operador=operador_promocao,
                             tipo="reserva" if alvo_status_orig == "Reservado" else "status",
                             acao=f"Atualizou status para {alvo_status_orig}" if alvo_status_orig != "Reservado" else "Reservou leito para solicitação",
-                            detalhes=f"Solicitação #{sol_ativa.id} ({sol_ativa.nome}) foi reservada para o Leito {alvo_destino_orig}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente.",
+                            detalhes=f"Solicitação #{sol_ativa.id} ({sol_ativa.nome}) foi reservada para {leito_orig_str}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente.",
                             prontuario=str(sol_ativa.prontuario)
                         )
                     
@@ -427,7 +430,7 @@ class SolicitacaoLeitoController:
                         operador=username,
                         tipo="cancelamento_solicitante" if alvo_status_orig == "Reservado" else "status",
                         acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito (Troca de Paciente)",
-                        detalhes=f"Solicitação #{sol_id} (Paciente A) voltou para a fila (Pendente). Motivo: Leito {alvo_destino_orig} foi remanejado para o Paciente B (Prontuário {nova_sol.prontuario}) via troca de paciente.",
+                        detalhes=f"Solicitação #{sol_id} ({alvo.nome}) voltou para a fila (Pendente). Motivo: {leito_orig_str} foi remanejado para {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente.",
                         prontuario=str(alvo.prontuario)
                     )
                 # Criação
@@ -435,7 +438,7 @@ class SolicitacaoLeitoController:
                     operador=username,
                     tipo="nova_solicitacao",
                     acao="Nova solicitação de vaga",
-                    detalhes=f"Solicitação #{nova_sol.id} (Paciente B) foi reservada para o Leito {alvo_destino_orig}. Motivo: Recebeu a vaga do Paciente A (Prontuário {alvo.prontuario}) via troca de paciente.",
+                    detalhes=f"Solicitação #{nova_sol.id} ({nova_sol.nome}) foi reservada para {leito_orig_str}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente.",
                     prontuario=str(nova_sol.prontuario)
                 )
             
