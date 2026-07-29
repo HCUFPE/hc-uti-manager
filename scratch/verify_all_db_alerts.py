@@ -15,7 +15,7 @@ async def verify():
         res = await session.execute(select(Alerta).order_by(Alerta.id.desc()))
         alertas = res.scalars().all()
         
-        print("=== RELATÓRIO GERAL DE ALERTAS NO BANCO ===")
+        print("=== RELATORIO GERAL DE ALERTAS NO BANCO ===")
         print(f"Total de alertas cadastrados: {len(alertas)}")
         
         # 1. Verificar duplicidades exatas (mesmo titulo, mensagem e prontuario)
@@ -30,11 +30,11 @@ async def verify():
                 seen[key] = a.id
                 
         if duplicates:
-            print(f"⚠️ Alerta: Encontrados {len(duplicates)} alertas duplicados!")
+            print(f"[!] Alerta: Encontrados {len(duplicates)} alertas duplicados!")
             for dup_id, orig_id, key in duplicates:
                 print(f"  - ID Duplicado: {dup_id} | ID Original: {orig_id} | Chave: {key[0]} - Pront: {key[2]}")
         else:
-            print("✅ Sucesso! Nenhuma duplicidade exata encontrada no banco de dados.")
+            print("[OK] Sucesso: Nenhuma duplicidade exata encontrada no banco de dados.")
             
         # 2. Verificar estado dos alertas referentes às trocas de hoje
         print("\n2. Checagem dos Alertas de Trocas de Hoje:")
@@ -45,7 +45,7 @@ async def verify():
             for a in alertas_hoje:
                 print(f"  - ID: {a.id} | Titulo: {a.titulo} | Lido: {a.lido} | Por: {a.lido_por} | Msg: {a.mensagem[:100]}...")
         else:
-            print("⚠️ Nenhum alerta encontrado para os prontuários das trocas.")
+            print("[!] Nenhum alerta encontrado para os prontuarios das trocas.")
             
     await db.close_connection()
 
