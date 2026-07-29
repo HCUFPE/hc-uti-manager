@@ -460,7 +460,7 @@ class SolicitacaoLeitoController:
                             operador="Sistema",
                             tipo="reserva",
                             acao="Reservou leito para solicitação",
-                            detalhes=f"Solicitação #{nova_sol.id} (Prontuário {nova_sol.prontuario}) para {nova_sol.destino}",
+                            detalhes=f"Solicitação #{nova_sol.id} (Prontuário {nova_sol.prontuario}) para {nova_sol.destino} (Gerada via troca de paciente)",
                             prontuario=str(nova_sol.prontuario)
                         )
 
