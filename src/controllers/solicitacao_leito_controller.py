@@ -328,9 +328,16 @@ class SolicitacaoLeitoController:
                         dados_antiga["prioridade_manual"] = True
                     await self.leito_provider.atualizar(sol_id, dados_antiga)
                     
-                    # Registrar no histórico
                     if self.historico_provider:
                         if status_antiga == "Cancelada":
+                            if alvo_status_orig == "Reservado":
+                                await self.historico_provider.registrar(
+                                    operador=username,
+                                    tipo="cancelamento_solicitante",
+                                    acao="Cancelou reserva de leito (Troca de Paciente)",
+                                    detalhes=f"Solicitação #{sol_id} ({alvo.nome}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente (Mesclado).",
+                                    prontuario=str(alvo.prontuario)
+                                )
                             motivo_cancel = "Alteração de Prioridade pós Reserva de Leito" if alvo_status_orig == "Reservado" else "Alteração de Prioridade pós Solicitação"
                             await self.historico_provider.registrar(
                                 operador=username,
@@ -417,6 +424,14 @@ class SolicitacaoLeitoController:
             # 4. Registrar logs de histórico de cancelamento/retorno e nova criação
             if self.historico_provider:
                 if status_antiga == "Cancelada":
+                    if alvo_status_orig == "Reservado":
+                        await self.historico_provider.registrar(
+                            operador=username,
+                            tipo="cancelamento_solicitante",
+                            acao="Cancelou reserva de leito (Troca de Paciente)",
+                            detalhes=f"Solicitação #{sol_id} ({alvo.nome}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente.",
+                            prontuario=str(alvo.prontuario)
+                        )
                     motivo_cancel = "Alteração de Prioridade pós Reserva de Leito" if alvo_status_orig == "Reservado" else "Alteração de Prioridade pós Solicitação"
                     await self.historico_provider.registrar(
                         operador=username,

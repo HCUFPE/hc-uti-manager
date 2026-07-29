@@ -254,12 +254,7 @@ class AlertaController:
         elif tipo in ["nova_solicitacao", "exclusao_solicitacao", "alteracao_prioridade"]:
             detalhes_lower = detalhes.lower()
             if tipo in ["nova_solicitacao", "exclusao_solicitacao"] and ("troca de paciente" in detalhes_lower or "substitu" in detalhes_lower):
-                # Se for exclusão de solicitação reservada em uma troca de paciente, gera o alerta unificado
-                if tipo == "exclusao_solicitacao" and "reserva de leito" in detalhes_lower:
-                    novos_alertas.append({
-                        "tipo": "aviso", "categoria": "Gargalo", "titulo": "Reserva Remanejada (Troca de Paciente)",
-                        "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": None, "criado_em": criado_em_evento
-                    })
+                pass
             else:
                 hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
                 evento_bsb_date = ""
