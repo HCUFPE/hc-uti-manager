@@ -215,8 +215,13 @@
                   </tr>
                   <tr>
                     <td class="px-4 py-3 font-medium">Reservas Canceladas pela UTI (Desfeitas)</td>
-                    <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_reservas ?? 0 }}</td>
+                    <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_reservas_uti ?? 0 }}</td>
                     <td class="px-4 py-3 text-right text-slate-500">Cliques em "Cancelar Reserva"</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-medium">Reservas Canceladas pelo Solicitante (Troca/Suspensão)</td>
+                    <td class="px-4 py-3 text-center font-bold text-rose-700">{{ detalhado.volumes?.cancelamento_reservas_solicitante ?? 0 }}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">Substituições de paciente pelo Bloco</td>
                   </tr>
                   <tr class="border-t-2">
                     <td class="px-4 py-3 font-medium">Altas Solicitadas pela UTI</td>

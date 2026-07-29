@@ -339,9 +339,9 @@ class SolicitacaoLeitoController:
                         else:
                             await self.historico_provider.registrar(
                                 operador=username,
-                                tipo="cancelamento_reserva" if alvo_status_orig == "Reservado" else "status",
-                                acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito",
-                                detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {sol_ativa.prontuario}) (Mesclado)",
+                                tipo="cancelamento_solicitante" if alvo_status_orig == "Reservado" else "status",
+                                acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito (Troca de Paciente)",
+                                detalhes=f"Solicitação #{sol_id} (Paciente A) voltou para a fila (Pendente). Motivo: Leito {alvo_destino_orig} foi remanejado para o Paciente B (Prontuário {sol_ativa.prontuario}) via troca de paciente.",
                                 prontuario=str(alvo.prontuario)
                             )
                         # Promoção da existente do novo (se reservado, a ação automática da reserva é registrada como do Sistema)
@@ -350,7 +350,7 @@ class SolicitacaoLeitoController:
                             operador=operador_promocao,
                             tipo="reserva" if alvo_status_orig == "Reservado" else "status",
                             acao=f"Atualizou status para {alvo_status_orig}" if alvo_status_orig != "Reservado" else "Reservou leito para solicitação",
-                            detalhes=f"Solicitação #{sol_id} mesclada com solicitação #{sol_ativa.id} existente do Paciente {sol_ativa.nome} - Status: {alvo_status_orig} " + (f"para {alvo_destino_orig}" if alvo_status_orig == "Reservado" else "") + f" (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {sol_ativa.prontuario})",
+                            detalhes=f"Solicitação #{sol_ativa.id} (Paciente B) foi reservada para o Leito {alvo_destino_orig}. Motivo: Recebeu a vaga do Paciente A (Prontuário {alvo.prontuario}) via troca de paciente.",
                             prontuario=str(sol_ativa.prontuario)
                         )
                     
@@ -425,9 +425,9 @@ class SolicitacaoLeitoController:
                 else:
                     await self.historico_provider.registrar(
                         operador=username,
-                        tipo="cancelamento_reserva" if alvo_status_orig == "Reservado" else "status",
-                        acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito",
-                        detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) voltou para Pendente devido à troca de paciente (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {nova_sol.prontuario})",
+                        tipo="cancelamento_solicitante" if alvo_status_orig == "Reservado" else "status",
+                        acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito (Troca de Paciente)",
+                        detalhes=f"Solicitação #{sol_id} (Paciente A) voltou para a fila (Pendente). Motivo: Leito {alvo_destino_orig} foi remanejado para o Paciente B (Prontuário {nova_sol.prontuario}) via troca de paciente.",
                         prontuario=str(alvo.prontuario)
                     )
                 # Criação
@@ -435,7 +435,7 @@ class SolicitacaoLeitoController:
                     operador=username,
                     tipo="nova_solicitacao",
                     acao="Nova solicitação de vaga",
-                    detalhes=f"Solicitação #{nova_sol.id} - Prontuário {nova_sol.prontuario} — {nova_sol.especialidade} ({nova_sol.tipo}) - Data: {nova_sol.data_cirurgia} (Gerada via troca de paciente) (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {nova_sol.prontuario})",
+                    detalhes=f"Solicitação #{nova_sol.id} (Paciente B) foi reservada para o Leito {alvo_destino_orig}. Motivo: Recebeu a vaga do Paciente A (Prontuário {alvo.prontuario}) via troca de paciente.",
                     prontuario=str(nova_sol.prontuario)
                 )
             

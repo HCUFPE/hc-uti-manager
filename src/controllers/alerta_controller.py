@@ -220,20 +220,28 @@ class AlertaController:
 
     def _gerar_alerta_por_tipo(self, tipo, acao, detalhes, operador, criado_em_evento, pront_alerta, perfil_vaga, match_hoje, novos_alertas):
         # 1. UTI <-> SOLICITANTE
-        if tipo in ["reserva", "cancelamento_reserva"]:
+        if tipo in ["reserva", "cancelamento_reserva", "cancelamento_solicitante"]:
             op_clean = operador.replace("-Admin", "").strip().upper()
             pv_clean = str(perfil_vaga or "").replace("-Admin", "").strip().upper()
             
             if perfil_vaga:
                 if tipo == "reserva":
-                    novos_alertas.append({
-                        "tipo": "info", "categoria": "Gargalo", "titulo": "Vaga Reservada pela UTI",
-                        "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": perfil_vaga, "criado_em": criado_em_evento
-                    })
+                    if "troca de paciente" not in detalhes.lower():
+                        novos_alertas.append({
+                            "tipo": "info", "categoria": "Gargalo", "titulo": "Vaga Reservada pela UTI",
+                            "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": perfil_vaga, "criado_em": criado_em_evento
+                        })
                 elif tipo == "cancelamento_reserva" and op_clean != pv_clean:
                     novos_alertas.append({
                         "tipo": "info", "categoria": "Gargalo", "titulo": "Reserva Cancelada pela UTI",
                         "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": perfil_vaga, "criado_em": criado_em_evento
+                    })
+                elif tipo == "cancelamento_solicitante":
+                    eh_troca = "Troca de Paciente" in acao or "troca de paciente" in detalhes
+                    alerta_titulo = "Reserva Remanejada (Troca de Paciente)" if eh_troca else "Reserva Cancelada pelo Solicitante"
+                    novos_alertas.append({
+                        "tipo": "aviso", "categoria": "Gargalo", "titulo": alerta_titulo,
+                        "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": None, "criado_em": criado_em_evento
                     })
             
             if tipo == "cancelamento_reserva" and perfil_vaga and op_clean == pv_clean:
@@ -244,21 +252,24 @@ class AlertaController:
 
         # 2. SOLICITANTE -> UTI
         elif tipo in ["nova_solicitacao", "exclusao_solicitacao", "alteracao_prioridade"]:
-            hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
-            evento_bsb_date = ""
-            if isinstance(criado_em_evento, datetime):
-                evento_bsb_date = (criado_em_evento - timedelta(hours=3)).strftime("%Y-%m-%d")
-                
-            if match_hoje and evento_bsb_date == hoje_bsb:
-                titulos = {
-                    "nova_solicitacao": "Nova solicitação para hoje",
-                    "exclusao_solicitacao": "Solicitação para hoje removida",
-                    "alteracao_prioridade": "Prioridade alterada (Paciente hoje)"
-                }
-                novos_alertas.append({
-                    "tipo": "info", "categoria": "Gargalo", "titulo": titulos.get(tipo),
-                    "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": None, "criado_em": criado_em_evento
-                })
+            if tipo == "nova_solicitacao" and "troca de paciente" in detalhes.lower():
+                pass
+            else:
+                hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
+                evento_bsb_date = ""
+                if isinstance(criado_em_evento, datetime):
+                    evento_bsb_date = (criado_em_evento - timedelta(hours=3)).strftime("%Y-%m-%d")
+                    
+                if match_hoje and evento_bsb_date == hoje_bsb:
+                    titulos = {
+                        "nova_solicitacao": "Nova solicitação para hoje",
+                        "exclusao_solicitacao": "Solicitação para hoje removida",
+                        "alteracao_prioridade": "Prioridade alterada (Paciente hoje)"
+                    }
+                    novos_alertas.append({
+                        "tipo": "info", "categoria": "Gargalo", "titulo": titulos.get(tipo),
+                        "mensagem": detalhes, "prontuario": pront_alerta, "perfil_alvo": None, "criado_em": criado_em_evento
+                    })
         
         # 3. UTI -> NIR ou NIR -> UTI
         elif tipo == "cancelamento":

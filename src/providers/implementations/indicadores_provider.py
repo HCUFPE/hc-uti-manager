@@ -372,13 +372,15 @@ class IndicadoresProvider:
         reservas_concluidas_periodo = [ev for ev in historico_todos if ev.tipo == "conclusao" and in_period(ev.criado_em)]
         # Cancelamentos de solicitações e reservas no período
         cancelamentos_sol_periodo = [ev for ev in historico_todos if ev.tipo == "exclusao_solicitacao" and in_period(ev.criado_em)]
-        cancelamentos_res_periodo = [ev for ev in historico_todos if ev.tipo in ["cancelamento_reserva"] and in_period(ev.criado_em)]
+        cancelamentos_res_uti_periodo = [ev for ev in historico_todos if ev.tipo == "cancelamento_reserva" and in_period(ev.criado_em)]
+        cancelamentos_res_sol_periodo = [ev for ev in historico_todos if ev.tipo == "cancelamento_solicitante" and in_period(ev.criado_em)]
 
         volume_solicitacoes = total_sols_periodo
         volume_reservas = len(reservas_efetuadas_periodo)
         volume_concluidas = len(reservas_concluidas_periodo)
         volume_cancelamentos_sol = len(cancelamentos_sol_periodo)
-        volume_cancelamentos_res = len(cancelamentos_res_periodo)
+        volume_cancelamentos_res_uti = len(cancelamentos_res_uti_periodo)
+        volume_cancelamentos_res_sol = len(cancelamentos_res_sol_periodo)
         volume_altas = len(altas_criadas_periodo)
         volume_altas_concluidas = len([ev for ev in historico_todos if ev.tipo == "conclusao_alta" and in_period(ev.criado_em)])
         volume_altas_pendentes = len([a for a in altas_criadas_periodo if a.status in ["pendente", "definida"]])
@@ -543,7 +545,9 @@ class IndicadoresProvider:
                     "reservadas": volume_reservas,
                     "concluidas": volume_concluidas,
                     "cancelamento_solicitacoes": volume_cancelamentos_sol,
-                    "cancelamento_reservas": volume_cancelamentos_res,
+                    "cancelamento_reservas": volume_cancelamentos_res_uti + volume_cancelamentos_res_sol,
+                    "cancelamento_reservas_uti": volume_cancelamentos_res_uti,
+                    "cancelamento_reservas_solicitante": volume_cancelamentos_res_sol,
                     "altas": volume_altas,
                     "altas_concluidas": volume_altas_concluidas,
                     "altas_pendentes": volume_altas_pendentes,
