@@ -106,6 +106,11 @@ def get_aghu_cirurgia_provider(
     """Provedor para cirurgias do AGHU via PostgreSQL."""
     return AghuCirurgiaProvider(session=session)
 
+def get_alerta_provider(
+    session: AsyncSession = Depends(get_app_db_session)
+) -> AlertaProvider:
+    return AlertaProvider(session=session)
+
 def get_solicitacao_leito_controller(
     leito_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
     estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
@@ -124,11 +129,6 @@ def get_solicitacao_leito_controller(
     )
 
 # --- ALERTAS --------------------------------------------------
-
-def get_alerta_provider(
-    session: AsyncSession = Depends(get_app_db_session)
-) -> AlertaProvider:
-    return AlertaProvider(session=session)
 
 def get_alerta_controller(
     alerta_provider: AlertaProvider = Depends(get_alerta_provider),
