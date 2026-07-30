@@ -13,8 +13,8 @@ def main():
     try:
         ssh.connect(host, username=user, password=secret, timeout=15)
         
-        # Consultar o status atual no banco
-        cmd = "export XDG_RUNTIME_DIR=/run/user/$(id -u) && podman exec hc-uti-backend python -c \"import sqlite3; conn = sqlite3.connect('/app/data/app.db'); print('Status das Solicitações:'); [print(row) for row in conn.execute('select id, prontuario, nome, status, data_cirurgia from solicitacoes_leito where prontuario in (\\'21036074\\', \\'22307987\\', \\'22064729\\', \\'21931076\\', \\'13938907\\')').fetchall()]; conn.close()\""
+        # Consultar o status atual no banco e o histórico de ações
+        cmd = "export XDG_RUNTIME_DIR=/run/user/$(id -u) && podman exec hc-uti-backend python -c \"import sqlite3; conn = sqlite3.connect('/app/data/app.db'); print('=== STATUS ==='); [print(row) for row in conn.execute('select id, prontuario, nome, status, data_cirurgia from solicitacoes_leito where prontuario in (\\'21036074\\', \\'22307987\\', \\'22064729\\', \\'21931076\\', \\'13938907\\')').fetchall()]; print('=== HISTÓRICO 21036074 ==='); [print(row) for row in conn.execute('select id, criado_em, tipo, acao, detalhes, prontuario from historico_acoes where prontuario=\\'21036074\\' order by criado_em desc').fetchall()]; print('=== HISTÓRICO 22307987 ==='); [print(row) for row in conn.execute('select id, criado_em, tipo, acao, detalhes, prontuario from historico_acoes where prontuario=\\''22307987\\' order by criado_em desc').fetchall()]; conn.close()\""
         
         stdin, stdout, stderr = ssh.exec_command(cmd)
         print(stdout.read().decode('utf-8', errors='ignore'))
