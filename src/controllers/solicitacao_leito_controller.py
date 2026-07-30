@@ -331,7 +331,7 @@ class SolicitacaoLeitoController:
                         dados_antiga["prioridade"] = "P1"
                         dados_antiga["prioridade_manual"] = True
                     await self.leito_provider.atualizar(sol_id, dados_antiga)
-                    
+                    if self.historico_provider:
                         if status_antiga == "Cancelada":
                             motivo_cancel = "Alteração de Prioridade pós Reserva de Leito" if alvo_status_orig == "Reservado" else "Alteração de Prioridade pós Solicitação"
                             await self.historico_provider.registrar(
