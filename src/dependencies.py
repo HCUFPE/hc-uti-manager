@@ -111,14 +111,16 @@ def get_solicitacao_leito_controller(
     estado_provider: LeitoEstadoProvider = Depends(get_leito_estado_provider),
     historico_provider: HistoricoProvider = Depends(get_historico_provider),
     aghu_cirurgia_provider: AghuCirurgiaProvider = Depends(get_aghu_cirurgia_provider),
-    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider)
+    census_provider: LeitoProviderInterface = Depends(_get_leito_aghu_provider),
+    alerta_provider: AlertaProvider = Depends(get_alerta_provider)
 ) -> SolicitacaoLeitoController:
     return SolicitacaoLeitoController(
         leito_provider=leito_provider,
         estado_provider=estado_provider,
         historico_provider=historico_provider,
         aghu_cirurgia_provider=aghu_cirurgia_provider,
-        census_provider=census_provider
+        census_provider=census_provider,
+        alerta_provider=alerta_provider
     )
 
 # --- ALERTAS --------------------------------------------------

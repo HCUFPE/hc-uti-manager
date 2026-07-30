@@ -9,6 +9,8 @@ from models.leito_estado import LeitoEstado
 
 from providers.interfaces.leito_provider_interface import LeitoProviderInterface
 
+from providers.implementations.alerta_provider import AlertaProvider
+
 class SolicitacaoLeitoController:
     """
     Controller para gerenciar solicitações de vaga/leito na UTI.
@@ -20,13 +22,15 @@ class SolicitacaoLeitoController:
         estado_provider: LeitoEstadoProvider | None = None,
         historico_provider: HistoricoProvider | None = None,
         aghu_cirurgia_provider: Any = None,
-        census_provider: LeitoProviderInterface | None = None
+        census_provider: LeitoProviderInterface | None = None,
+        alerta_provider: AlertaProvider | None = None
     ):
         self.leito_provider = leito_provider
         self.estado_provider = estado_provider
         self.historico_provider = historico_provider
         self.aghu_cirurgia_provider = aghu_cirurgia_provider
         self.census_provider = census_provider
+        self.alerta_provider = alerta_provider
 
     async def _sincronizar_prioridades(self, data_cirurgia: str, turno: str | None = None, sol_id_foco: int | None = None, prioridade_desejada: str | None = None):
         """
@@ -328,16 +332,7 @@ class SolicitacaoLeitoController:
                         dados_antiga["prioridade_manual"] = True
                     await self.leito_provider.atualizar(sol_id, dados_antiga)
                     
-                    if self.historico_provider:
                         if status_antiga == "Cancelada":
-                            if alvo_status_orig == "Reservado":
-                                await self.historico_provider.registrar(
-                                    operador=username,
-                                    tipo="cancelamento_solicitante",
-                                    acao="Cancelou reserva de leito (Troca de Paciente)",
-                                    detalhes=f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente (Mesclado).",
-                                    prontuario=str(alvo.prontuario)
-                                )
                             motivo_cancel = "Alteração de Prioridade pós Reserva de Leito" if alvo_status_orig == "Reservado" else "Alteração de Prioridade pós Solicitação"
                             await self.historico_provider.registrar(
                                 operador=username,
@@ -346,14 +341,48 @@ class SolicitacaoLeitoController:
                                 detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: {motivo_cancel} (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {sol_ativa.prontuario}) (Mesclado)",
                                 prontuario=str(alvo.prontuario)
                             )
+                            if alvo_status_orig == "Reservado":
+                                msg_detalhe = f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) teve sua solicitação Cancelada. Motivo: Foi substituído por {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente (Mesclado)."
+                                await self.historico_provider.registrar(
+                                    operador=username,
+                                    tipo="cancelamento_solicitante",
+                                    acao="Cancelou reserva de leito (Troca de Paciente)",
+                                    detalhes=msg_detalhe,
+                                    prontuario=str(alvo.prontuario)
+                                )
+                                if self.alerta_provider:
+                                    await self.alerta_provider.criar({
+                                        "tipo": "aviso",
+                                        "categoria": "Gargalo",
+                                        "titulo": "Reserva Remanejada (Troca de Paciente)",
+                                        "mensagem": msg_detalhe,
+                                        "prontuario": str(sol_ativa.prontuario),
+                                        "perfil_alvo": None,
+                                        "lido": True,
+                                        "lido_por": username,
+                                        "lido_em": datetime.utcnow()
+                                    })
                         else:
+                            msg_detalhe = f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) voltou para a fila (Pendente). Motivo: {leito_orig_str} foi remanejado para {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente."
                             await self.historico_provider.registrar(
                                 operador=username,
                                 tipo="cancelamento_solicitante" if alvo_status_orig == "Reservado" else "status",
                                 acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito (Troca de Paciente)",
-                                detalhes=f"Solicitação #{sol_id} ({alvo.nome}) voltou para a fila (Pendente). Motivo: {leito_orig_str} foi remanejado para {sol_ativa.nome} (Prontuário {sol_ativa.prontuario}) via troca de paciente.",
+                                detalhes=msg_detalhe,
                                 prontuario=str(alvo.prontuario)
                             )
+                            if alvo_status_orig == "Reservado" and self.alerta_provider:
+                                await self.alerta_provider.criar({
+                                    "tipo": "aviso",
+                                    "categoria": "Gargalo",
+                                    "titulo": "Reserva Remanejada (Troca de Paciente)",
+                                    "mensagem": msg_detalhe,
+                                    "prontuario": str(sol_ativa.prontuario),
+                                    "perfil_alvo": None,
+                                    "lido": True,
+                                    "lido_por": username,
+                                    "lido_em": datetime.utcnow()
+                                })
                         # Promoção da existente do novo (se reservado, a ação automática da reserva é registrada como do Sistema)
                         operador_promocao = "Sistema" if alvo_status_orig == "Reservado" else username
                         await self.historico_provider.registrar(
@@ -424,14 +453,6 @@ class SolicitacaoLeitoController:
             # 4. Registrar logs de histórico de cancelamento/retorno e nova criação
             if self.historico_provider:
                 if status_antiga == "Cancelada":
-                    if alvo_status_orig == "Reservado":
-                        await self.historico_provider.registrar(
-                            operador=username,
-                            tipo="cancelamento_solicitante",
-                            acao="Cancelou reserva de leito (Troca de Paciente)",
-                            detalhes=f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) teve sua reserva no {leito_orig_str} cancelada. Motivo: Foi substituído por {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente.",
-                            prontuario=str(alvo.prontuario)
-                        )
                     motivo_cancel = "Alteração de Prioridade pós Reserva de Leito" if alvo_status_orig == "Reservado" else "Alteração de Prioridade pós Solicitação"
                     await self.historico_provider.registrar(
                         operador=username,
@@ -440,14 +461,48 @@ class SolicitacaoLeitoController:
                         detalhes=f"Solicitação #{sol_id} (Prontuário {alvo.prontuario}) - Motivo: {motivo_cancel} (Prontuário {alvo.prontuario} foi substituído pelo Prontuário {nova_sol.prontuario})",
                         prontuario=str(alvo.prontuario)
                     )
+                    if alvo_status_orig == "Reservado":
+                        msg_detalhe = f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) foi cancelada. Motivo: Foi substituído por {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente."
+                        await self.historico_provider.registrar(
+                            operador=username,
+                            tipo="cancelamento_solicitante",
+                            acao="Cancelou reserva de leito (Troca de Paciente)",
+                            detalhes=msg_detalhe,
+                            prontuario=str(alvo.prontuario)
+                        )
+                        if self.alerta_provider:
+                            await self.alerta_provider.criar({
+                                "tipo": "aviso",
+                                "categoria": "Gargalo",
+                                "titulo": "Reserva Remanejada (Troca de Paciente)",
+                                "mensagem": msg_detalhe,
+                                "prontuario": str(nova_sol.prontuario),
+                                "perfil_alvo": None,
+                                "lido": True,
+                                "lido_por": username,
+                                "lido_em": datetime.utcnow()
+                            })
                 else:
+                    msg_detalhe = f"Solicitação #{sol_id} ({alvo.nome} - Prontuário {alvo.prontuario}) voltou para a fila (Pendente). Motivo: {leito_orig_str} foi remanejado para {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente."
                     await self.historico_provider.registrar(
                         operador=username,
                         tipo="cancelamento_solicitante" if alvo_status_orig == "Reservado" else "status",
                         acao="Solicitação voltou para a fila" if alvo_status_orig != "Reservado" else "Cancelou reserva de leito (Troca de Paciente)",
-                        detalhes=f"Solicitação #{sol_id} ({alvo.nome}) voltou para a fila (Pendente). Motivo: {leito_orig_str} foi remanejado para {nova_sol.nome} (Prontuário {nova_sol.prontuario}) via troca de paciente.",
+                        detalhes=msg_detalhe,
                         prontuario=str(alvo.prontuario)
                     )
+                    if alvo_status_orig == "Reservado" and self.alerta_provider:
+                        await self.alerta_provider.criar({
+                            "tipo": "aviso",
+                            "categoria": "Gargalo",
+                            "titulo": "Reserva Remanejada (Troca de Paciente)",
+                            "mensagem": msg_detalhe,
+                            "prontuario": str(nova_sol.prontuario),
+                            "perfil_alvo": None,
+                            "lido": True,
+                            "lido_por": username,
+                            "lido_em": datetime.utcnow()
+                        })
                 # Criação
                 await self.historico_provider.registrar(
                     operador=username,
