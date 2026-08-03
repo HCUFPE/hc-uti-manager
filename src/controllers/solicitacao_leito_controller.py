@@ -385,11 +385,16 @@ class SolicitacaoLeitoController:
                                 })
                         # Promoção da existente do novo (se reservado, a ação automática da reserva é registrada como do Sistema)
                         operador_promocao = "Sistema" if alvo_status_orig == "Reservado" else username
+                        if alvo_status_orig == "Reservado":
+                            msg_promocao = f"Solicitação #{sol_ativa.id} ({sol_ativa.nome}) foi reservada para {leito_orig_str}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente."
+                        else:
+                            msg_promocao = f"Solicitação #{sol_ativa.id} ({sol_ativa.nome}) assumiu a vaga na fila (Pendente). Motivo: Substituiu {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente."
+                        
                         await self.historico_provider.registrar(
                             operador=operador_promocao,
                             tipo="reserva" if alvo_status_orig == "Reservado" else "status",
-                            acao=f"Atualizou status para {alvo_status_orig}" if alvo_status_orig != "Reservado" else "Reservou leito para solicitação",
-                            detalhes=f"Solicitação #{sol_ativa.id} ({sol_ativa.nome}) foi reservada para {leito_orig_str}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente.",
+                            acao="Reservou leito para solicitação" if alvo_status_orig == "Reservado" else f"Atualizou status para {alvo_status_orig}",
+                            detalhes=msg_promocao,
                             prontuario=str(sol_ativa.prontuario)
                         )
                     
@@ -504,11 +509,16 @@ class SolicitacaoLeitoController:
                             "lido_em": datetime.utcnow()
                         })
                 # Criação
+                if alvo_status_orig == "Reservado":
+                    msg_promocao = f"Solicitação #{nova_sol.id} ({nova_sol.nome}) foi reservada para {leito_orig_str}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente."
+                else:
+                    msg_promocao = f"Solicitação #{nova_sol.id} ({nova_sol.nome}) assumiu a vaga na fila (Pendente). Motivo: Substituiu {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente."
+
                 await self.historico_provider.registrar(
                     operador=username,
                     tipo="nova_solicitacao",
                     acao="Nova solicitação de vaga",
-                    detalhes=f"Solicitação #{nova_sol.id} ({nova_sol.nome}) foi reservada para {leito_orig_str}. Motivo: Recebeu a vaga de {alvo.nome} (Prontuário {alvo.prontuario}) via troca de paciente.",
+                    detalhes=msg_promocao,
                     prontuario=str(nova_sol.prontuario)
                 )
             
