@@ -139,17 +139,18 @@ Para garantir que a aplicacao inicialize automaticamente junto com o sistema ope
    sudo systemctl enable hc-uti.service
    sudo systemctl start hc-uti.service
    ```
-4. **Executar as Migrações do Banco de Dados (Primeira Inicialização):**
-   Logo após o container subir pela primeira vez, execute o comando do Alembic para criar a estrutura inicial de tabelas no banco de dados SQLite:
-   ```bash
-   podman exec hc-uti-backend alembic upgrade head
-   ```
-5. Acompanhe os logs da aplicacao em tempo real:
+4. Acompanhe os logs da aplicacao em tempo real para verificar se o container iniciou corretamente:
    ```bash
    journalctl -u hc-uti.service -f
    ```
 
-### 7. Rotina de Backup Automatico (Cron)
+### 7. Inicializacao do Banco de Dados (Primeira Inicializacao)
+Logo após o container subir pela primeira vez, voce deve executar o comando do Alembic dentro do container para criar a estrutura inicial das tabelas no banco de dados SQLite local:
+```bash
+podman exec hc-uti-backend alembic upgrade head
+```
+
+### 8. Rotina de Backup Automatico (Cron)
 Um script de backup diario do banco de dados SQLite local com rotacao automatica e executado no cron da VM:
 
 1. Dê permissao de execucao no script:
@@ -161,7 +162,7 @@ Um script de backup diario do banco de dados SQLite local com rotacao automatica
    (crontab -l 2>/dev/null; echo "0 2 * * * /var/app/hc-uti-manager/scratch/backup_db.sh > /dev/null 2>&1") | crontab -
    ```
 
-### 8. Rotina de Atualizacao / Deploy na VM
+### 9. Rotina de Atualizacao / Deploy na VM
 Para atualizar a aplicacao na VM quando novos commits forem enviados para a branch `master`:
 
 1. **Fazer Backup do Banco Local:**
@@ -187,7 +188,7 @@ Para atualizar a aplicacao na VM quando novos commits forem enviados para a bran
 
 *(Nota: O utilitario local `.venv/bin/python scratch/git_pull_and_rebuild.py` pode ser executado para rodar todos esses comandos na VM de forma remota via SSH).*
 
-### 9. Manutencao de Logs e Limpeza de Disco
+### 10. Manutencao de Logs e Limpeza de Disco
 Para evitar quedas do container ou falhas de deploy por falta de espaco em disco, execute a limpeza periodica na VM:
 ```bash
 # Limpa cache do gerenciador de pacotes do host
