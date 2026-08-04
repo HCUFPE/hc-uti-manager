@@ -10,7 +10,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | :--- | :--- | :--- | :--- |
 | **RF001** | Autenticação Híbrida | Login integrado via LDAP/Active Directory corporativo (Ebserh) com fallback automático para Mock offline em desenvolvimento. | Essencial |
 | **RF002** | Integração AGHU | Importação e sincronização em tempo real de pacientes e cirurgias agendadas a partir do banco de dados oficial (PostgreSQL). | Essencial |
-| **`RF003`** | Criação e Priorização de Solicitações | Permitir a criação de solicitações de vagas na UTI (importando dados de cirurgias do AGHU) e a definição ou reordenação manual das prioridades clínicas de atendimento (P1 a P10) na fila. | Essencial |
+| **RF003** | Criação e Priorização de Solicitações | Permitir a criação de solicitações de vagas na UTI (importando dados de cirurgias do AGHU) e a definição ou reordenação manual das prioridades clínicas de atendimento (P1 a P10) na fila. | Essencial |
 | **RF004** | Censo de Leitos (Bed Cards) | Painel visual dinâmico com cards para cada leito da UTI (mostrando ocupante atual, alta solicitada ou próxima reserva). | Essencial |
 | **RF005** | Reserva de Leitos | Vinculação de uma solicitação de vaga pendente a um leito físico disponível, atualizando o status para "Reservado". | Essencial |
 | **RF006** | Troca de Pacientes (Swap) | Substituição de um paciente na fila por outro, transferindo a reserva física e cancelando a solicitação antiga para evitar duplicidades. | Essencial |

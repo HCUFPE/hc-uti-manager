@@ -12,6 +12,11 @@ erDiagram
     solicitacoes_leito ||--o{ historico_acoes : "gera log"
     solicitacoes_leito ||--o{ alertas : "gera notificacao"
     
+    solicitacoes_alta ||--o{ historico_acoes : "gera log"
+    solicitacoes_alta ||--o{ alertas : "gera notificacao"
+    
+    usuarios_perfis ||--o{ refresh_tokens : "possui tokens"
+    
     solicitacoes_leito {
         int id PK
         string prontuario "NOT NULL"
@@ -44,6 +49,18 @@ erDiagram
         datetime atualizado_em
     }
     
+    solicitacoes_alta {
+        int id PK
+        string lto_id "NOT NULL"
+        string prontuario "NOT NULL"
+        string leito_destino
+        string necessidades_especiais
+        string status "NOT NULL (pendente/concluida)"
+        integer destino_disponivel "NOT NULL"
+        datetime criado_em
+        datetime atualizado_em
+    }
+    
     historico_acoes {
         int id PK
         string operador "NOT NULL"
@@ -64,11 +81,34 @@ erDiagram
         string lido_por
         datetime criado_em
     }
+    
+    usuarios_perfis {
+        int id PK
+        string username "NOT NULL (AD)"
+        string perfil "NOT NULL (UTI/NIR/BC/Admin)"
+        string nome_completo
+        string lotacao
+        string email
+    }
+    
+    refresh_tokens {
+        int id PK
+        string user_id "FK (username)"
+        string token "NOT NULL (Unique)"
+        json groups
+        datetime expires_at "NOT NULL"
+        datetime created_at
+    }
+    
+    historico_ocupacao {
+        date data PK
+        float taxa_ocupacao "NOT NULL"
+    }
 ```
 
 ---
 
-## 2. Dicionário de Dados (Principais Tabelas)
+## 2. Dicionário de Dados (Tabelas do Sistema)
 
 ### A. Tabela `solicitacoes_leito`
 Armazena a fila de solicitações de vagas pós-operatórias ou reguladas para a UTI.
@@ -92,6 +132,39 @@ Gere o estado e vínculos extras dos leitos físicos da UTI que não existem no 
 *   `alta_solicitada` (BOOLEAN): Se a UTI solicitou alta deste leito para o NIR regular.
 *   `prontuario_proximo` (INTEGER): Prontuário do paciente reservado para este leito.
 *   `solicitacao_id` (INTEGER, FK): Referência da solicitação que possui a reserva ativa.
+
+### C. Tabela `solicitacoes_alta`
+Controla os pedidos de transferência de pacientes que já receberam alta clínica da UTI.
+
+*   `id` (INTEGER, PK, Autoincrement): Chave primária.
+*   `lto_id` (VARCHAR(14)): Identificador do leito de origem na UTI.
+*   `prontuario` (VARCHAR(50)): Prontuário do paciente que está de alta.
+*   `leito_destino` (VARCHAR(100)): Descrição do leito de destino definido pelo NIR.
+*   `status` (VARCHAR(50)): Status do processo (`pendente`, `concluida`).
+*   `destino_disponivel` (INTEGER): Flag binário (0/1) indicando se a enfermaria já disponibilizou a vaga física.
+
+### D. Tabela `usuarios_perfis`
+Define perfis de privilégios de acesso locais a partir da autenticação de usuários do AD.
+
+*   `id` (INTEGER, PK, Autoincrement): Chave primária.
+*   `username` (VARCHAR(50), Unique): Usuário de rede do funcionário (Ebserh).
+*   `perfil` (VARCHAR(50)): Role operacional no sistema (`Administrador`, `UTI`, `NIR`, `Solicitante de Leito`, `Comum`).
+*   `nome_completo` (VARCHAR(100)): Nome social/profissional.
+
+### E. Tabela `refresh_tokens`
+Sessões de refresh token persistidas localmente para renovação segura de token JWT.
+
+*   `id` (INTEGER, PK): Chave primária.
+*   `user_id` (VARCHAR): Username de auditoria do AD.
+*   `token` (VARCHAR, Unique): Token físico em hash criptografado.
+*   `expires_at` (DATETIME): Data e horário limite de expiração da sessão.
+
+### F. Tabela `historico_ocupacao`
+Consolida histórico diário para geração de gráficos estatísticos do painel do Gestor.
+
+*   `data` (DATE, PK): Data de fechamento do indicador.
+*   `taxa_ocupacao` (FLOAT): Porcentagem de ocupação agregada naquele dia.
+
 
 ---
 

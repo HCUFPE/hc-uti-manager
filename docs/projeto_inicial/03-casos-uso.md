@@ -54,7 +54,7 @@ flowchart LR
     5. A solicitação entra na fila como **Pendente**.
 
 ### UC002 — Reservar Leito na UTI
-*   **Atores:** Bloco Cirúrgico (BC) ou Equipe da UTI.
+*   **Atores:** Equipe da UTI.
 *   **Fluxo Principal:**
     1. O usuário visualiza o painel de leitos (Bed Cards) e identifica um leito vago (Disponível).
     2. O usuário seleciona uma solicitação de vaga ativa na fila e clica em **Reservar**.
