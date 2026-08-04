@@ -139,7 +139,12 @@ Para garantir que a aplicacao inicialize automaticamente junto com o sistema ope
    sudo systemctl enable hc-uti.service
    sudo systemctl start hc-uti.service
    ```
-4. Acompanhe os logs da aplicacao em tempo real:
+4. **Executar as Migrações do Banco de Dados (Primeira Inicialização):**
+   Logo após o container subir pela primeira vez, execute o comando do Alembic para criar a estrutura inicial de tabelas no banco de dados SQLite:
+   ```bash
+   podman exec hc-uti-backend alembic upgrade head
+   ```
+5. Acompanhe os logs da aplicacao em tempo real:
    ```bash
    journalctl -u hc-uti.service -f
    ```
