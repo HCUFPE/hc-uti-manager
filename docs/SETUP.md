@@ -1,117 +1,77 @@
 # Guia de Instalacao e Execucao
 
-Este guia contem os passos detalhados para configurar e executar os ambientes de desenvolvimento do backend e do frontend.
+Este guia contem os passos detalhados para configurar o ambiente de desenvolvimento local e implantar a aplicacao em producao na VM.
 
 ## Pre-requisitos
-
+- Git
 - Python 3.10 ou superior
 - Node.js 18 ou superior
-- Git
 
-## Opcao A: Executar com Podman (rapido)
+---
 
-1. Na raiz do repositorio, copie e ajuste suas variaveis de ambiente:
-   ```bash
-   cp .env.example .env
-   # Edite o arquivo .env conforme seu ambiente (AD, banco, JWT, etc.)
-   ```
-2. Ainda na raiz, suba os servicos:
-   ```bash
-   podman-compose up --build
-   ```
+## Opcao A: Ambiente de Desenvolvimento Local (Manual)
 
-- Backend em `http://127.0.0.1:8000` e frontend em `http://127.0.0.1:5173`.
-- Use esta opcao se quiser um ambiente pronto rapidamente utilizando o Podman; lembre-se de revisar `.env` para conectar ao seu AD ou banco real.
-
-## Opcao B: Ambiente local manual
+Utilize esta opcao para programar e testar alteracoes no seu computador pessoal de forma nativa.
 
 ### 1. Configuracao do Backend
-
-Siga estes passos a partir da raiz do repositorio.
+Execute estes comandos na raiz do projeto:
 
 ```bash
-# 1. Clone o repositorio (se ainda nao o fez)
-# git clone <url-do-repositorio>
-# cd <nome-do-repositorio>
-
-# 2. Crie e ative um ambiente virtual
+# 1. Crie e ative o ambiente virtual
 python -m venv .venv
 source .venv/bin/activate  # No Windows: .venv\Scripts\activate
 
-# 3. Instale as dependencias do Python
+# 2. Instale as dependencias
 pip install -r requirements.txt
 
-# 4. Configure as variaveis de ambiente
-# Copie o arquivo de exemplo para criar seu arquivo de configuracao local
+# 3. Configure as variaveis de ambiente
 cp .env.example .env
-
-# Edite o arquivo .env com suas configuracoes (banco de dados, segredos, etc.)
-# Dica: Para desenvolvimento offline, voce pode deixar as variaveis de AD e POSTGRES comentadas.
+# Edite o arquivo .env com suas credenciais e segredos locais
 nano .env
 ```
 
 ### 2. Configuracao do Frontend
-
-Estes passos devem ser executados em um novo terminal.
+Execute estes comandos em um novo terminal:
 
 ```bash
-# 1. Navegue ate a pasta do frontend
+# 1. Navegue ate a pasta do frontend e instale as dependencias
 cd frontend
-
-# 2. Instale as dependencias do Node.js
 npm install
 ```
 
-### 3. Executando a Aplicacao
+### 3. Executando em Desenvolvimento
 
-#### Servidor de Backend
+- **Iniciar o Backend:**
+  ```bash
+  # Na raiz do projeto, com o .venv ativo
+  uvicorn src.main:app --reload
+  ```
+  O backend ficara acessivel em `http://127.0.0.1:8000`. A documentacao interativa (Swagger UI) estara em `/docs`.
 
-Com o ambiente virtual (`.venv`) ativado, execute o servidor FastAPI a partir da raiz do projeto.
-
-```bash
-uvicorn src.main:app --reload
-```
-
-- O backend estara disponivel em `http://127.0.0.1:8000`.
-- A documentacao interativa da API (Swagger UI) estara em `http://127.0.0.1:8000/docs`.
-- A documentacao alternativa (ReDoc) estara em `http://127.0.0.1:8000/redoc`.
-
-#### Servidor de Frontend
-
-Na pasta `frontend/`, execute o servidor de desenvolvimento do Vite.
-
-```bash
-npm run dev
-```
-
-- O frontend estara disponivel em `http://127.0.0.1:5173` (ou outra porta indicada pelo Vite). O servidor de desenvolvimento do Vite ja vem configurado com um proxy para o backend, entao todas as chamadas de API para `/api` serao redirecionadas automaticamente para `http://127.0.0.1:8000`.
+- **Iniciar o Frontend:**
+  ```bash
+  # Na pasta frontend/
+  npm run dev
+  ```
+  O frontend ficara acessivel em `http://127.0.0.1:5173`. O Vite redirecionara todas as chamadas de `/api` automaticamente para o backend local.
 
 ### 4. Build de Producao do Frontend
-
-Para gerar a versao de producao do frontend, que e servida diretamente pelo FastAPI:
-
+Para gerar os arquivos estaticos finais a serem servidos pelo backend:
 ```bash
 # Na pasta frontend/
 npm run build
 ```
 
-Os arquivos gerados em `frontend/dist/` serao servidos pela aplicacao FastAPI quando ela nao estiver em modo de desenvolvimento, na rota raiz (`/`).
-
 ---
 
-## Opcao C: Executar em Producao com Podman (VM de Producao)
+## Opcao B: Ambiente de Producao com Podman (VM de Producao)
 
-Para o ambiente de producao corporativo na VM, o sistema e executado utilizando o **Podman** e gerenciado via **systemd**.
+Esta opcao descreve a arquitetura utilizada no servidor de producao, onde a aplicacao roda empacotada em containers gerenciados via **Podman** e monitorados pelo **systemd**.
 
-### 1. Pre-requisitos na VM
-- Podman e Podman-Compose instalados.
-- Diretorio do projeto localizado em `/var/app/hc-uti-manager`.
-- Arquivo `.env` configurado na raiz com as variaveis corretas (especialmente `POSTGRES_DSN` e segredos JWT).
+### 1. Servico no Systemd
+Para que a aplicacao inicialize automaticamente junto com o sistema operacional e reinicie em caso de falhas, configuramos o servico systemd:
 
-### 2. Configurar o Servico no Systemd
-Para garantir que a aplicacao inicialize automaticamente com o sistema operacional e seja reiniciada em caso de falhas, utilizamos o arquivo de servico fornecido no repositorio:
-
-1. Copie o arquivo de servico para a pasta do systemd:
+1. Copie o arquivo de servico fornecido no repositorio para a VM:
    ```bash
    cp /var/app/hc-uti-manager/hc-uti.service /etc/systemd/system/
    ```
@@ -124,25 +84,25 @@ Para garantir que a aplicacao inicialize automaticamente com o sistema operacion
    systemctl enable hc-uti.service
    systemctl start hc-uti.service
    ```
-4. Veja os logs do servico em tempo real:
+4. Acompanhe os logs da aplicacao em tempo real:
    ```bash
    journalctl -u hc-uti.service -f
    ```
 
-### 3. Rotina de Backup Automatico do SQLite (Cron)
-Para evitar perda de dados nas reservas locais e configuracoes extras, configuramos um script de backup diario com rotacao automatica:
+### 2. Rotina de Backup Automatico (Cron)
+Um script de backup diario do banco de dados SQLite local com rotacao automatica e executado no cron da VM:
 
-1. Garanta permissao de execucao no script:
+1. Dê permissao de execucao no script:
    ```bash
    chmod +x /var/app/hc-uti-manager/scratch/backup_db.sh
    ```
-2. Agende o script no Cron para rodar diariamente as 02:00 da manha:
+2. Agende o script no Cron para rodar diariamente as 02:00:
    ```bash
    (crontab -l 2>/dev/null; echo "0 2 * * * /var/app/hc-uti-manager/scratch/backup_db.sh > /dev/null 2>&1") | crontab -
    ```
 
-### 4. Pipeline de Deploy / Atualizacao Manual (Script de Rebuild)
-Sempre que uma atualizacao for enviada para a branch `master`, execute a rotina abaixo para atualizar a VM de producao sem perder dados:
+### 3. Rotina de Atualizacao / Deploy na VM
+Para atualizar a aplicacao na VM quando novos commits forem enviados para a branch `master`:
 
 1. **Fazer Backup do Banco Local:**
    ```bash
@@ -160,17 +120,17 @@ Sempre que uma atualizacao for enviada para a branch `master`, execute a rotina 
    ```bash
    systemctl restart hc-uti.service
    ```
-5. **Rodar Migracoes Pendentes de Banco (Alembic):**
+5. **Rodar Migracoes de Banco (Alembic):**
    ```bash
    podman exec hc-uti-backend alembic upgrade head
    ```
 
-*(Nota: Voce pode automatizar esse processo rodando diretamente o utilitario `.venv/bin/python scratch/git_pull_and_rebuild.py` a partir do host local do desenvolvedor).*
+*(Nota: O utilitario local `.venv/bin/python scratch/git_pull_and_rebuild.py` pode ser executado para rodar todos esses comandos na VM de forma remota via SSH).*
 
-### 5. Manutencao e Limpeza de Disco na VM
-Se o disco da VM ficar cheio, impedindo o deploy ou fazendo o container cair, execute a rotina de limpeza de logs e cache:
+### 4. Manutencao de Logs e Limpeza de Disco
+Para evitar quedas do container ou falhas de deploy por falta de espaco em disco, execute a limpeza periodica na VM:
 ```bash
-# Limpa cache do gerenciador de pacotes
+# Limpa cache do gerenciador de pacotes do host
 apt-get clean
 
 # Reduz o tamanho de logs acumulados no journald
@@ -180,4 +140,3 @@ journalctl --vacuum-size=50M
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 podman system prune -a -f
 ```
-
