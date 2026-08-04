@@ -1,9 +1,7 @@
-# Documentações Iniciais do Projeto
+# Documentação de Concepção e Requisitos do Projeto
 
-Esta pasta está reservada para armazenar todos os documentos iniciais de concepção, planejamento, atas de reuniões e arquivos originais que deram início ao projeto do **HC-UTI Manager**.
+As especificações de requisitos, modelagens e o contrato de desenvolvimento do **HC-UTI Manager** estão integrados e listados no arquivo mestre:
 
-## O que colocar aqui:
-- Atas de reunião de especificação de requisitos.
-- Protótipos de tela desenhados inicialmente (mockups, wireframes).
-- Arquivos de propostas comerciais ou termos de abertura de projeto.
-- Emails ou discussões de concepção inicial do sistema.
+*   **[README.md Principal (Raiz do Repositório)](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/README.md)**
+
+Por favor, consulte o documento principal na raiz para ter a visão geral, guias de execução e links para todos os arquivos de especificação (01 a 07) organizados neste diretório.

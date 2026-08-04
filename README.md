@@ -10,6 +10,23 @@ O **HC UTI Manager** é uma aplicação web full-stack projetada para otimizar o
 
 ---
 
+## 📄 Spec-Driven Development (SDD) e Documentação do Projeto
+
+Este projeto utiliza o padrão de desenvolvimento orientado a especificações. Toda a documentação inicial de requisitos e análise serve como contrato ativo do sistema.
+
+As especificações detalhadas do projeto estão organizadas na pasta [docs/projeto_inicial/](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/):
+
+1. **[SPEC.md](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/SPEC.md)**: Contrato de Desenvolvimento ativo e Task Breakdown.
+2. **[01 - Visão](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/01-visao.md)**: Define o problema, os objetivos do negócio e escopo de alto nível.
+3. **[02 - Requisitos](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/02-requisitos.md)**: Lista de requisitos funcionais (RF001-RF010) e não funcionais (RNF001-RNF006).
+4. **[03 - Casos de Uso](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/03-casos-uso.md)**: Diagramas Mermaid e detalhamento dos fluxos (UC001-UC007) no padrão CARE.
+5. **[04 - Modelo de Dados](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/04-modelo-dados.md)**: Diagrama ERD do banco local e schemas de payload JSON.
+6. **[05 - Interfaces](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/05-interfaces.md)**: Especificação de telas de UI/UX, hardware e contratos de APIs.
+7. **[06 - Arquitetura](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/06-arquitetura.md)**: Stack técnica, segurança de acesso e guardrails de desenvolvimento.
+8. **[07 - Glossário](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/07-glossario.md)**: Glossário de termos técnicos hospitalares e bibliografia de referência.
+
+---
+
 ## 🛠️ Arquitetura e Estrutura de Pastas
 
 A aplicação foi estruturada segundo uma arquitetura monolítica desacoplada, dividindo claramente as responsabilidades de backend, banco de dados e interface.
@@ -18,6 +35,7 @@ A aplicação foi estruturada segundo uma arquitetura monolítica desacoplada, d
 HC-UTI-Manager/
 ├── alembic/              # Migrações do banco de dados (SQLite local)
 ├── docs/                 # Documentação detalhada da arquitetura e fluxos
+│   └── projeto_inicial/  # Especificações originais de requisitos e concepção (01 a 07)
 ├── frontend/             # Single-Page Application (Vue 3, TypeScript, Vite)
 ├── openspec/             # Especificações funcionais dos fluxos e mudanças do projeto
 ├── src/                  # Backend assíncrono (Python 3.10+, FastAPI)
@@ -91,10 +109,9 @@ Os arquivos de configuração e exemplos de credenciais contidos em `.env.exampl
 
 ## 📦 Produção e Deployment (VM)
 
-O deployment da aplicação na máquina virtual de produção (`10.34.0.192`) é gerenciado de forma containerizada usando **Podman Compose** e **Systemd**:
+O deployment da aplicação na máquina virtual de produção é gerenciado de forma containerizada usando **Podman Compose** e **Systemd**. As instruções completas para instalação, deploy inicial, configuração de Nginx/SSL e atualizações automáticas estão descritas em detalhe no guia:
 
-1. **Build Multi-stage (`Dockerfile`):** O build compila o frontend Vue, copia os arquivos otimizados gerados para o diretório `/src/static/dist` do FastAPI, e empacota o backend Python em uma imagem de runtime leve.
-2. **Serviço do Systemd (`hc-uti.service`):** Configura a inicialização automática do container no boot da máquina virtual e facilita os comandos de reinício e monitoramento de logs (`systemctl restart hc-uti`).
+*   **[Guia de Instalação e Deploy da VM (docs/SETUP.md)](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/SETUP.md)**
 
 ---
 
