@@ -110,9 +110,20 @@ nano /var/app/hc-uti-manager/.env
 * `AD_URL=ldap://ip_do_ad:389` e `AD_BASEDN=dc=ebserh,dc=gov,dc=br` (Integracao com o Active Directory para autenticacao)
 * `JWT_SECRET=sua_chave_secreta` (Seguranca do token de sessao)
 
-*(Nota: O arquivo `/var/app/hc-uti-manager/nginx/default.conf` ja vem configurado no repositorio para fazer o proxy reverso seguro, direcionando as portas 80/443 para o backend).*
+### 5. Configuracao do Servidor Web (Nginx e SSL)
+O container do Nginx atua como proxy reverso para o backend FastAPI e gerencia as conexoes seguras (HTTPS). Para que ele funcione corretamente, os certificados SSL devem ser configurados no host da VM:
 
-### 5. Persistencia do Servico (Systemd)
+1. Crie o diretorio para armazenar as chaves de seguranca SSL:
+   ```bash
+   mkdir -p /var/app/hc-uti-manager/nginx/ssl
+   ```
+2. Insira os arquivos de certificado corporativo do hospital na pasta criada com os nomes exatos esperados pela configuracao do Nginx:
+   * Certificado público: `/var/app/hc-uti-manager/nginx/ssl/server.crt`
+   * Chave privada: `/var/app/hc-uti-manager/nginx/ssl/server.key`
+
+*(Nota: O arquivo `/var/app/hc-uti-manager/nginx/default.conf` ja vem configurado no repositorio para fazer o redirecionamento automatico da porta 80 para a 443 com HTTPS).*
+
+### 6. Persistencia do Servico (Systemd)
 Para garantir que a aplicacao inicialize automaticamente junto com o sistema operacional e reinicie em caso de falhas:
 
 1. Copie o arquivo de servico fornecido no repositorio para a VM:
@@ -133,7 +144,7 @@ Para garantir que a aplicacao inicialize automaticamente junto com o sistema ope
    journalctl -u hc-uti.service -f
    ```
 
-### 6. Rotina de Backup Automatico (Cron)
+### 7. Rotina de Backup Automatico (Cron)
 Um script de backup diario do banco de dados SQLite local com rotacao automatica e executado no cron da VM:
 
 1. Dê permissao de execucao no script:
@@ -145,7 +156,7 @@ Um script de backup diario do banco de dados SQLite local com rotacao automatica
    (crontab -l 2>/dev/null; echo "0 2 * * * /var/app/hc-uti-manager/scratch/backup_db.sh > /dev/null 2>&1") | crontab -
    ```
 
-### 7. Rotina de Atualizacao / Deploy na VM
+### 8. Rotina de Atualizacao / Deploy na VM
 Para atualizar a aplicacao na VM quando novos commits forem enviados para a branch `master`:
 
 1. **Fazer Backup do Banco Local:**
@@ -171,7 +182,7 @@ Para atualizar a aplicacao na VM quando novos commits forem enviados para a bran
 
 *(Nota: O utilitario local `.venv/bin/python scratch/git_pull_and_rebuild.py` pode ser executado para rodar todos esses comandos na VM de forma remota via SSH).*
 
-### 8. Manutencao de Logs e Limpeza de Disco
+### 9. Manutencao de Logs e Limpeza de Disco
 Para evitar quedas do container ou falhas de deploy por falta de espaco em disco, execute a limpeza periodica na VM:
 ```bash
 # Limpa cache do gerenciador de pacotes do host
