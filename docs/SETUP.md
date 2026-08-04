@@ -68,28 +68,72 @@ npm run build
 
 Esta opcao descreve a arquitetura utilizada no servidor de producao, onde a aplicacao roda empacotada em containers gerenciados via **Podman** e monitorados pelo **systemd**.
 
-### 1. Servico no Systemd
-Para que a aplicacao inicialize automaticamente junto com o sistema operacional e reinicie em caso de falhas, configuramos o servico systemd:
+### 1. Sistema Operacional e Utilitários de Base
+A VM roda Debian/Ubuntu-like Linux. Instale os utilitarios essenciais de rede e administracao no host:
+```bash
+sudo apt update && sudo apt install -y git curl ufw systemd openssh-server python3
+```
+
+### 2. Runtime de Containers (Podman)
+Este projeto utiliza o Podman para gerenciar a execucao dos containers de producao (Backend + Nginx):
+```bash
+sudo apt install -y podman podman-compose
+```
+
+### 3. Estruturacao de Pastas e Clone do Codigo
+No host da VM, a aplicacao deve ser implantada no diretorio `/var/app/`:
+
+1. Crie o diretorio de destino e ajuste as permissoes para o usuario local:
+   ```bash
+   sudo mkdir -p /var/app/hc-uti-manager
+   sudo chown -R $USER:$USER /var/app/hc-uti-manager
+   ```
+2. Clone o repositorio do Git na pasta criada:
+   ```bash
+   git clone <URL_DO_REPOSITORIO> /var/app/hc-uti-manager
+   ```
+3. Crie a pasta de dados persistentes utilizada pelo SQLite (para manter os logs locais e reservas de leito):
+   ```bash
+   mkdir -p /var/app/hc-uti-manager/data
+   ```
+
+### 4. Configuracao das Variaveis de Ambiente (.env)
+Crie e preencha o arquivo `/var/app/hc-uti-manager/.env` com as configuracoes corporativas da VM:
+```bash
+cp /var/app/hc-uti-manager/.env.example /var/app/hc-uti-manager/.env
+nano /var/app/hc-uti-manager/.env
+```
+
+**Principais variaveis a configurar:**
+* `SQLITE_DSN=sqlite+aiosqlite:///./data/app.db` (Banco local do sistema de UTI)
+* `POSTGRES_DSN=postgresql+asyncpg://usuario:senha@ip_do_banco:5432/aghu` (Conexao com o banco de dados do AGHU)
+* `AD_URL=ldap://ip_do_ad:389` e `AD_BASEDN=dc=ebserh,dc=gov,dc=br` (Integracao com o Active Directory para autenticacao)
+* `JWT_SECRET=sua_chave_secreta` (Seguranca do token de sessao)
+
+*(Nota: O arquivo `/var/app/hc-uti-manager/nginx/default.conf` ja vem configurado no repositorio para fazer o proxy reverso seguro, direcionando as portas 80/443 para o backend).*
+
+### 5. Persistencia do Servico (Systemd)
+Para garantir que a aplicacao inicialize automaticamente junto com o sistema operacional e reinicie em caso de falhas:
 
 1. Copie o arquivo de servico fornecido no repositorio para a VM:
    ```bash
-   cp /var/app/hc-uti-manager/hc-uti.service /etc/systemd/system/
+   sudo cp /var/app/hc-uti-manager/hc-uti.service /etc/systemd/system/
    ```
 2. Recarregue os daemon do systemd:
    ```bash
-   systemctl daemon-reload
+   sudo systemctl daemon-reload
    ```
 3. Habilite e inicie o servico:
    ```bash
-   systemctl enable hc-uti.service
-   systemctl start hc-uti.service
+   sudo systemctl enable hc-uti.service
+   sudo systemctl start hc-uti.service
    ```
 4. Acompanhe os logs da aplicacao em tempo real:
    ```bash
    journalctl -u hc-uti.service -f
    ```
 
-### 2. Rotina de Backup Automatico (Cron)
+### 6. Rotina de Backup Automatico (Cron)
 Um script de backup diario do banco de dados SQLite local com rotacao automatica e executado no cron da VM:
 
 1. Dê permissao de execucao no script:
@@ -101,7 +145,7 @@ Um script de backup diario do banco de dados SQLite local com rotacao automatica
    (crontab -l 2>/dev/null; echo "0 2 * * * /var/app/hc-uti-manager/scratch/backup_db.sh > /dev/null 2>&1") | crontab -
    ```
 
-### 3. Rotina de Atualizacao / Deploy na VM
+### 7. Rotina de Atualizacao / Deploy na VM
 Para atualizar a aplicacao na VM quando novos commits forem enviados para a branch `master`:
 
 1. **Fazer Backup do Banco Local:**
@@ -118,7 +162,7 @@ Para atualizar a aplicacao na VM quando novos commits forem enviados para a bran
    ```
 4. **Reiniciar o Servico no Systemd:**
    ```bash
-   systemctl restart hc-uti.service
+   sudo systemctl restart hc-uti.service
    ```
 5. **Rodar Migracoes de Banco (Alembic):**
    ```bash
@@ -127,14 +171,14 @@ Para atualizar a aplicacao na VM quando novos commits forem enviados para a bran
 
 *(Nota: O utilitario local `.venv/bin/python scratch/git_pull_and_rebuild.py` pode ser executado para rodar todos esses comandos na VM de forma remota via SSH).*
 
-### 4. Manutencao de Logs e Limpeza de Disco
+### 8. Manutencao de Logs e Limpeza de Disco
 Para evitar quedas do container ou falhas de deploy por falta de espaco em disco, execute a limpeza periodica na VM:
 ```bash
 # Limpa cache do gerenciador de pacotes do host
-apt-get clean
+sudo apt-get clean
 
 # Reduz o tamanho de logs acumulados no journald
-journalctl --vacuum-size=50M
+sudo journalctl --vacuum-size=50M
 
 # Limpa caches e containers antigos orfaos do Podman
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
