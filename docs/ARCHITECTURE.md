@@ -20,39 +20,43 @@ O fluxo de uma requisicao na aplicacao segue um padrao claro e unidirecional, ga
     - **Responsabilidade:** Camada de acesso a dados. E a unica parte do sistema que sabe como obter ou persistir dados em uma fonte especifica (PostgreSQL, Oracle, CSV, API externa, etc.).
     - **Funcao:** Implementa uma interface (contrato) definida em `src/providers/interfaces/`. Cada implementacao concreta (ex: `PacientePostgresProvider`, `PacienteCsvProvider`) contem a logica especifica para uma fonte de dados.
 
-## Padrao de Provedor com Selecao de Estrategia
+## Padrao de Injecao de Dependencias e Arquitetura de Dados
 
-A principal caracteristica arquitetural do framework e a capacidade de trocar a fonte de dados de um dominio de forma limpa e explicita.
+O sistema utiliza a injecao de dependencias do FastAPI para isolar o acesso a dados da logica de negocios, operando de forma hibrida com duas fontes de dados:
 
-### Como Funciona
+1. **Banco Hospitalar Oficial (AGHU - PostgreSQL):**
+   - Utilizado para ler dados em tempo real do hospital, como cadastro de pacientes e agendamentos de cirurgias.
+   - Provedores como `PacientePostgresProvider` e `LeitoAghuProvider` dependem da sessao `get_aghu_db_session` injetada pelo FastAPI.
 
-1.  **Interfaces (`src/providers/interfaces/`)**: Para cada dominio (ex: `paciente`), existe um "contrato" (`PacienteProviderInterface`) que define os metodos que devem estar disponiveis (ex: `listar_pacientes`).
+2. **Banco Local do Sistema (SQLite - `app.db`):**
+   - Utilizado para gravar e persistir dados e estados exclusivos do painel da UTI, como solicitacoes de vaga, estados locais de leito, historico de acoes e alertas.
+   - Provedores como `SolicitacaoLeitoProvider` e `AlertaProvider` dependem da sessao `get_app_db_session`.
 
-2.  **Implementacoes (`src/providers/implementations/`)**: Para cada interface, podem existir varias implementacoes concretas. Por exemplo, `PacientePostgresProvider` e `PacienteCsvProvider` ambas implementam `PacienteProviderInterface`.
+### Como Funciona a Injecao no Roteador
 
-3.  **Fabrica de Dependencias (`src/dependencies.py`)**: Este arquivo contem uma funcao fabrica (ex: `get_paciente_provider`) que recebe uma string de "estrategia" (`'postgres'` ou `'csv'`). Com base nessa string, a fabrica retorna a **funcao de dependencia correta** que o FastAPI deve usar para criar o provedor. Isso garante que a conexao com o banco de dados so seja tentada se a estrategia `'postgres'` for selecionada.
+Os roteadores do FastAPI (`src/routers/`) declaram as interfaces dos provedores como dependencias usando `Depends()`. O framework resolve a implementacao concreta baseando-se no arquivo `src/dependencies.py`:
 
-4.  **Configuracao no Roteador (`src/routers/`)**: O arquivo do roteador e o local onde a estrategia e definida.
+```python
+# Em src/routers/paciente.py
+@router.get("", response_model=List[dict])
+async def listar_pacientes(
+    provider: PacienteProviderInterface = Depends(get_paciente_provider)
+):
+    return await paciente_controller.listar_pacientes(provider)
+```
 
-    ```python
-    # Em src/routers/paciente.py
+E no arquivo `src/dependencies.py`, as dependencias de banco de dados sao resolvidas e injetadas automaticamente:
 
-    # --- PONTO UNICO DE CONFIGURACAO PARA ESTE ROTEADOR ---
-    # Para usar o banco de dados em producao, altere esta linha para "postgres"
-    STRATEGY = "csv"
-    # ----------------------------------------------------
-
-    @router.get("", ...)
-    async def listar_pacientes(
-        # A fabrica e chamada com a estrategia, e o FastAPI injeta o provedor correto.
-        provider: PacienteProviderInterface = Depends(get_paciente_provider(STRATEGY))
-    ):
-        return await paciente_controller.listar_pacientes(provider)
-    ```
+```python
+# Em src/dependencies.py
+def get_paciente_provider(
+    session: AsyncSession = Depends(get_aghu_db_session)
+) -> PacienteProviderInterface:
+    return PacientePostgresProvider(session=session)
+```
 
 ### Vantagens desta Abordagem
 
-- **Flexibilidade:** Permite usar fontes de dados diferentes em ambientes diferentes (ex: CSV em desenvolvimento, Postgres em producao).
-- **Desacoplamento Real:** A logica de negocio no controller nunca e afetada pela fonte de dados.
-- **Clareza:** Fica explicito no roteador qual fonte de dados esta sendo utilizada para aquele dominio.
-- **Eficiencia:** Recursos como pools de conexao com o banco de dados so sao inicializados se forem realmente necessarios para a estrategia selecionada.
+- **Desacoplamento Real:** A logica de negocio no controller nunca e afetada pela tecnologia ou infraestrutura de banco de dados.
+- **Testabilidade:** Permite mockar facilmente as interfaces dos provedores para testes unitarios ou de integracao.
+- **Eficiencia:** Conexoes com os respectivos bancos de dados (Postgres ou SQLite) so sao abertas se a rota executada realmente precisar do provedor correspondente.
