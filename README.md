@@ -109,7 +109,10 @@ Os arquivos de configuração e exemplos de credenciais contidos em `.env.exampl
 
 ## 📦 Produção e Deployment (VM)
 
-O deployment da aplicação na máquina virtual de produção é gerenciado de forma containerizada usando **Podman Compose** e **Systemd**. As instruções completas para instalação, deploy inicial, configuração de Nginx/SSL e atualizações automáticas estão descritas em detalhe no guia:
+A aplicacao esta disponivel oficialmente no ambiente de rede hospitalar atraves do endereço:
+* **URL de Produção:** [https://utimanager.hc-ufpe.ebserh/](https://utimanager.hc-ufpe.ebserh/)
+
+O deployment da aplicacao na maquina virtual de producao e gerenciado de forma containerizada usando **Podman Compose** e **Systemd**. As instrucoes completas para instalacao, deploy inicial, configuracao de Nginx/SSL e atualizacoes automaticas estao descritas em detalhe no guia:
 
 *   **[Guia de Instalação e Deploy da VM (docs/SETUP.md)](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/SETUP.md)**
 
