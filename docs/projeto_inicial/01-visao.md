@@ -15,10 +15,10 @@ O sistema integra-se de forma inteligente ao sistema de gestão hospitalar ofici
 
 | Elemento | Descrição |
 | --- | --- |
-| **O problema de** | Falta de visibilidade em tempo real do status físico dos leitos da UTI, atraso na comunicação de altas e ineficiência na alocação de leitos para cirurgias eletivas de alta complexidade. |
-| **Afeta** | A equipe médica da UTI, os cirurgiões do Bloco Cirúrgico, os reguladores do NIR e, principalmente, os pacientes que aguardam vaga em estado grave ou pós-operatório. |
-| **O impacto disso é** | Ociosidade de leitos críticos (espera longa por higienização ou liberação), suspensão desnecessária de cirurgias por suposta falta de vagas, e estresse na comunicação manual (ramal/papel). |
-| **Uma solução de sucesso seria** | Um painel visual e dinâmico (Bed Card Board) atualizado em tempo real, com alertas inteligentes automáticos e regras de mesclagem para substituição e priorização de pacientes. |
+| **O problema de** | Falta de visibilidade em tempo real do status físico dos leitos da UTI, gerando a necessidade de alinhamento manual por canais de comunicação informais e descentralizados para saber se haverá vagas, ausência de previsão consolidada de cirurgias eletivas para a UTI, e dificuldades operacionais para reservar leitos com antecedência e gerar indicadores de acompanhamento confiáveis. |
+| **Afeta** | A equipe médica e administrativa da UTI, os cirurgiões e gestores do Bloco Cirúrgico, os reguladores do NIR e, principalmente, os pacientes que aguardam vaga em estado grave ou pós-operatório. |
+| **O impacto disso é** | Ociosidade de leitos críticos (longa espera), cancelamento ou suspensão desnecessária de cirurgias eletivas por suposta falta de vagas, falhas de comunicação devido ao uso de ferramentas externas e descentralizadas, e dificuldade na extração de métricas históricas de controle e auditoria. |
+| **Uma solução de sucesso seria** | Um painel visual e dinâmico (Bed Card Board) atualizado em tempo real, que integre a previsão de cirurgias do AGHU para a UTI, permita a reserva ágil de leitos com alertas inteligentes automáticos e forneça um dashboard de indicadores para análise de performance. |
 
 ---
 
