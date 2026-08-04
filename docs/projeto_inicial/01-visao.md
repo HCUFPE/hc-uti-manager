@@ -28,10 +28,10 @@ O sistema atende a perfis específicos, cada um com permissões operacionais dis
 
 *   **Equipe da UTI (Médicos e Enfermagem):**
     *   *Objetivo:* Controlar o estado do leito físico (ocupado, higienização, desativado).
-    *   *Ação no sistema:* Solicitar alta de pacientes internados, definir a necessidade de higienização ou interdição de leitos.
+    *   *Ação no sistema:* Solicitar alta de pacientes internados, definir a necessidade de higienização ou interdição de leitos, e **reservar leitos** para solicitações ativas.
 *   **Bloco Cirúrgico (BC / Solicitantes):**
     *   *Objetivo:* Garantir leito de UTI pós-operatório para as cirurgias eletivas agendadas.
-    *   *Ação no sistema:* Cadastrar solicitações de leitos de UTI, gerenciar prioridades de fila (P1 a P4) e reservar leitos vagos específicos para pacientes cirúrgicos.
+    *   *Ação no sistema:* Cadastrar solicitações de leitos de UTI, gerenciar prioridades de fila (**P1 a P10**) e reservar leitos vagos específicos para pacientes cirúrgicos.
 *   **NIR (Núcleo Interno de Regulação):**
     *   *Objetivo:* Regular a entrada e saída de todos os pacientes do hospital.
     *   *Ação no sistema:* Visualizar solicitações de alta da UTI e definir a enfermaria/leito de destino para onde o paciente será transferido, liberando fisicamente o leito da UTI.
