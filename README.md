@@ -14,16 +14,16 @@ O **HC UTI Manager** é uma aplicação web full-stack projetada para otimizar o
 
 Este projeto utiliza o padrão de desenvolvimento orientado a especificações. Toda a documentação inicial de requisitos e análise serve como contrato ativo do sistema.
 
-As especificações detalhadas do projeto estão organizadas na pasta [docs/projeto_inicial/](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/):
+As especificações detalhadas do projeto estão organizadas na pasta [docs/projeto_inicial/](./docs/projeto_inicial/):
 
-1. **[SPEC.md](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/SPEC.md)**: Contrato de Desenvolvimento ativo e Task Breakdown.
-2. **[01 - Visão](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/01-visao.md)**: Define o problema, os objetivos do negócio e escopo de alto nível.
-3. **[02 - Requisitos](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/02-requisitos.md)**: Lista de requisitos funcionais (RF001-RF010) e não funcionais (RNF001-RNF006).
-4. **[03 - Casos de Uso](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/03-casos-uso.md)**: Diagramas Mermaid e detalhamento dos fluxos (UC001-UC007) no padrão CARE.
-5. **[04 - Modelo de Dados](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/04-modelo-dados.md)**: Diagrama ERD do banco local e schemas de payload JSON.
-6. **[05 - Interfaces](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/05-interfaces.md)**: Especificação de telas de UI/UX, hardware e contratos de APIs.
-7. **[06 - Arquitetura](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/06-arquitetura.md)**: Stack técnica, segurança de acesso e guardrails de desenvolvimento.
-8. **[07 - Glossário](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/projeto_inicial/07-glossario.md)**: Glossário de termos técnicos hospitalares e bibliografia de referência.
+1. **[SPEC.md](./docs/projeto_inicial/SPEC.md)**: Contrato de Desenvolvimento ativo e Task Breakdown.
+2. **[01 - Visão](./docs/projeto_inicial/01-visao.md)**: Define o problema, os objetivos do negócio e escopo de alto nível.
+3. **[02 - Requisitos](./docs/projeto_inicial/02-requisitos.md)**: Lista de requisitos funcionais (RF001-RF010) e não funcionais (RNF001-RNF006).
+4. **[03 - Casos de Uso](./docs/projeto_inicial/03-casos-uso.md)**: Diagramas Mermaid e detalhamento dos fluxos (UC001-UC007) no padrão CARE.
+5. **[04 - Modelo de Dados](./docs/projeto_inicial/04-modelo-dados.md)**: Diagrama ERD do banco local e schemas de payload JSON.
+6. **[05 - Interfaces](./docs/projeto_inicial/05-interfaces.md)**: Especificação de telas de UI/UX, hardware e contratos de APIs.
+7. **[06 - Arquitetura](./docs/projeto_inicial/06-arquitetura.md)**: Stack técnica, segurança de acesso e guardrails de desenvolvimento.
+8. **[07 - Glossário](./docs/projeto_inicial/07-glossario.md)**: Glossário de termos técnicos hospitalares e bibliografia de referência.
 
 ---
 
@@ -114,7 +114,7 @@ A aplicacao esta disponivel oficialmente no ambiente de rede hospitalar atraves 
 
 O deployment da aplicacao na maquina virtual de producao e gerenciado de forma containerizada usando **Podman Compose** e **Systemd**. As instrucoes completas para instalacao, deploy inicial, configuracao de Nginx/SSL e atualizacoes automaticas estao descritas em detalhe no guia:
 
-*   **[Guia de Instalação e Deploy da VM (docs/SETUP.md)](file:///c:/Users/daniel.turmina/Documents/HC-uti-manager/docs/SETUP.md)**
+*   **[Guia de Instalação e Deploy da VM (docs/SETUP.md)](./docs/SETUP.md)**
 
 ---
 
