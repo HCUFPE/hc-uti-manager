@@ -8,7 +8,7 @@ Este guia contem os passos detalhados para configurar e executar os ambientes de
 - Node.js 18 ou superior
 - Git
 
-## Opcao A: Executar com Docker (rapido)
+## Opcao A: Executar com Podman (rapido)
 
 1. Na raiz do repositorio, copie e ajuste suas variaveis de ambiente:
    ```bash
@@ -17,11 +17,11 @@ Este guia contem os passos detalhados para configurar e executar os ambientes de
    ```
 2. Ainda na raiz, suba os servicos:
    ```bash
-   docker compose up --build
+   podman-compose up --build
    ```
 
 - Backend em `http://127.0.0.1:8000` e frontend em `http://127.0.0.1:5173`.
-- Use esta opcao se quiser um ambiente pronto rapidamente; lembre-se de revisar `.env` para conectar ao seu AD ou banco real.
+- Use esta opcao se quiser um ambiente pronto rapidamente utilizando o Podman; lembre-se de revisar `.env` para conectar ao seu AD ou banco real.
 
 ## Opcao B: Ambiente local manual
 
