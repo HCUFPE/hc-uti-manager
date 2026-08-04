@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from datetime import datetime, timezone, timedelta
 import logging
 import re
+import asyncio
 
 from providers.implementations.alerta_provider import AlertaProvider
 from providers.interfaces.leito_provider_interface import LeitoProviderInterface
@@ -22,6 +23,7 @@ class AlertaController:
         self.alta_provider = alta_provider
         self.solicitacao_leito_provider = solicitacao_leito_provider
         self.historico_provider = historico_provider
+        self._lock = asyncio.Lock()
 
     async def listar_alertas(self, perfil_usuario: str = None) -> List[Dict[str, Any]]:
         """
@@ -74,25 +76,26 @@ class AlertaController:
         """
         Analisa o estado atual do sistema e gera novos alertas.
         """
-        try:
-            novos_alertas_data = []
-            hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
-            
-            # 1. Analisar Leitos
-            leitos = await self.leitos_controller.listar_leitos()
-            
-            # 2. Analisar Solicitações de Alta
-            await self._analisar_altas(novos_alertas_data)
+        async with self._lock:
+            try:
+                novos_alertas_data = []
+                hoje_bsb = (datetime.now() - timedelta(hours=3)).strftime("%Y-%m-%d")
+                
+                # 1. Analisar Leitos
+                leitos = await self.leitos_controller.listar_leitos()
+                
+                # 2. Analisar Solicitações de Alta
+                await self._analisar_altas(novos_alertas_data)
 
-            # 3. Analisar Histórico (Notificações Bidirecionais)
-            await self._analisar_historico(novos_alertas_data, hoje_bsb)
+                # 3. Analisar Histórico (Notificações Bidirecionais)
+                await self._analisar_historico(novos_alertas_data, hoje_bsb)
 
-            # 4. Sincronização e Limpeza
-            return await self._sincronizar_alertas(novos_alertas_data)
+                # 4. Sincronização e Limpeza
+                return await self._sincronizar_alertas(novos_alertas_data)
 
-        except Exception as e:
-            logger.exception("Erro crítico na geração de alertas")
-            return {"message": "Erro ao processar alertas.", "error": str(e)}
+            except Exception as e:
+                logger.exception("Erro crítico na geração de alertas")
+                return {"message": "Erro ao processar alertas.", "error": str(e)}
 
     async def _analisar_altas(self, novos_alertas: List[Dict[str, Any]]):
         try:
