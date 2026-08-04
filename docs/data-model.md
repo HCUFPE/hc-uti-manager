@@ -1,6 +1,6 @@
 # Modelo dos Dados e Entidades (frontend)
 
-Última atualização: 22 Jan 2026
+Última atualização: 04 Ago 2026
 
 ## API endpoints atualmente chamados
 - `POST /api/login` (body form: username, password, remember_me) -> `{ access_token }`
@@ -102,7 +102,7 @@ Campos atualmente usados (frontend/src/views/Historico.vue):
 | acao | string | titulo curto |
 | detalhes | string | descricao textual |
 | dataHora | string | timestamp textual |
-| tipo | enum(alta, reserva, destino, cancelamento, solicitacao, status) | direciona cor da badge |
+| tipo | enum(solicitacao, nova_solicitacao, conclusao, reserva, cancelamento_reserva, cancelamento_solicitante, destino, alteracao_destino, destino_disponivel, destino_pendente, alta, conclusao_alta, cancelamento, exclusao_solicitacao, status, edicao) | direciona cor da badge |
 Sugestoes de campos uteis: entidade (paciente/leito/solicitacao) e referencia_id, valores_anteriores/novos, criado_em (ISO), criado_por_id, terminal_ip, resultado (sucesso/erro), correlacao (request_id) para auditoria.
 
 ## Alerta do sistema
