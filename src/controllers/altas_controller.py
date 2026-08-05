@@ -95,25 +95,30 @@ class AltasController:
 
         dados = {}
         if "leitoDestino" in payload:
-            dados["leito_destino"] = payload["leitoDestino"]
-            dados["status"] = "definida"
+            novo_destino = str(payload["leitoDestino"]).strip()
+            destino_atual = str(alvo.leito_destino or "").strip()
             
-            acao_hist = "Alterou destino de alta" if (alvo.leito_destino and str(alvo.leito_destino).strip()) else "Definiu destino de alta"
-            
-            # Registra no histórico para gerar alerta automático
-            if self.historico_provider:
-                await self.historico_provider.registrar(
-                    operador=operador,
-                    tipo="alteracao_destino",
-                    acao=acao_hist,
-                    detalhes=f"Leito {alvo.lto_id}: Destino {payload['leitoDestino']}",
-                    prontuario=str(alvo.prontuario)
-                )
+            if novo_destino != destino_atual:
+                dados["leito_destino"] = payload["leitoDestino"]
+                dados["status"] = "definida"
+                
+                acao_hist = "Alterou destino de alta" if destino_atual else "Definiu destino de alta"
+                
+                # Registra no histórico para gerar alerta automático
+                if self.historico_provider:
+                    await self.historico_provider.registrar(
+                        operador=operador,
+                        tipo="alteracao_destino",
+                        acao=acao_hist,
+                        detalhes=f"Leito {alvo.lto_id}: Destino {payload['leitoDestino']}",
+                        prontuario=str(alvo.prontuario)
+                    )
 
         if "necessidadesEspeciais" in payload:
             dados["necessidades_especiais"] = payload["necessidadesEspeciais"]
 
-        await self.alta_provider.atualizar(alta_id, dados)
+        if dados:
+            await self.alta_provider.atualizar(alta_id, dados)
         return {"message": "Solicitação atualizada."}
 
     async def atualizar_destino_disponivel(self, alta_id: int, disponivel: bool, operador: str = "Sistema") -> dict:
@@ -122,7 +127,13 @@ class AltasController:
         if not alvo:
             raise HTTPException(status_code=404, detail="Solicitação de alta não encontrada.")
 
-        await self.alta_provider.atualizar(alta_id, {"destino_disponivel": 1 if disponivel else 0})
+        disponivel_int = 1 if disponivel else 0
+        
+        # Evita duplicidade no histórico se o valor não tiver mudado
+        if alvo.destino_disponivel == disponivel_int:
+            return {"message": "Status do destino já está atualizado."}
+
+        await self.alta_provider.atualizar(alta_id, {"destino_disponivel": disponivel_int})
         
         if disponivel and self.historico_provider:
              await self.historico_provider.registrar(
