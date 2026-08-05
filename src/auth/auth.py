@@ -156,9 +156,14 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
                 if re.match(r"CN=([^,]+)", group)
             ]
 
+            # Filtrar e manter apenas os atributos estritamente necessários no token para evitar cabeçalhos HTTP gigantes (Erro 400)
+            atributos_permitidos = {
+                "displayName", "cn", "mail", "userPrincipalName", 
+                "department", "title", "employeeNumber"
+            }
+
             for key, value in attrs.items():
-                # Skip groups (already handled)
-                if key == "memberOf":
+                if key not in atributos_permitidos:
                     continue
                 
                 # STRICT TYPE CHECKING: Only allow JSON-serializable primitives
@@ -169,8 +174,6 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
                         user_info[key] = clean_list
                 elif isinstance(value, (str, int, float, bool)):
                     user_info[key] = value
-                else:
-                    pass
 
             logger.info(f"SECURITY: AD Authentication SUCCESSFUL for user: {username}")
             return user_info
