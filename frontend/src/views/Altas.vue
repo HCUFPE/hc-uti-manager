@@ -172,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'; // Import computed
+import { ref, onMounted, onUnmounted, computed } from 'vue'; // Import computed and onUnmounted
 import { ClockIcon, ArrowRightIcon, CheckCircleIcon } from '@heroicons/vue/24/outline';
 import { useToast } from 'vue-toastification';
 import UiBadge from '../components/ui/Badge.vue';
@@ -204,6 +204,7 @@ const altaSelecionada = ref<Alta | null>(null);
 const formDestino = ref({ leitoDestino: '' });
 const toast = useToast();
 const authStore = useAuthStore();
+let refreshInterval: any = null;
 
 const showModalCancelAlta = ref(false);
 const motivoCancelAlta = ref('Leito de Enfermaria Indisponível');
@@ -229,7 +230,10 @@ async function confirmarCancelarAlta() {
 }
 
 async function carregar() {
-  loading.value = true;
+  // Only show the loading spinner on the first load to avoid screen blinks
+  if (altas.value.length === 0) {
+    loading.value = true;
+  }
   erro.value = null;
   try {
     const resp = await api.get('/api/altas');
@@ -318,5 +322,14 @@ const statusText: Record<string, string> = {
   cancelada: 'Cancelada',
 };
 
-onMounted(carregar);
+onMounted(async () => {
+  await carregar();
+  refreshInterval = setInterval(carregar, 120000); // Sincroniza a cada 2 minutos (120000ms)
+});
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+});
 </script>
