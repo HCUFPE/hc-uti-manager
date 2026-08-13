@@ -362,6 +362,17 @@ class IndicadoresProvider:
                     
         tempo_medio_liberacao_encaminhamento = (sum(tempos_liberacao_encaminhamento) / len(tempos_liberacao_encaminhamento)) if tempos_liberacao_encaminhamento else 0.0
 
+        # 8c. Tempo Médio de Encaminhamento até Admissão (Liberar Encaminhamento -> Conclusão Admissão)
+        tempos_encaminhamento_admissao = []
+        for ev in novas_internacoes_periodo:
+            sol = find_solicitacao(ev)
+            if sol and sol.encaminhamento_liberado_em:
+                diff = (ev.criado_em - sol.encaminhamento_liberado_em).total_seconds() / 60.0 # em minutos
+                if diff >= 0:
+                    tempos_encaminhamento_admissao.append(diff)
+                    
+        tempo_medio_encaminhamento_admissao = (sum(tempos_encaminhamento_admissao) / len(tempos_encaminhamento_admissao)) if tempos_encaminhamento_admissao else 0.0
+
 
         # 9. Volumes e Relações Percentuais
         altas_criadas_periodo = [a for a in altas_todas if in_period(a.criado_em)]
@@ -531,6 +542,7 @@ class IndicadoresProvider:
                 "tempo_acomodacao_alta_horas": round(tempo_medio_acomodacao_alta, 1),
                 "tempo_liberacao_leito_horas": round(tempo_medio_liberacao_leito, 1),
                 "tempo_liberacao_encaminhamento_minutos": round(tempo_medio_liberacao_encaminhamento, 1),
+                "tempo_encaminhamento_admissao_minutos": round(tempo_medio_encaminhamento_admissao, 1),
                 "tempo_higienizacao_minutos": round(tempo_medio_higienizacao, 1),
                 "volumes": {
                     "solicitacoes": volume_solicitacoes,

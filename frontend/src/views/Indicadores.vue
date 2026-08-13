@@ -71,7 +71,7 @@
       </div>
 
       <!-- Nova Seção: Tempos Médios de Processo e Fluxo (Gargalos) -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
 
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Recepção Pós-Cirúrgico (BC)</p>
@@ -83,6 +83,12 @@
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Liberação Encaminhamento</p>
           <p class="mt-2 text-3xl font-extrabold text-slate-800 text-blue-600">{{ formatarTempoLiberacao(detalhado.tempo_liberacao_encaminhamento_minutos) }}</p>
           <p class="mt-1 text-xs text-slate-500">Espera média do fim da cirurgia até liberação de encaminhamento pela UTI.</p>
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Encaminhamento até Admissão</p>
+          <p class="mt-2 text-3xl font-extrabold text-slate-800 text-blue-600">{{ formatarTempoLiberacao(detalhado.tempo_encaminhamento_admissao_minutos) }}</p>
+          <p class="mt-1 text-xs text-slate-500">Tempo médio da liberação do encaminhamento até a entrada física na UTI.</p>
         </article>
 
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
