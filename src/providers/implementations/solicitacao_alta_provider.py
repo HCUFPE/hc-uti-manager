@@ -55,6 +55,19 @@ class SolicitacaoAltaProvider:
         await self.session.commit()
         await self.session.refresh(solicitacao)
         return solicitacao
+        
+    async def concluir_alta_se_pendente(self, id: int) -> bool:
+        """Conclui a alta de forma atômica se ela ainda estiver pendente ou definida. Retorna True se o status foi alterado."""
+        from sqlalchemy import update
+        stmt = (
+            update(SolicitacaoAlta)
+            .where(SolicitacaoAlta.id == id)
+            .where(SolicitacaoAlta.status.in_(["pendente", "definida"]))
+            .values(status="concluida")
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount > 0
     
     async def deletar(self, id: int) -> bool:
         solicitacao = await self.get_por_id(id)

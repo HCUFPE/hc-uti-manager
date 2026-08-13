@@ -111,17 +111,21 @@ class LeitosController:
                 # Se o prontuário no censo não for o mesmo da alta solicitada, ela foi concluída!
                 if p_censo_norm != p_alta_norm:
                     try:
-                        await self.alta_provider.atualizar(alta_obj.id, {"status": "concluida"})
-                        await self.estado_provider.salvar_alta(lto_id, False)
+                        # Conclui a alta de forma atômica para evitar concorrência e duplicidade no histórico
+                        alterou = await self.alta_provider.concluir_alta_se_pendente(alta_obj.id)
                         
-                        if self.historico_provider:
-                            await self.historico_provider.registrar(
-                                operador="Sistema (Censo)",
-                                tipo="conclusao_alta",
-                                acao=f"Alta concluída no leito {lto_id}",
-                                detalhes=f"Paciente desocupou o leito {lto_id}. Alta #{alta_obj.id} concluída automaticamente via censo.",
-                                prontuario=alta_obj.prontuario
-                            )
+                        if alterou:
+                            await self.estado_provider.salvar_alta(lto_id, False)
+                            
+                            if self.historico_provider:
+                                await self.historico_provider.registrar(
+                                    operador="Sistema (Censo)",
+                                    tipo="conclusao_alta",
+                                    acao=f"Alta concluída no leito {lto_id}",
+                                    detalhes=f"Paciente desocupou o leito {lto_id}. Alta #{alta_obj.id} concluída automaticamente via censo.",
+                                    prontuario=alta_obj.prontuario
+                                )
+                        
                         # Remove do leito na resposta atual
                         leito['alta_solicitada'] = False
                         leito['alta_info'] = None
