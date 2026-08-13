@@ -163,17 +163,17 @@ class LeitosController:
                         await self.estado_provider.limpar_reserva(lto_id)
                         
                         if sol_id and self.solicitacao_provider:
-                            sol = await self.solicitacao_provider.get_por_id(sol_id)
-                            if sol and sol.status != "Concluída":
-                                await self.solicitacao_provider.atualizar(sol_id, {"status": "Concluída"})
-                                if self.historico_provider:
-                                    await self.historico_provider.registrar(
-                                        operador="Sistema (Censo)",
-                                        tipo="conclusao",
-                                        acao=f"Admissão concluída no leito {lto_aghu_real}",
-                                        detalhes=f"Paciente ocupou o leito {lto_aghu_real}. Solicitação #{sol_id} concluída automaticamente via censo.",
-                                        prontuario=prontuario_reserva
-                                    )
+                            # Conclui a admissão de forma atômica para evitar concorrência e duplicidade no histórico
+                            alterou_admissao = await self.solicitacao_provider.concluir_admissao_se_pendente(sol_id)
+                            
+                            if alterou_admissao and self.historico_provider:
+                                await self.historico_provider.registrar(
+                                    operador="Sistema (Censo)",
+                                    tipo="conclusao",
+                                    acao=f"Admissão concluída no leito {lto_aghu_real}",
+                                    detalhes=f"Paciente ocupou o leito {lto_aghu_real}. Solicitação #{sol_id} concluída automaticamente via censo.",
+                                    prontuario=prontuario_reserva
+                                )
                         
                         leito['prontuario_proximo'] = None
                         leito['conflito_reserva'] = False

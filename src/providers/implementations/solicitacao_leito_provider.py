@@ -47,6 +47,19 @@ class SolicitacaoLeitoProvider:
         await self.session.commit()
         await self.session.refresh(solicitacao)
         return solicitacao
+        
+    async def concluir_admissao_se_pendente(self, id: int) -> bool:
+        """Conclui a solicitação de leito de forma atômica se ela não estiver Concluída ou Cancelada. Retorna True se o status foi alterado."""
+        from sqlalchemy import update
+        stmt = (
+            update(SolicitacaoLeito)
+            .where(SolicitacaoLeito.id == id)
+            .where(SolicitacaoLeito.status.notin_(["Concluída", "Cancelada"]))
+            .values(status="Concluída")
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount > 0
     
     async def deletar(self, id: int) -> bool:
         solicitacao = await self.get_por_id(id)
