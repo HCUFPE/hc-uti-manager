@@ -488,7 +488,7 @@ class IndicadoresProvider:
                     "tendencia": f"{total_ocupados} de {total_leitos} leitos"
                 },
                 "tempo_permanencia": {
-                    "valor": f"{tempo_ocupacao_medio_geral:.1f}",
+                    "valor": f"{tempo_ocupacao_medio_geral / 24.0:.1f}",
                     "subtitulo": "dias (média)",
                     "tendencia": "Com base nos pacientes de alta"
                 },
