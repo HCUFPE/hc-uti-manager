@@ -128,23 +128,17 @@ const activeItems = computed(() => {
       to: '/alertas',
       icon: AlertCircle,
     },
+    {
+      label: 'Indicadores',
+      to: '/indicadores',
+      icon: BarChart3,
+    },
+    {
+      label: 'Histórico',
+      to: '/historico',
+      icon: History,
+    },
   ];
-
-  // Apenas coordenação e admins vêem indicadores e histórico
-  if (authStore.isCoordination || authStore.isAnyAdmin) {
-    items.push(
-      {
-        label: 'Indicadores',
-        to: '/indicadores',
-        icon: BarChart3,
-      },
-      {
-        label: 'Histórico',
-        to: '/historico',
-        icon: History,
-      }
-    );
-  }
 
   // Apenas Admin vê Configurações
   if (authStore.isAnyAdmin) {
