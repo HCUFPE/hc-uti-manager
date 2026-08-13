@@ -9,8 +9,7 @@ router = APIRouter(
     prefix="/api/indicadores",
     tags=["Indicadores"],
     dependencies=[
-        Depends(auth_handler.decode_token),
-        Depends(check_role([Role.ADMIN, Role.UTI_ADMIN, Role.NIR_ADMIN, Role.COB_ADMIN, Role.BC_ADMIN, Role.HEM_ADMIN]))
+        Depends(auth_handler.decode_token)
     ],
 )
 
