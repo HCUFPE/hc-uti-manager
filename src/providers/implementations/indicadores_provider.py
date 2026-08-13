@@ -381,10 +381,12 @@ class IndicadoresProvider:
         volume_cancelamentos_sol = len(cancelamentos_sol_periodo)
         volume_cancelamentos_res_uti = len(cancelamentos_res_uti_periodo)
         volume_cancelamentos_res_sol = len(cancelamentos_res_sol_periodo)
+        
+        # Ajuste de consistência: calcular altas a partir do status final da solicitação
         volume_altas = len(altas_criadas_periodo)
-        volume_altas_concluidas = len([ev for ev in historico_todos if ev.tipo == "conclusao_alta" and in_period(ev.criado_em)])
+        volume_altas_concluidas = len([a for a in altas_criadas_periodo if a.status == "concluida"])
         volume_altas_pendentes = len([a for a in altas_criadas_periodo if a.status in ["pendente", "definida"]])
-        volume_altas_canceladas = len([ev for ev in historico_todos if ev.tipo == "cancelamento" and in_period(ev.criado_em)])
+        volume_altas_canceladas = len([a for a in altas_criadas_periodo if a.status == "cancelada"])
 
         # Sub-estados do ciclo de vida para as solicitações criadas no período
         volume_concluidas_real = len([s for s in sols_criadas_periodo if s.status == "Concluída"])
