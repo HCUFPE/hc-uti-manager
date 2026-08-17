@@ -21,7 +21,12 @@
 - [ ] 4.2 Exibir o modal de checkpoint com as informações clínicas da Passagem de Caso se ela estiver preenchida.
 - [ ] 4.3 Implementar a ação "Ciente e Liberar" para confirmar e efetuar a liberação, e a ação "Cancelar" para abortar e fechar o modal.
 
-## 5. Verificação e Testes
-
 - [ ] 5.1 Criar um script de teste de integração para simular o fluxo completo da API de passagem de caso.
 - [ ] 5.2 Testar manualmente o fluxo completo no navegador.
+
+## 6. Sincronização de Documentação e Requisitos
+
+- [ ] 6.1 Atualizar os requisitos em `docs/projeto_inicial/02-requisitos.md` com a funcionalidade de Passagem de Caso.
+- [ ] 6.2 Atualizar os fluxos e casos de uso em `docs/projeto_inicial/03-casos-uso.md`.
+- [ ] 6.3 Sincronizar o modelo de dados físico/lógico em `docs/projeto_inicial/04-modelo-dados.md` e payloads de tela em `docs/data-model.md`.
+- [ ] 6.4 Atualizar os contratos e endpoints de API em `docs/projeto_inicial/05-interfaces.md`.
