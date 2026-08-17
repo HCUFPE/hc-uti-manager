@@ -11,9 +11,9 @@ mkdir -p "$BACKUP_DIR"
 
 echo "Iniciando backup do SQLite..."
 
-# Faz o backup usando o container se ele estiver ativo, ou diretamente no arquivo se o sqlite3 estiver instalado no host
+# Faz o backup usando o container se ele estiver ativo (utilizando Python nativo para evitar dependência do binário sqlite3)
 if podman ps | grep -q "hc-uti-backend"; then
-    podman exec hc-uti-backend sqlite3 /app/data/app.db ".backup '/app/data/backups/backup_$TIMESTAMP.db'"
+    podman exec hc-uti-backend python -c "import sqlite3; conn = sqlite3.connect('/app/data/app.db'); dest = sqlite3.connect('/app/data/backups/backup_$TIMESTAMP.db'); conn.backup(dest); conn.close(); dest.close()"
 else
     # Fallback se o container estiver offline e tiver sqlite3 no host
     if command -v sqlite3 &> /dev/null; then
