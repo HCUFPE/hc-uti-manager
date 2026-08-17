@@ -32,7 +32,8 @@ def main():
             
             # 6. Reiniciar o serviço systemd para validar tudo (Tarefa 2.3)
             "systemctl restart hc-uti.service",
-            "sleep 12",
+            # Aguarda a inicialização completa do container
+            "until [ \"\\$(podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicializacao do container...'; sleep 3; done",
             
             # 7. Executar migrações do Alembic no banco de dados de produção
             "podman exec -i hc-uti-backend alembic upgrade head"
