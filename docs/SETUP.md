@@ -167,7 +167,7 @@ Para atualizar a aplicacao na VM quando novos commits forem enviados para a bran
 
 1. **Fazer Backup do Banco Local:**
    ```bash
-   podman exec hc-uti-backend sqlite3 /app/data/app.db ".backup '/app/data/backup_pre_deploy.db'"
+    podman exec hc-uti-backend python -c "import sqlite3; conn = sqlite3.connect('/app/data/app.db'); dest = sqlite3.connect('/app/data/backup_pre_deploy.db'); conn.backup(dest); conn.close(); dest.close()"
    ```
 2. **Atualizar o Codigo Fonte:**
    ```bash

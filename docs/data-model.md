@@ -51,6 +51,7 @@ Campos atualmente usados:
 | proximoPaciente | { prontuario, idade, especialidade }? | Home.vue | opcional, fila/reserva |
 | tipoReserva | string? | Home.vue | motivo da reserva (ex: Cirurgico, Emergencia) |
 | sinalizacaoTransferencia | boolean? | Home.vue, BedCard.vue | destaca leito com alerta |
+| bloqueadoClinico | boolean | Home.vue, BedCard.vue | indica se o leito possui bloqueio preventivo (Clínico/COB/HEM) |
 | overviewCards | numbers | Home.vue | agregados: taxa ocupacao, leitos disponiveis, em uso, higienizacao, desativados, reservas pendentes |
 Sugestoes de campos uteis: unidade/setor/ala, classificacao (ex: isolamento, box, coorte), equipamentos_disponiveis (respirador, monitor, bomba), tempo_desde_ultima_limpeza, previsao_liberacao, ocupacao_iniciada_em, bloqueado_motivo, responsavel_enfermagem, tags (uti fechado, covid etc.).
 
