@@ -18,6 +18,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF008** | Alertas em Tempo Real | Geração de alertas visuais/sonoros para o painel (altas pendentes, novas solicitações do dia, reservas e cancelamentos do solicitante). | Essencial |
 | **RF009** | Histórico de Auditoria | Log cronológico inalterável de todas as ações de usuários (ação, operador, detalhes, prontuário e timestamp). | Essencial |
 | **RF010** | KPIs e Indicadores | Dashboard com taxas de ocupação, total de admissões e segmentação de cancelamentos (separando os provocados pela UTI dos causados pelo Bloco). | Desejável |
+| **RF011** | Reserva Preventiva (Clínico/COB/HEM) | Permitir o bloqueio preventivo de leitos de UTI (incluindo leitos em limpeza ou com alta solicitada) para demandas clínicas, preservando o bloqueio no swap de leitos, autolimpando via censo e isolando estatísticas do BI. | Essencial |
 
 ---
 
@@ -43,6 +44,12 @@ Abaixo está o detalhamento estruturado de requisitos operacionais críticos do 
 *   **Action (Ação):** O sistema verifica se o paciente de destino já possui solicitação ativa. Se possuir, cancela a solicitação de origem e mescla o estado (se houver reserva ativa de leito, transfere os dados da reserva física para a solicitação preexistente).
 *   **Result (Resultado):** O censo local de leitos e o histórico de auditoria refletem a substituição sem criar registros duplicados ou leitos fantasmas.
 *   **Evaluation (Avaliação):** Validação de integridade nos logs gerados no histórico de ações.
+
+### [CARE-RF011] Reserva Preventiva e Swap de Leitos Clínicos
+*   **Context (Contexto):** A UTI precisa reservar um leito preventivamente para demandas clínicas de urgência de setores como Clínico/COB/HEM.
+*   **Action (Ação):** O sistema permite o bloqueio do leito (mesmo em limpeza ou alta solicitada). Se esse leito for alvo de um swap (remanejamento de paciente com leito reservado), o bloqueio clínico preventivo é transferido automaticamente para o leito original que ficou vago. O censo físico do AGHU limpa automaticamente a reserva se detectar ocupação por outro prontuário.
+*   **Result (Resultado):** O leito fica bloqueado para novas cirurgias do Bloco, mantendo-se persistente e dinâmico conforme remanejamentos.
+*   **Evaluation (Avaliação):** Validação nos logs de auditoria e exclusão nos indicadores estatísticos de BI.
 
 ### [CARE-RNF003] Proteção de Concorrência de Alertas
 *   **Context (Contexto):** Múltiplos componentes do frontend disparam requisições paralelas para `/api/alertas/gerar` no milissegundo de carregamento da tela.

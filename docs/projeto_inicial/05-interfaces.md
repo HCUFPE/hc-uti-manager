@@ -82,4 +82,17 @@ class LeitoEstadoProvider:
     async def limpar_reserva_por_solicitacao(self, solicitacao_id: int) -> bool:
         """Libera o leito fisicamente no SQLite e limpa os campos de reserva."""
         pass
+
+    async def bloquear_leito_clinico(self, lto_id: str) -> bool:
+        """Define a flag bloqueado_clinico = True no banco SQLite local."""
+        pass
+
+    async def cancelar_bloqueio_clinico(self, lto_id: str) -> bool:
+        """Define a flag bloqueado_clinico = False no banco SQLite local."""
+        pass
 ```
+
+### D. Endpoints REST da API (Reserva Preventiva)
+*   `POST /api/leitos/{lto_id}/bloquear-clinico` — Ativa o bloqueio preventivo para o leito correspondente e registra log no histórico de auditoria.
+*   `POST /api/leitos/{lto_id}/cancelar-reserva-clinica` — Remove o bloqueio preventivo do leito correspondente e registra o log de cancelamento.
+

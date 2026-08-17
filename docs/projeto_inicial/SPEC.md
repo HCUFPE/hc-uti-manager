@@ -10,6 +10,7 @@ Este documento atua como o contrato de desenvolvimento e especificação técnic
 - [x] Gerenciar a fila dinâmica de prioridades (P1 a P10) de forma automática.
 - [x] Garantir controle de concorrência atômico contra duplicidades de alertas.
 - [x] Manter uma trilha de auditoria (logs de ações de usuários) imutável.
+- [x] Reservar leitos preventivamente para demandas clínicas (Clínico/COB/HEM) com autolimpeza e swap.
 
 ---
 
@@ -57,6 +58,9 @@ As especificações detalhadas de cada etapa do projeto estão distribuídas nos
 ### Fase 3: Concorrência e Confiabilidade
 - [x] **[TASK-008]** Correção de condição de corrida em endpoints de alertas no carregamento de telas concorrentes do front.
 - [x] **[TASK-009]** Script de backup automático (`backup_db.sh`) diário rotativo do banco SQLite agendado no cron da VM.
+
+### Fase 4: Recursos Avançados e Ajustes
+- [x] **[TASK-010]** Implementação de bloqueio e reserva clínica preventiva de leitos (Clínico/COB/HEM) com autolimpeza e swap.
 
 ---
 

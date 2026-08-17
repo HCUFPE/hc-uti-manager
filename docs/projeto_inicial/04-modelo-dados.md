@@ -42,6 +42,7 @@ erDiagram
     leito_estados {
         string lto_id PK
         boolean alta_solicitada "NOT NULL"
+        boolean bloqueado_clinico "NOT NULL"
         int prontuario_proximo
         int idade_proximo
         string especialidade_proximo
@@ -130,6 +131,7 @@ Gere o estado e vínculos extras dos leitos físicos da UTI que não existem no 
 
 *   `lto_id` (VARCHAR(14), PK): Nome identificador do leito físico (ex: `Leito 05`).
 *   `alta_solicitada` (BOOLEAN): Se a UTI solicitou alta deste leito para o NIR regular.
+*   `bloqueado_clinico` (BOOLEAN): Flag de bloqueio preventivo para admissões de pacientes de clínica (Clínico/COB/HEM).
 *   `prontuario_proximo` (INTEGER): Prontuário do paciente reservado para este leito.
 *   `solicitacao_id` (INTEGER, FK): Referência da solicitação que possui a reserva ativa.
 

@@ -22,6 +22,7 @@ flowchart LR
         UC5([UC005 - Definir Leito de Destino])
         UC6([UC006 - Visualizar e Reconhecer Alertas])
         UC7([UC007 - Acompanhar KPIs e Indicadores])
+        UC8([UC008 - Reservar Leito Clínico/COB/HEM Preventivamente])
     end
     
     %% Relacionamentos
@@ -33,6 +34,7 @@ flowchart LR
     UTI --- UC2
     UTI --- UC4
     UTI --- UC6
+    UTI --- UC8
     
     NIR --- UC5
     NIR --- UC6
@@ -88,6 +90,14 @@ flowchart LR
     1. O usuário visualiza alertas não lidos específicos para o seu perfil no painel.
     2. Ao tomar conhecimento do alerta, o usuário clica em **Ciente** para arquivar a notificação, registrando quem leu e o timestamp.
 
+### UC008 — Reservar Leito Clínico/COB/HEM Preventivamente
+*   **Ator Principal:** Equipe da UTI.
+*   **Fluxo Principal:**
+    1. O usuário identifica um leito vago (Disponível, Higienização ou com Alta Solicitada) no painel de censo.
+    2. O usuário clica no botão "Reservar Clínico/COB/HEM".
+    3. O sistema cria o bloqueio clínico no banco SQLite, define a flag `bloqueado_clinico = True` e registra o histórico de auditoria.
+    4. O leito fica indisponível para reservas automáticas do Bloco Cirúrgico.
+
 ---
 
 ## 3. Detalhamento SDD (CARE)
@@ -103,3 +113,11 @@ flowchart LR
 *   **Action:** Envolver o motor de sincronização no `AlertaController.gerar_alertas()` usando um `asyncio.Lock()` global.
 *   **Result:** Execução estritamente serial das requisições. A segunda requisição aguarda a primeira gravar no banco, prevenindo a inserção de registros duplicados para o mesmo evento de histórico.
 *   **Evaluation:** Ausência de alertas com mesmo timestamp e dados idênticos para o mesmo log de histórico na base local da VM.
+
+### [CARE-UC008] Autolimpeza e Swap de Reserva Clínica Preventiva
+*   **Context:** Um leito está com o bloqueio clínico preventivo ativo (`bloqueado_clinico = True`).
+*   **Action:** O sistema gerencia duas ações reativas:
+    1. Se houver um swap (remanejamento de leito de outro paciente para este leito), a flag `bloqueado_clinico` é migrada automaticamente para o leito de origem que se tornou vago.
+    2. Ao sincronizar o censo físico do AGHU, se o leito com bloqueio for detectado como fisicamente ocupado por qualquer paciente, o sistema desativa `bloqueado_clinico = False` e grava o log de auto-limpeza.
+*   **Result:** Integridade total do estado dos leitos no painel sem criar leitos fantasmas ou bloqueios eternos.
+*   **Evaluation:** Cobertura de testes unitários simulando sincronizações de censo e swaps de leitos clínicos.
