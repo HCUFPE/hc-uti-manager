@@ -265,7 +265,7 @@ class IndicadoresProvider:
         tempo_medio_sol_ocupacao = (sum(diferencas_sol_ocupacao) / len(diferencas_sol_ocupacao)) if diferencas_sol_ocupacao else 0.0
 
         # 5. Horário Médio de Reserva de Leito por Turno (Manhã e Tarde)
-        reservas_periodo = [ev for ev in historico_todos if ev.tipo == "reserva" and in_period(ev.criado_em)]
+        reservas_periodo = [ev for ev in historico_todos if ev.tipo == "reserva" and ev.prontuario and in_period(ev.criado_em)]
         minutos_manha = []
         minutos_tarde = []
         for ev in reservas_periodo:
@@ -378,12 +378,12 @@ class IndicadoresProvider:
         altas_criadas_periodo = [a for a in altas_todas if in_period(a.criado_em)]
         
         # Reservas ocorridas no período
-        reservas_efetuadas_periodo = [ev for ev in historico_todos if ev.tipo == "reserva" and in_period(ev.criado_em)]
+        reservas_efetuadas_periodo = [ev for ev in historico_todos if ev.tipo == "reserva" and ev.prontuario and in_period(ev.criado_em)]
         # Reservas concluídas no período
         reservas_concluidas_periodo = [ev for ev in historico_todos if ev.tipo == "conclusao" and in_period(ev.criado_em)]
         # Cancelamentos de solicitações e reservas no período
         cancelamentos_sol_periodo = [ev for ev in historico_todos if ev.tipo == "exclusao_solicitacao" and in_period(ev.criado_em)]
-        cancelamentos_res_uti_periodo = [ev for ev in historico_todos if ev.tipo == "cancelamento_reserva" and in_period(ev.criado_em)]
+        cancelamentos_res_uti_periodo = [ev for ev in historico_todos if ev.tipo == "cancelamento_reserva" and ev.prontuario and in_period(ev.criado_em)]
         cancelamentos_res_sol_periodo = [ev for ev in historico_todos if ev.tipo == "cancelamento_solicitante" and in_period(ev.criado_em)]
 
         volume_solicitacoes = total_sols_periodo

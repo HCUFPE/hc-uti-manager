@@ -148,3 +148,16 @@ class LeitoEstadoProvider:
         await self.session.commit()
         return old_lto_id
 
+    async def salvar_bloqueio_clinico(self, lto_id: str, bloqueado: bool) -> None:
+        """Define o estado de bloqueio genérico para clínico de um leito."""
+        result = await self.session.execute(select(LeitoEstado).where(LeitoEstado.lto_id == lto_id))
+        estado = result.scalar_one_or_none()
+
+        if not estado:
+            estado = LeitoEstado(lto_id=lto_id, bloqueado_clinico=bloqueado)
+            self.session.add(estado)
+        else:
+            estado.bloqueado_clinico = bloqueado
+
+        await self.session.commit()
+

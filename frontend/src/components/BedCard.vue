@@ -4,6 +4,7 @@
     :class="[
       temConflito ? 'border-red-500 ring-4 ring-red-500/10 shadow-red-100 bg-white/90' : 
       (sinalizacaoTransferencia ? 'border-rose-200 ring-4 ring-rose-500/5 shadow-rose-100 bg-white/90' : 
+      bloqueadoClinico ? 'border-indigo-400 bg-indigo-50/40 ring-4 ring-indigo-500/10 shadow-indigo-100' :
       (proximoPaciente && cirurgiaFinalizada && !encaminhamentoLiberado) ? 
         (authStore.isUTI ? 'animate-pulse-warning border-amber-300' : 'border-amber-300 bg-amber-50/60 ring-4 ring-amber-400/10 shadow-amber-100') :
       (proximoPaciente && encaminhamentoLiberado) ? 'border-emerald-300 bg-emerald-50/60 ring-4 ring-emerald-400/10 shadow-emerald-100' :
@@ -33,7 +34,7 @@
       </div>
 
       <div class="flex flex-col items-end gap-1.5 shrink-0">
-        <StatusBadge :status="status" />
+        <StatusBadge :status="bloqueadoClinico ? 'reservado' : status" />
       </div>
     </div>
 
@@ -65,7 +66,13 @@
         </p>
       </div>
 
-      <div v-if="proximoPaciente" class="space-y-1 border-l-4 border-emerald-500 pl-4 bg-emerald-50/30 py-1 rounded-r-lg">
+      <div v-if="bloqueadoClinico" class="space-y-1 border-l-4 border-indigo-500 pl-4 bg-indigo-50/30 py-2 rounded-r-lg animate-fade-in">
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Reserva Preventiva</p>
+        <p class="text-base font-bold text-indigo-900">Clínico/COB/HEM</p>
+        <p class="text-xs text-slate-600">Leito reservado preventivamente pela UTI.</p>
+      </div>
+
+      <div v-else-if="proximoPaciente" class="space-y-1 border-l-4 border-emerald-500 pl-4 bg-emerald-50/30 py-1 rounded-r-lg">
         <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Próximo Paciente</p>
         <p class="text-base font-bold text-slate-900">Prontuário: {{ proximoPaciente.prontuario }}</p>
         <p v-if="proximoPaciente.nome" class="text-xs font-semibold text-slate-500 leading-none my-1">
@@ -103,7 +110,7 @@
         </UiBadge>
       </div>
 
-      <p v-else class="pl-4 text-slate-500">Sem reserva</p>
+      <p v-else-if="!bloqueadoClinico" class="pl-4 text-slate-500">Sem reserva</p>
       
       <!-- Alerta de Conflito -->
       <div v-if="temConflito" class="mt-2 rounded-lg bg-red-50 p-3 border border-red-200">
@@ -135,6 +142,20 @@
         Cancelar Alta
       </button>
       <button
+        v-if="['disponivel', 'higienizacao', 'alta'].includes(status) && !proximoPaciente && !bloqueadoClinico"
+        class="inline-flex flex-1 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+        @click="emit('reservar-clinico')"
+      >
+        Reservar Clínico/COB/HEM
+      </button>
+      <button
+        v-if="bloqueadoClinico"
+        class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+        @click="emit('cancelar-reserva-clinica')"
+      >
+        Cancelar Reserva
+      </button>
+      <button
         v-if="proximoPaciente && cirurgiaFinalizada && !encaminhamentoLiberado"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-600 shadow-sm"
         @click="emit('liberar-encaminhamento', solicitacaoId!)"
@@ -149,9 +170,9 @@
         Cancelar Liberação
       </button>
       <button
-        v-if="proximoPaciente"
+        v-if="proximoPaciente || bloqueadoClinico"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
-        @click="emit('mudar-leito', props.solicitacaoId!, props.leitoNumero)"
+        @click="emit('mudar-leito', props.solicitacaoId || 0, props.leitoNumero)"
       >
         Mudar Leito
       </button>
@@ -203,6 +224,7 @@ const props = defineProps<{
   cirurgiaFinalizada?: boolean;
   encaminhamentoLiberado?: boolean;
   solicitacaoId?: number;
+  bloqueadoClinico?: boolean;
 }>();
 
 const authStore = useAuthStore();
@@ -211,6 +233,8 @@ const emit = defineEmits<{
   'solicitar-alta': [];
   'cancelar-alta': [];
   'cancelar-reserva': [];
+  'reservar-clinico': [];
+  'cancelar-reserva-clinica': [];
   'liberar-encaminhamento': [solicitacaoId: number];
   'cancelar-liberacao': [solicitacaoId: number];
   'mudar-leito': [solicitacaoId: number, leitoNumero: string];

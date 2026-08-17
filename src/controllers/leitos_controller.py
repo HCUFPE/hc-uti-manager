@@ -147,9 +147,33 @@ class LeitosController:
                 else:
                     leito['alta_solicitada'] = leito.get('alta_solicitada', False)
 
+            # Injeta a flag bloqueado_clinico
+            leito['bloqueado_clinico'] = estados[lto_id].bloqueado_clinico if lto_id in estados else False
+
             # Reservas e Sincronização Inteligente
             if lto_id in estados:
                 est = estados[lto_id]
+                
+                # Autolimpeza de Bloqueio Clínico se estiver ocupado no censo físico (AGHU)
+                prontuario_aghu = leito.get('prontuario_atual')
+                alta_solicitada = leito.get('alta_solicitada', False)
+                if est.bloqueado_clinico and prontuario_aghu and str(prontuario_aghu).strip() not in ["", "0", "N/D"] and not alta_solicitada:
+                    try:
+                        await self.estado_provider.salvar_bloqueio_clinico(lto_id, False)
+                        est.bloqueado_clinico = False
+                        leito['bloqueado_clinico'] = False
+                        
+                        if self.historico_provider:
+                            await self.historico_provider.registrar(
+                                operador="Sistema (Censo)",
+                                tipo="cancelamento_reserva",
+                                acao="Cancelou reserva de leito (Clínico/COB/HEM) - Auto-limpeza via censo",
+                                detalhes=f"Reserva preventiva do leito {lto_id} limpa automaticamente devido à ocupação física do leito pelo prontuário {prontuario_aghu}.",
+                                prontuario=None
+                            )
+                    except Exception as e:
+                        logger.error(f"Erro na autolimpeza de bloqueio clinico do leito {lto_id}: {e}")
+
                 prontuario_reserva = str(est.prontuario_proximo or "").strip()
                 
                 # SUCESSO/CONCLUSÃO: O paciente reservado apareceu no AGHU (neste leito ou em outro)
@@ -316,6 +340,9 @@ class LeitosController:
             if status == "DESATIVADO":
                 continue
                 
+            if l.get("bloqueado_clinico", False) and not incluir_reservados:
+                continue
+                
             ja_tem_reserva = proximo_paciente is not None and str(proximo_paciente).strip() != ""
             esta_fisicamente_vazio = (prontuario_atual is None or str(prontuario_atual).strip() in ["", "0", "N/D"])
             
@@ -330,3 +357,9 @@ class LeitosController:
                 disponiveis.append(l)
         
         return disponiveis
+
+    async def bloquear_clinico(self, leito_id: str) -> None:
+        await self.estado_provider.salvar_bloqueio_clinico(leito_id, True)
+
+    async def cancelar_reserva_clinica(self, leito_id: str) -> None:
+        await self.estado_provider.salvar_bloqueio_clinico(leito_id, False)

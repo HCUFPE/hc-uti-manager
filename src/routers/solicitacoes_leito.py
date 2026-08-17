@@ -353,6 +353,7 @@ async def remanejar_reserva(
     leito_origem = result.get("leito_origem")
     leito_destino = result.get("leito_destino")
     swap_ocorreu = result.get("swap_ocorreu", False)
+    swap_clinico_ocorreu = result.get("swap_clinico_ocorreu", False)
     
     if swap_ocorreu:
         prontuario_destino = result.get("prontuario_destino", "?")
@@ -371,6 +372,23 @@ async def remanejar_reserva(
             acao="Remanejou reserva (Troca)",
             detalhes=f"Reserva trocada com Prontuário {prontuario}: transferida do Leito {leito_destino} para o Leito {leito_origem}",
             prontuario=str(prontuario_destino)
+        )
+    elif swap_clinico_ocorreu:
+        # Registrar histórico para o paciente remanejado
+        await historico.registrar(
+            operador=current_user.get("username", "Sistema"),
+            tipo="remanejamento_reserva",
+            acao="Remanejou reserva (Troca)",
+            detalhes=f"Reserva trocada com Clínico/COB/HEM: transferida do Leito {leito_origem} para o Leito {leito_destino}.",
+            prontuario=str(prontuario)
+        )
+        # Registrar histórico para o leito que herdou a reserva clínica
+        await historico.registrar(
+            operador=current_user.get("username", "Sistema"),
+            tipo="remanejamento_reserva",
+            acao="Remanejou reserva (Troca)",
+            detalhes=f"Reserva de Clínico/COB/HEM trocada com Prontuário {prontuario}: transferida do Leito {leito_destino} para o Leito {leito_origem}.",
+            prontuario=None
         )
     else:
         # Sem swap (caso normal)

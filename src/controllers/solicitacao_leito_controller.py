@@ -756,6 +756,42 @@ class SolicitacaoLeitoController:
         )
         estado_destino = result_destino.scalar_one_or_none()
         
+        # Caso o leito destino esteja reservado para clínico genérico, fazemos a troca (swap) clínico
+        if estado_destino and estado_destino.bloqueado_clinico:
+            # Guardamos os dados da origem
+            orig_prontuario = estado_origem.prontuario_proximo
+            orig_idade = estado_origem.idade_proximo
+            orig_especialidade = estado_origem.especialidade_proximo
+            orig_sol_id = estado_origem.solicitacao_id
+
+            # Atribui dados da origem ao destino e limpa bloqueio
+            estado_destino.prontuario_proximo = orig_prontuario
+            estado_destino.idade_proximo = orig_idade
+            estado_destino.especialidade_proximo = orig_especialidade
+            estado_destino.solicitacao_id = orig_sol_id
+            estado_destino.bloqueado_clinico = False
+
+            # Atribui bloqueio clinico à origem e limpa dados da reserva
+            estado_origem.prontuario_proximo = None
+            estado_origem.idade_proximo = None
+            estado_origem.especialidade_proximo = None
+            estado_origem.solicitacao_id = None
+            estado_origem.bloqueado_clinico = True
+
+            await self.estado_provider.session.commit()
+
+            # Atualizar o destino na solicitação no banco
+            await self.leito_provider.atualizar(sol_id, {"destino": f"Leito {novo_leito_id}"})
+
+            return {
+                "message": f"Troca de reserva com Clínico/COB/HEM realizada com sucesso: Prontuário {solicitacao.prontuario} foi para o Leito {novo_leito_id} e Leito {old_lto_id} ficou reservado para clínica.",
+                "leito_origem": old_lto_id,
+                "leito_destino": novo_leito_id,
+                "prontuario": solicitacao.prontuario,
+                "swap_clinico_ocorreu": True,
+                "swap_ocorreu": False
+            }
+
         # Caso o leito destino tenha uma reserva de outro paciente, fazemos a troca (swap)
         if estado_destino and estado_destino.prontuario_proximo and estado_destino.solicitacao_id != sol_id:
             sol_destino_id = estado_destino.solicitacao_id

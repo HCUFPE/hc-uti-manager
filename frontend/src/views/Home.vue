@@ -99,6 +99,8 @@
         @solicitar-alta="handleSolicitarAlta(leito)"
         @cancelar-alta="handleCancelarAlta(leito)"
         @cancelar-reserva="handleCancelarReserva(leito)"
+        @reservar-clinico="handleReservarClinico(leito)"
+        @cancelar-reserva-clinica="handleCancelarReservaClinica(leito)"
         @liberar-encaminhamento="handleLiberarEncaminhamento"
         @cancelar-liberacao="handleCancelarLiberacao"
         @mudar-leito="handleMudarLeito"
@@ -210,13 +212,16 @@
           >
             <span class="font-bold text-slate-900 flex justify-between w-full items-center">
               <span>Leito {{ leito.lto_lto_id }}</span>
-              <span v-if="leito.ja_tem_reserva" class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+              <span v-if="leito.ja_tem_reserva || leito.bloqueado_clinico" class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
                 Troca
               </span>
             </span>
             <span class="text-xs text-slate-500">
               <span v-if="leito.ja_tem_reserva" class="text-amber-600 font-medium">
                 Reservado (Pront. {{ leito.prontuario_proximo }})
+              </span>
+              <span v-else-if="leito.bloqueado_clinico" class="text-indigo-600 font-medium">
+                Reservado (Clínico/COB/HEM)
               </span>
               <span v-else class="capitalize">
                 {{ leito.status }} {{ leito.alta_solicitada ? '(Alta solicitada)' : '' }}
@@ -278,6 +283,7 @@ type Leito = {
   cirurgiaFinalizada?: boolean;
   encaminhamentoLiberado?: boolean;
   solicitacaoId?: number;
+  bloqueadoClinico?: boolean;
 };
 
 const leitos = ref<Leito[]>([]);
@@ -314,7 +320,7 @@ const loadLeitos = async () => {
       leitoNumero: l.lto_lto_id,
       status: l.alta_solicitada ? 'alta' :
               (l.status || '').toLowerCase() === 'ocupado' ? 'ocupado' :
-              l.prontuario_proximo ? 'reservado' :
+              (l.prontuario_proximo || l.bloqueado_clinico) ? 'reservado' :
               (l.status || '').toLowerCase() === 'desocupado' ? 'disponivel' :
               (l.status || '').toLowerCase() === 'limpeza' ? 'higienizacao' :
               (l.status || '').toLowerCase() === 'interditado' ? 'desativado' : 'disponivel',
@@ -343,6 +349,7 @@ const loadLeitos = async () => {
       cirurgiaFinalizada: l.cirurgia_finalizada || false,
       encaminhamentoLiberado: l.encaminhamento_liberado || false,
       solicitacaoId: l.solicitacao_id,
+      bloqueadoClinico: l.bloqueado_clinico || false,
     }));
 
     // Identificar leitos com cirurgia concluída e encaminhamento pendente de liberação
@@ -503,7 +510,8 @@ const showModalCancelAlta = ref(false);
 const motivoCancelAlta = ref('');
 const MOTIVOS_CANCELAMENTO_ALTA = [
   'Piora Clínica',
-  'Leito de Enfermaria Indisponível'
+  'Leito de Enfermaria Indisponível',
+  'Solicitação de Alta Equivocada (Paciente Incorreto)'
 ];
 
 const showModalCancelReserva = ref(false);
@@ -604,6 +612,28 @@ const confirmarCancelarReserva = async () => {
   }
 };
 
+const handleReservarClinico = async (leito: Leito) => {
+  try {
+    await api.post(`/api/leitos/${leito.leitoNumero}/bloquear-clinico`);
+    toast.success(`Leito ${leito.leitoNumero} reservado para Clínico/COB/HEM.`);
+    await loadLeitos();
+  } catch (e: any) {
+    console.error(e);
+    toast.error('Erro ao realizar reserva clínica.');
+  }
+};
+
+const handleCancelarReservaClinica = async (leito: Leito) => {
+  try {
+    await api.post(`/api/leitos/${leito.leitoNumero}/cancelar-reserva-clinica`);
+    toast.warning(`Reserva do leito ${leito.leitoNumero} para Clínico/COB/HEM cancelada.`);
+    await loadLeitos();
+  } catch (e: any) {
+    console.error(e);
+    toast.error('Erro ao cancelar reserva clínica.');
+  }
+};
+
 const handleLiberarEncaminhamento = async (solicitacaoId: number) => {
   try {
     await api.post(`/api/solicitacoes/${solicitacaoId}/liberar-encaminhamento`);
@@ -634,7 +664,12 @@ const leitoOrigemMudarLeito = ref<string | null>(null);
 const leitosDisponiveisFiltrados = computed(() => {
   console.log('leitosDisponiveisFiltrados - Origem:', leitoOrigemMudarLeito.value, 'Disponiveis:', leitosDisponiveis.value);
   if (!leitoOrigemMudarLeito.value) return leitosDisponiveis.value;
-  return leitosDisponiveis.value.filter(l => l.lto_lto_id !== leitoOrigemMudarLeito.value);
+  let list = leitosDisponiveis.value.filter(l => l.lto_lto_id !== leitoOrigemMudarLeito.value);
+  if (solIdParaMudarLeito.value === 0) {
+    // Para bloqueio clínico, só pode mover para leitos desocupados/limpeza/alta (mesmo que tenham reserva de paciente, pois faremos swap)
+    return list.filter(l => !l.bloqueado_clinico && ((l.status || '').toLowerCase() !== 'ocupado' || l.alta_solicitada));
+  }
+  return list;
 });
 const loadingLeitos = ref(false);
 const submetendo = ref(false);
@@ -661,13 +696,32 @@ const handleMudarLeito = (solicitacaoId: number, leitoNumero: string) => {
 };
 
 const confirmarMudarLeito = async () => {
-  if (!solIdParaMudarLeito.value || !leitoEscolhido.value) return;
+  if (solIdParaMudarLeito.value === null || !leitoEscolhido.value) return;
   submetendo.value = true;
   try {
-    await api.post(`/api/solicitacoes/${solIdParaMudarLeito.value}/remanejar-reserva`, {
-      leito_id: leitoEscolhido.value
-    });
-    toast.success('Reserva remanejada com sucesso!');
+    if (solIdParaMudarLeito.value === 0) {
+      // Procurar se o leito escolhido de destino já tem uma reserva de paciente real
+      const targetBed = leitosDisponiveis.value.find(l => l.lto_lto_id === leitoEscolhido.value);
+      if (targetBed && targetBed.ja_tem_reserva && targetBed.solicitacao_id) {
+        // SWAP: Remaneja a reserva do paciente real para o leito do Clínico (origem)
+        // Isso automaticamente acionará a lógica de swap do backend
+        await api.post(`/api/solicitacoes/${targetBed.solicitacao_id}/remanejar-reserva`, {
+          leito_id: leitoOrigemMudarLeito.value
+        });
+        toast.success('Reserva preventiva trocada com o paciente reservado com sucesso!');
+      } else {
+        // Remanejamento simples (origem -> destino vazio)
+        await api.post(`/api/leitos/${leitoEscolhido.value}/bloquear-clinico`);
+        await api.post(`/api/leitos/${leitoOrigemMudarLeito.value}/cancelar-reserva-clinica`);
+        toast.success('Reserva preventiva remanejada com sucesso!');
+      }
+    } else {
+      // Caso normal de paciente real
+      await api.post(`/api/solicitacoes/${solIdParaMudarLeito.value}/remanejar-reserva`, {
+        leito_id: leitoEscolhido.value
+      });
+      toast.success('Reserva remanejada com sucesso!');
+    }
     showModalMudarLeito.value = false;
     await loadLeitos();
   } catch (error: any) {

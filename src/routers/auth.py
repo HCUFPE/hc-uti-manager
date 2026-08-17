@@ -123,7 +123,7 @@ async def login(
 
             samesite="lax",
 
-            secure=True, # Should be True in production with HTTPS
+            secure=os.getenv("ENV", "production").lower() == "production",
 
             max_age=REFRESH_TOKEN_EXP_DAYS * 24 * 60 * 60 # Convert days to seconds
 
@@ -246,7 +246,7 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
 
         samesite="lax",
 
-        secure=True, # Should be True in production with HTTPS
+        secure=os.getenv("ENV", "production").lower() == "production",
 
         max_age=REFRESH_TOKEN_EXP_DAYS * 24 * 60 * 60
 

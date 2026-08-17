@@ -11,6 +11,7 @@ class LeitoEstado(Base):
 
     lto_id = Column(String(14), primary_key=True, index=True)
     alta_solicitada = Column(Boolean, default=False)
+    bloqueado_clinico = Column(Boolean, default=False, nullable=False)
     
     # Dados da reserva (próximo paciente)
     prontuario_proximo = Column(Integer, nullable=True)
@@ -24,6 +25,7 @@ class LeitoEstado(Base):
         return {
             "lto_id": self.lto_id,
             "alta_solicitada": self.alta_solicitada,
+            "bloqueado_clinico": self.bloqueado_clinico,
             "prontuario_proximo": self.prontuario_proximo,
             "idade_proximo": self.idade_proximo,
             "especialidade_proximo": self.especialidade_proximo,
