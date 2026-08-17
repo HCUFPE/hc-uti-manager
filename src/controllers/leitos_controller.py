@@ -3,12 +3,16 @@ from typing import List, Dict, Any, Optional
 from datetime import date, datetime, timedelta
 import asyncio
 import os
+from sqlalchemy import select
+from models.leito_estado import LeitoEstado
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 class LeitosController:
+    _lock = asyncio.Lock()
+
     def __init__(self, census_provider, estado_provider, alta_provider=None, solicitacao_provider=None, historico_provider=None):
         self.census_provider = census_provider
         self.estado_provider = estado_provider
@@ -158,21 +162,32 @@ class LeitosController:
                 prontuario_aghu = leito.get('prontuario_atual')
                 alta_solicitada = leito.get('alta_solicitada', False)
                 if est.bloqueado_clinico and prontuario_aghu and str(prontuario_aghu).strip() not in ["", "0", "N/D"] and not alta_solicitada:
-                    try:
-                        await self.estado_provider.salvar_bloqueio_clinico(lto_id, False)
-                        est.bloqueado_clinico = False
-                        leito['bloqueado_clinico'] = False
-                        
-                        if self.historico_provider:
-                            await self.historico_provider.registrar(
-                                operador="Sistema (Censo)",
-                                tipo="cancelamento_reserva",
-                                acao="Cancelou reserva de leito (Clínico/COB/HEM) - Auto-limpeza via censo",
-                                detalhes=f"Reserva preventiva do leito {lto_id} limpa automaticamente devido à ocupação física do leito pelo prontuário {prontuario_aghu}.",
-                                prontuario=None
-                            )
-                    except Exception as e:
-                        logger.error(f"Erro na autolimpeza de bloqueio clinico do leito {lto_id}: {e}")
+                    # Serialização via lock assíncrono com checagem dupla para evitar duplicidades sob concorrência
+                    async with self._lock:
+                        result = await self.estado_provider.session.execute(
+                            select(LeitoEstado).where(LeitoEstado.lto_id == lto_id)
+                        )
+                        db_est = result.scalar_one_or_none()
+                        if db_est and db_est.bloqueado_clinico:
+                            try:
+                                await self.estado_provider.salvar_bloqueio_clinico(lto_id, False)
+                                est.bloqueado_clinico = False
+                                leito['bloqueado_clinico'] = False
+                                
+                                if self.historico_provider:
+                                    await self.historico_provider.registrar(
+                                        operador="Sistema (Censo)",
+                                        tipo="cancelamento_reserva",
+                                        acao="Cancelou reserva de leito (Clínico/COB/HEM) - Auto-limpeza via censo",
+                                        detalhes=f"Reserva preventiva do leito {lto_id} limpa automaticamente devido à ocupação física do leito pelo prontuário {prontuario_aghu}.",
+                                        prontuario=None
+                                    )
+                            except Exception as e:
+                                logger.error(f"Erro na autolimpeza de bloqueio clinico do leito {lto_id}: {e}")
+                        elif db_est and not db_est.bloqueado_clinico:
+                            # Se outra requisição concorrente já limpou, apenas atualiza a referência local da listagem
+                            est.bloqueado_clinico = False
+                            leito['bloqueado_clinico'] = False
 
                 prontuario_reserva = str(est.prontuario_proximo or "").strip()
                 
