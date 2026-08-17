@@ -23,6 +23,7 @@ flowchart LR
         UC6([UC006 - Visualizar e Reconhecer Alertas])
         UC7([UC007 - Acompanhar KPIs e Indicadores])
         UC8([UC008 - Reservar Leito Clínico/COB/HEM Preventivamente])
+        UC9([UC009 - Realizar Passagem de Caso Clínica])
     end
     
     %% Relacionamentos
@@ -30,11 +31,13 @@ flowchart LR
     BC --- UC2
     BC --- UC3
     BC --- UC6
+    BC --- UC9
     
     UTI --- UC2
     UTI --- UC4
     UTI --- UC6
     UTI --- UC8
+    UTI --- UC9
     
     NIR --- UC5
     NIR --- UC6
@@ -98,6 +101,15 @@ flowchart LR
     3. O sistema cria o bloqueio clínico no banco SQLite, define a flag `bloqueado_clinico = True` e registra o histórico de auditoria.
     4. O leito fica indisponível para reservas automáticas do Bloco Cirúrgico.
 
+### UC009 — Realizar Passagem de Caso Clínica
+*   **Atores:** Bloco Cirúrgico (BC) e Equipe da UTI.
+*   **Fluxo Principal:**
+    1. Ao finalizar uma cirurgia, o Bloco Cirúrgico clica em "Finalizar Cirurgia".
+    2. O sistema abre o modal perguntando se deseja inserir passagem de caso.
+    3. O solicitante insere observações clínicas (opcional) e confirma.
+    4. Na UTI, ao clicar em "Liberar Encaminhamento" para autorizar o transporte, se houver dados clínicos digitados, o sistema exibe obrigatoriamente um modal de checkpoint com o conteúdo da Passagem de Caso.
+    5. A equipe da UTI clica em "Ciente e Liberar" para confirmar a recepção e autorizar o transporte.
+
 ---
 
 ## 3. Detalhamento SDD (CARE)
@@ -121,3 +133,11 @@ flowchart LR
     2. Ao sincronizar o censo físico do AGHU, se o leito com bloqueio for detectado como fisicamente ocupado por qualquer paciente, o sistema desativa `bloqueado_clinico = False` e grava o log de auto-limpeza.
 *   **Result:** Integridade total do estado dos leitos no painel sem criar leitos fantasmas ou bloqueios eternos.
 *   **Evaluation:** Cobertura de testes unitários simulando sincronizações de censo e swaps de leitos clínicos.
+
+### [CARE-UC009] Segurança e Opcionalidade na Passagem de Caso
+*   **Context:** Uma solicitação tem cirurgia finalizada com ou sem dados clínicos na Passagem de Caso.
+*   **Action:** O sistema diferencia o fluxo de liberação:
+    1. Se `passagem_caso` for preenchida, o botão de liberação abre obrigatoriamente um modal de checkpoint (Cenário B).
+    2. Se `passagem_caso` for nula/vazia, a liberação ocorre diretamente em 1 único clique (Cenário A), sem interromper a rotina de casos não graves.
+*   **Result:** Garantia de segurança para pacientes complexos sem engessar a regulação de rotina.
+*   **Evaluation:** Validado via testes unitários e no modal de tela do censo de leitos.

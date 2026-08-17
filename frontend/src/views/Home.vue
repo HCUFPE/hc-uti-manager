@@ -267,6 +267,7 @@ type Patient = {
   turno?: string;
   horaCirurgiaFinalizada?: string;
   dataNascimento?: string;
+  passagemCaso?: string;
 };
 
 type Leito = {
@@ -284,6 +285,7 @@ type Leito = {
   encaminhamentoLiberado?: boolean;
   solicitacaoId?: number;
   bloqueadoClinico?: boolean;
+  passagemCaso?: string;
 };
 
 const leitos = ref<Leito[]>([]);

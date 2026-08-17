@@ -24,6 +24,7 @@ class SolicitacaoLeito(Base):
     prioridade = Column(String(10), nullable=True) # P1, P2, P3, P4, P5
     prioridade_manual = Column(Boolean, default=False, server_default="0", nullable=False)
     perfil_solicitante = Column(String(50), nullable=True) # COB, BC, HEM, UTI, etc.
+    passagem_caso = Column(String, nullable=True) # Observações clínicas críticas da passagem de caso
     
     cirurgia_finalizada = Column(Boolean, default=False)
     encaminhamento_liberado = Column(Boolean, default=False)
@@ -56,6 +57,7 @@ class SolicitacaoLeito(Base):
             "prioridade_manual": bool(self.prioridade_manual),
             "destino": self.destino,
             "perfil_solicitante": self.perfil_solicitante,
+            "passagem_caso": self.passagem_caso,
             "cirurgia_finalizada": bool(self.cirurgia_finalizada),
             "encaminhamento_liberado": bool(self.encaminhamento_liberado),
             "cirurgia_finalizada_em": cirurgia_finalizada_local.isoformat() if cirurgia_finalizada_local else None,

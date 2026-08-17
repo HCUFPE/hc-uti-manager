@@ -210,7 +210,7 @@
                       ? 'bg-emerald-600 border-none text-white font-bold px-4 shadow-sm opacity-100 cursor-not-allowed'
                       : 'bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 border-none shadow-sm flex items-center gap-1'
                   ]"
-                  @click="confirmarCirurgiaFinalizada(sol.id)"
+                  @click="abrirModalPassagemCaso(sol)"
                 >
                   <CheckIcon class="h-4 w-4 mr-1 text-white" />
                   {{ sol.cirurgia_finalizada ? 'Cirurgia Concluída' : 'Finalizar Cirurgia' }}
@@ -537,6 +537,31 @@
         </UiButton>
       </template>
     </Modal>
+
+    <!-- Modal Passagem de Caso -->
+    <Modal :show="showModalPassagemCaso" @close="fecharModalPassagemCaso">
+      <template #header>Passagem de Caso - Prontuário {{ solSelecionada?.prontuario }}</template>
+      <div class="space-y-4 text-left">
+        <p class="text-sm text-slate-600">
+          Você deseja preencher informações clínicas críticas do paciente (passagem de caso) para a equipe da UTI?
+        </p>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Observações Clínicas (Opcional)</label>
+          <textarea
+            v-model="passagemCasoTexto"
+            placeholder="Digite os principais dados clínicos (DVA, drogas, acesso, ventilação, etc.)"
+            rows="4"
+            class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          ></textarea>
+        </div>
+      </div>
+      <template #footer>
+        <UiButton variant="outline" @click="confirmarFinalizarSemPassagem">Não (Finalizar Sem Passagem)</UiButton>
+        <UiButton @click="confirmarFinalizarComPassagem" :disabled="submetendo" class="bg-blue-600 text-white hover:bg-blue-700">
+          {{ submetendo ? 'Salvando...' : 'Salvar e Finalizar' }}
+        </UiButton>
+      </template>
+    </Modal>
   </section>
 </template>
 
@@ -632,6 +657,10 @@ const idCancelamento = ref('');
 const isCancelamentoReserva = ref(false);
 const showModalConfirmacaoTrocaProntuario = ref(false);
 const concluidaExpandida = ref(false);
+
+const showModalPassagemCaso = ref(false);
+const passagemCasoTexto = ref("");
+const idSolicitacaoFinalizacao = ref("");
 
 const formNova = ref({
   prontuario: '',
@@ -978,14 +1007,42 @@ function podeGerenciar(sol: any) {
   return solPerfil === userGrupo;
 }
 
-async function confirmarCirurgiaFinalizada(id: string) {
+function abrirModalPassagemCaso(sol: any) {
+  solSelecionada.value = sol;
+  idSolicitacaoFinalizacao.value = sol.id;
+  passagemCasoTexto.value = "";
+  showModalPassagemCaso.value = true;
+}
+
+function fecharModalPassagemCaso() {
+  showModalPassagemCaso.value = false;
+  passagemCasoTexto.value = "";
+  idSolicitacaoFinalizacao.value = "";
+}
+
+async function confirmarFinalizarSemPassagem() {
+  showModalPassagemCaso.value = false;
+  await executarConfirmarCirurgiaFinalizada(idSolicitacaoFinalizacao.value, null);
+}
+
+async function confirmarFinalizarComPassagem() {
+  showModalPassagemCaso.value = false;
+  await executarConfirmarCirurgiaFinalizada(idSolicitacaoFinalizacao.value, passagemCasoTexto.value);
+}
+
+async function executarConfirmarCirurgiaFinalizada(id: string, passagem: string | null) {
+  submetendo.value = true;
   try {
-    await api.post(`/api/solicitacoes/${id}/cirurgia-finalizada`);
+    const payload = passagem ? { passagem_caso: passagem } : null;
+    await api.post(`/api/solicitacoes/${id}/cirurgia-finalizada`, payload);
     toast.success('Cirurgia sinalizada como finalizada.');
     await carregarSolicitacoes();
   } catch (error) {
     console.error('Erro ao marcar cirurgia finalizada:', error);
     toast.error('Não foi possível marcar cirurgia como finalizada.');
+  } finally {
+    submetendo.value = false;
+    fecharModalPassagemCaso();
   }
 }
 

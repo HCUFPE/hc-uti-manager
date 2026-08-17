@@ -222,6 +222,7 @@ class LeitosController:
                     leito['nome_proximo'] = None
                     leito['hora_cirurgia_proximo'] = None
                     leito['cirurgia_finalizada_em'] = None
+                    leito['passagem_caso'] = None
                     
                     # Busca info da cirurgia
                     sol_id = getattr(est, 'solicitacao_id', None)
@@ -236,6 +237,7 @@ class LeitosController:
                             leito['encaminhamento_liberado'] = getattr(sol, 'encaminhamento_liberado', False)
                             leito['solicitacao_id'] = sol.id
                             leito['cirurgia_finalizada_em'] = (sol.cirurgia_finalizada_em - timedelta(hours=3)).isoformat() if getattr(sol, 'cirurgia_finalizada_em', None) else None
+                            leito['passagem_caso'] = getattr(sol, 'passagem_caso', None)
             else:
                 leito['conflito_reserva'] = False
                 leito['prontuario_proximo'] = leito.get('prontuario_proximo')
@@ -244,6 +246,7 @@ class LeitosController:
                 leito['nome_proximo'] = leito.get('nome_proximo')
                 leito['hora_cirurgia_proximo'] = leito.get('hora_cirurgia_proximo')
                 leito['cirurgia_finalizada_em'] = leito.get('cirurgia_finalizada_em')
+                leito['passagem_caso'] = leito.get('passagem_caso')
         return leitos
 
     async def listar(self):

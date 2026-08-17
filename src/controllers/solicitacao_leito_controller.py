@@ -686,7 +686,7 @@ class SolicitacaoLeitoController:
 
         return {"message": "Reserva cancelada. Solicitação voltou para Pendente."}
 
-    async def marcar_cirurgia_finalizada(self, sol_id: int) -> dict:
+    async def marcar_cirurgia_finalizada(self, sol_id: int, passagem_caso: str = None) -> dict:
         """Marca que a cirurgia do paciente foi finalizada."""
         sol = await self.leito_provider.get_por_id(sol_id)
         if not sol:
@@ -694,7 +694,8 @@ class SolicitacaoLeitoController:
         from datetime import datetime
         await self.leito_provider.atualizar(sol_id, {
             "cirurgia_finalizada": True,
-            "cirurgia_finalizada_em": datetime.utcnow()
+            "cirurgia_finalizada_em": datetime.utcnow(),
+            "passagem_caso": passagem_caso
         })
         return {"message": "Cirurgia finalizada com sucesso."}
 

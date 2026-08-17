@@ -259,6 +259,7 @@ async def cancelar_reserva(
 @router.post("/{sol_id}/cirurgia-finalizada")
 async def marcar_cirurgia_finalizada(
     sol_id: int,
+    payload: dict = None,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([
@@ -270,12 +271,18 @@ async def marcar_cirurgia_finalizada(
     if not solicitacao:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
     
-    result = await controller.marcar_cirurgia_finalizada(sol_id)
+    passagem = payload.get("passagem_caso") if payload else None
+    result = await controller.marcar_cirurgia_finalizada(sol_id, passagem_caso=passagem)
+    
+    detalhes_hist = f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) com cirurgia concluída."
+    if passagem:
+        detalhes_hist += f" Passagem de caso: {passagem}"
+        
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
         tipo="cirurgia_finalizada",
         acao="Cirurgia Finalizada",
-        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) com cirurgia concluída.",
+        detalhes=detalhes_hist,
         prontuario=str(solicitacao.prontuario)
     )
     return result

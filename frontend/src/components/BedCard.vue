@@ -158,7 +158,7 @@
       <button
         v-if="proximoPaciente && cirurgiaFinalizada && !encaminhamentoLiberado"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-600 shadow-sm"
-        @click="emit('liberar-encaminhamento', solicitacaoId!)"
+        @click="handleCliqueLiberar"
       >
         Liberar Encaminhamento
       </button>
@@ -184,6 +184,33 @@
         Cancelar Reserva
       </button>
     </div>
+
+    <!-- Modal de Checkpoint de Passagem de Caso (UTI) -->
+    <Modal :show="showModalHandover" @close="showModalHandover = false">
+      <template #header>Passagem de Caso - Prontuário {{ proximoPaciente?.prontuario }}</template>
+      <div class="space-y-4 text-left p-1">
+        <p class="text-sm text-slate-600">
+          Atenção! Este paciente possui informações clínicas de passagem de caso fornecidas pelo Bloco Cirúrgico. Por favor, revise antes de liberar o transporte:
+        </p>
+        <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-4 text-sm text-amber-900 font-medium whitespace-pre-wrap">
+          {{ passagemCaso }}
+        </div>
+      </div>
+      <template #footer>
+        <button
+          class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+          @click="showModalHandover = false"
+        >
+          Cancelar
+        </button>
+        <button
+          class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 cursor-pointer"
+          @click="confirmarLiberacao"
+        >
+          Ciente e Liberar Transporte
+        </button>
+      </template>
+    </Modal>
   </article>
 </template>
 
@@ -193,6 +220,7 @@ import { useAuthStore } from '../stores/auth';
 import { ExclamationTriangleIcon, ClockIcon, MapPinIcon } from '@heroicons/vue/24/outline';
 import StatusBadge from './StatusBadge.vue';
 import UiBadge from './ui/Badge.vue';
+import Modal from './Modal.vue';
 
 type BedStatus = 'disponivel' | 'ocupado' | 'higienizacao' | 'desativado' | 'alta' | 'reservado';
 type BedType = 'cirurgico' | 'hem' | 'obstetrico' | 'uti' | 'outro' | 'nao_definido';
@@ -225,9 +253,25 @@ const props = defineProps<{
   encaminhamentoLiberado?: boolean;
   solicitacaoId?: number;
   bloqueadoClinico?: boolean;
+  passagemCaso?: string;
 }>();
 
 const authStore = useAuthStore();
+
+const showModalHandover = ref(false);
+
+const handleCliqueLiberar = () => {
+  if (props.passagemCaso) {
+    showModalHandover.value = true;
+  } else {
+    emit('liberar-encaminhamento', props.solicitacaoId!);
+  }
+};
+
+const confirmarLiberacao = () => {
+  showModalHandover.value = false;
+  emit('liberar-encaminhamento', props.solicitacaoId!);
+};
 
 const emit = defineEmits<{
   'solicitar-alta': [];
