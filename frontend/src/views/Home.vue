@@ -352,6 +352,7 @@ const loadLeitos = async () => {
       encaminhamentoLiberado: l.encaminhamento_liberado || false,
       solicitacaoId: l.solicitacao_id,
       bloqueadoClinico: l.bloqueado_clinico || false,
+      passagemCaso: l.passagem_caso || undefined,
     }));
 
     // Identificar leitos com cirurgia concluída e encaminhamento pendente de liberação
