@@ -556,8 +556,10 @@
         </div>
       </div>
       <template #footer>
-        <UiButton variant="outline" @click="confirmarFinalizarSemPassagem">Não (Finalizar Sem Passagem)</UiButton>
-        <UiButton @click="confirmarFinalizarComPassagem" :disabled="submetendo" class="bg-blue-600 text-white hover:bg-blue-700">
+        <UiButton variant="outline" @click="confirmarFinalizarSemPassagem" :disabled="submetendo || !!passagemCasoTexto.trim()">
+          Não (Finalizar Sem Passagem)
+        </UiButton>
+        <UiButton @click="confirmarFinalizarComPassagem" :disabled="submetendo || !passagemCasoTexto.trim()" class="bg-blue-600 text-white hover:bg-blue-700">
           {{ submetendo ? 'Salvando...' : 'Salvar e Finalizar' }}
         </UiButton>
       </template>
@@ -1021,6 +1023,7 @@ function fecharModalPassagemCaso() {
 }
 
 async function confirmarFinalizarSemPassagem() {
+  passagemCasoTexto.value = "";
   showModalPassagemCaso.value = false;
   await executarConfirmarCirurgiaFinalizada(idSolicitacaoFinalizacao.value, null);
 }
