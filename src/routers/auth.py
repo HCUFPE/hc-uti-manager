@@ -1,5 +1,6 @@
 # src/routers/auth.py
 
+import os
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status, Form
