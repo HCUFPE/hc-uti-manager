@@ -32,7 +32,10 @@ def main():
             
             # 6. Reiniciar o serviço systemd para validar tudo (Tarefa 2.3)
             "systemctl restart hc-uti.service",
-            "sleep 8"
+            "sleep 12",
+            
+            # 7. Executar migrações do Alembic no banco de dados de produção
+            "podman exec -i hc-uti-backend alembic upgrade head"
         ]
         
         for cmd in commands:
