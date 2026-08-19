@@ -100,19 +100,36 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
             logger.debug(f"LDAP Bind FAILED: Empty password for {user}")
             raise LDAPBindError("Empty password not allowed")
             
-        server = Server(self.ad_url, get_info=ALL)
-        conn = Connection(
-            server,
-            user=user,
-            password=password,
-            receive_timeout=10,
-        )
-        if not conn.bind():
-            logger.debug(f"LDAP Bind FAILED for {user}. Result: {conn.result}")
-            raise LDAPBindError(f"Invalid credentials")
+        urls = [url.strip() for url in self.ad_url.split(",")]
+        last_exception = None
         
-        logger.debug(f"LDAP Bind SUCCESS for {user}")
-        return conn
+        for url in urls:
+            logger.debug(f"Attempting LDAP Bind on server: {url}")
+            try:
+                server = Server(url, get_info=ALL)
+                conn = Connection(
+                    server,
+                    user=user,
+                    password=password,
+                    receive_timeout=10,
+                )
+                if conn.bind():
+                    logger.debug(f"LDAP Bind SUCCESS for {user} on server {url}")
+                    return conn
+                else:
+                    logger.debug(f"LDAP Bind FAILED for {user} on server {url}. Result: {conn.result}")
+                    # Se as credenciais forem inválidas, falha imediatamente (evita requisições extras demoradas)
+                    raise LDAPBindError("Invalid credentials")
+            except LDAPBindError as e:
+                # Repassa o erro de credenciais inválidas diretamente para cima
+                raise e
+            except (LDAPException, Exception) as e:
+                logger.warning(f"LDAP connection failed on server {url}: {e}")
+                last_exception = e
+                continue
+                
+        # Se todos falharem por problemas de rede ou conexão
+        raise LDAPBindError(f"All LDAP servers failed. Last error: {last_exception}")
 
     def authenticate_user(self, username, password) -> dict:
         logger.info(f"--- Starting AD Authentication Process for: {username} ---")

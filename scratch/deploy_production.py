@@ -15,8 +15,8 @@ def main():
         
         # Sequência de comandos de deploy e limpeza
         commands = [
-            # 1. Puxar o código mais recente com o script de limpeza
-            "cd /var/app/hc-uti-manager && git pull origin master",
+            # 1. Descartar alterações locais na VM, buscar as tags/branches e fazer checkout do hotfix
+            "cd /var/app/hc-uti-manager && git restore . && git fetch origin && git checkout hotfix/concurrency-lock && git pull origin hotfix/concurrency-lock",
             
             # 2. Atualizar MOCK_BEDS para false (Tarefa 2.1)
             "sed -i 's/MOCK_BEDS=true/MOCK_BEDS=false/g' /var/app/hc-uti-manager/.env",
@@ -33,7 +33,7 @@ def main():
             # 6. Reiniciar o serviço systemd para validar tudo (Tarefa 2.3)
             "systemctl restart hc-uti.service",
             # Aguarda a inicialização completa do container
-            "until [ \"\\$(podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicializacao do container...'; sleep 3; done",
+            "until [ \"$(podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicializacao do container...'; sleep 3; done",
             
             # 7. Executar migrações do Alembic no banco de dados de produção
             "podman exec -i hc-uti-backend alembic upgrade head"
