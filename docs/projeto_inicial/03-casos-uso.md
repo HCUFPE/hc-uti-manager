@@ -105,9 +105,9 @@ flowchart LR
 *   **Atores:** Bloco Cirúrgico (BC) e Equipe da UTI.
 *   **Fluxo Principal:**
     1. Ao finalizar uma cirurgia, o Bloco Cirúrgico clica em "Finalizar Cirurgia".
-    2. O sistema abre o modal perguntando se deseja inserir passagem de caso.
-    3. O solicitante insere observações clínicas (opcional) e confirma.
-    4. Na UTI, ao clicar em "Liberar Encaminhamento" para autorizar o transporte, se houver dados clínicos digitados, o sistema exibe obrigatoriamente um modal de checkpoint com o conteúdo da Passagem de Caso.
+    2. O sistema abre o modal obrigatório de passagem de caso.
+    3. O solicitante insere obrigatoriamente as observações clínicas (o botão de confirmação permanece desabilitado enquanto o campo estiver vazio) e confirma.
+    4. Na UTI, ao clicar em "Liberar Encaminhamento" para autorizar o transporte, o sistema exibe obrigatoriamente um modal de checkpoint com o conteúdo da Passagem de Caso.
     5. A equipe da UTI clica em "Ciente e Liberar" para confirmar a recepção e autorizar o transporte.
 
 ---
@@ -119,7 +119,7 @@ flowchart LR
 *   **Action:** O backend verifica se `#B` já tem solicitação ativa. Se sim, reatribui a reserva de leito (SQLite `leito_estados` e `solicitacoes_leito.destino`) para `#B`, cancela a solicitação `#A` com a justificativa de mesclagem e gera logs detalhados de auditoria.
 *   **Result:** A substituição é refletida de forma transparente no painel e na fila, evitando duplicar o paciente `#B` no painel.
 *   **Evaluation:** Verificação via testes de integração simulando a rota de edição de prontuários com e sem reserva prévia.
-
+ 
 ### [CARE-UC006] Tratamento Concorrente de Alertas
 *   **Context:** Diversos componentes do frontend disparam requisições paralelas para gerar alertas ao mesmo tempo durante o boot da aplicação.
 *   **Action:** Envolver o motor de sincronização no `AlertaController.gerar_alertas()` usando um `asyncio.Lock()` global.
@@ -134,10 +134,10 @@ flowchart LR
 *   **Result:** Integridade total do estado dos leitos no painel sem criar leitos fantasmas ou bloqueios eternos.
 *   **Evaluation:** Cobertura de testes unitários simulando sincronizações de censo e swaps de leitos clínicos.
 
-### [CARE-UC009] Segurança e Opcionalidade na Passagem de Caso
-*   **Context:** Uma solicitação tem cirurgia finalizada com ou sem dados clínicos na Passagem de Caso.
-*   **Action:** O sistema diferencia o fluxo de liberação:
-    1. Se `passagem_caso` for preenchida, o botão de liberação abre obrigatoriamente um modal de checkpoint (Cenário B).
-    2. Se `passagem_caso` for nula/vazia, a liberação ocorre diretamente em 1 único clique (Cenário A), sem interromper a rotina de casos não graves.
-*   **Result:** Garantia de segurança para pacientes complexos sem engessar a regulação de rotina.
+### [CARE-UC009] Segurança e Obrigatoriedade na Passagem de Caso
+*   **Context:** Uma solicitação tem cirurgia finalizada, exigindo o repasse de informações de passagem de caso.
+*   **Action:** O sistema força o preenchimento de dados clínicos e gerencia a liberação:
+    1. O Bloco Cirúrgico só pode finalizar a cirurgia se digitar as observações na passagem de caso (bloqueio do botão no frontend e validação HTTP 400 no backend).
+    2. A liberação de encaminhamento na UTI exige obrigatoriamente a leitura e confirmação da passagem de caso por meio do modal de checkpoint.
+*   **Result:** Garantia de segurança total e rastreabilidade na transferência de todos os pacientes cirúrgicos pós-operatórios para a UTI.
 *   **Evaluation:** Validado via testes unitários e no modal de tela do censo de leitos.

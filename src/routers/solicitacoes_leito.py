@@ -271,7 +271,10 @@ async def marcar_cirurgia_finalizada(
     if not solicitacao:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
     
-    passagem = payload.get("passagem_caso") if payload else None
+    if not payload or not payload.get("passagem_caso") or not str(payload.get("passagem_caso")).strip():
+        raise HTTPException(status_code=400, detail="A passagem de caso é obrigatória para finalizar a cirurgia.")
+        
+    passagem = str(payload.get("passagem_caso")).strip()
     result = await controller.marcar_cirurgia_finalizada(sol_id, passagem_caso=passagem)
     
     detalhes_hist = f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) com cirurgia concluída."

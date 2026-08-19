@@ -543,10 +543,10 @@
       <template #header>Passagem de Caso - Prontuário {{ solSelecionada?.prontuario }}</template>
       <div class="space-y-4 text-left">
         <p class="text-sm text-slate-600">
-          Você deseja preencher informações clínicas críticas do paciente (passagem de caso) para a equipe da UTI?
+          Por favor, preencha as informações clínicas críticas do paciente (passagem de caso) para a equipe da UTI.
         </p>
         <div>
-          <label class="block text-sm font-medium text-slate-700">Observações Clínicas (Opcional)</label>
+          <label class="block text-sm font-medium text-slate-700">Observações Clínicas (Obrigatório)</label>
           <textarea
             v-model="passagemCasoTexto"
             placeholder="Digite os principais dados clínicos (DVA, drogas, acesso, ventilação, etc.)"
@@ -556,8 +556,8 @@
         </div>
       </div>
       <template #footer>
-        <UiButton variant="outline" @click="confirmarFinalizarSemPassagem" :disabled="submetendo || !!passagemCasoTexto.trim()">
-          Não (Finalizar Sem Passagem)
+        <UiButton variant="outline" @click="fecharModalPassagemCaso" :disabled="submetendo">
+          Cancelar
         </UiButton>
         <UiButton @click="confirmarFinalizarComPassagem" :disabled="submetendo || !passagemCasoTexto.trim()" class="bg-blue-600 text-white hover:bg-blue-700">
           {{ submetendo ? 'Salvando...' : 'Salvar e Finalizar' }}
@@ -1022,11 +1022,6 @@ function fecharModalPassagemCaso() {
   idSolicitacaoFinalizacao.value = "";
 }
 
-async function confirmarFinalizarSemPassagem() {
-  passagemCasoTexto.value = "";
-  showModalPassagemCaso.value = false;
-  await executarConfirmarCirurgiaFinalizada(idSolicitacaoFinalizacao.value, null);
-}
 
 async function confirmarFinalizarComPassagem() {
   showModalPassagemCaso.value = false;

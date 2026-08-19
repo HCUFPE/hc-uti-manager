@@ -19,7 +19,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF009** | Histórico de Auditoria | Log cronológico inalterável de todas as ações de usuários (ação, operador, detalhes, prontuário e timestamp). | Essencial |
 | **RF010** | KPIs e Indicadores | Dashboard com taxas de ocupação, total de admissões e segmentação de cancelamentos (separando os provocados pela UTI dos causados pelo Bloco). | Desejável |
 | **RF011** | Reserva Preventiva (Clínico/COB/HEM) | Permitir o bloqueio preventivo de leitos de UTI (incluindo leitos em limpeza ou com alta solicitada) para demandas clínicas, preservando o bloqueio no swap de leitos, autolimpando via censo e isolando estatísticas do BI. | Essencial |
-| **RF012** | Passagem de Caso | Permitir que o Bloco Cirúrgico insira opcionalmente observações clínicas ao finalizar cirurgias, exibindo um modal obrigatório de checkpoint na UTI antes de liberar o transporte do paciente. | Essencial |
+| **RF012** | Passagem de Caso | Exigir que o Bloco Cirúrgico insira obrigatoriamente observações clínicas ao finalizar cirurgias, exibindo um modal obrigatório de checkpoint na UTI antes de liberar o transporte do paciente. | Essencial |
 
 ---
 

@@ -96,6 +96,6 @@ class LeitoEstadoProvider:
 *   `POST /api/leitos/{lto_id}/cancelar-reserva-clinica` — Remove o bloqueio preventivo do leito correspondente e registra o log de cancelamento.
 
 ### E. Endpoints REST da API (Passagem de Caso)
-*   `POST /api/solicitacoes/{sol_id}/cirurgia-finalizada` — Marca a cirurgia associada à solicitação como concluída. Aceita um payload JSON opcional contendo `{ "passagem_caso": "dados clínicos..." }` para persistir observações de passagem de caso.
+*   `POST /api/solicitacoes/{sol_id}/cirurgia-finalizada` — Marca a cirurgia associada à solicitação como concluída. Exige um payload JSON contendo obrigatoriamente `{ "passagem_caso": "dados clínicos..." }` para persistir observações de passagem de caso.
 
 
