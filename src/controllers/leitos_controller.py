@@ -3,7 +3,11 @@ from typing import List, Dict, Any, Optional
 from datetime import date, datetime, timedelta
 import asyncio
 import os
+<<<<<<< HEAD
 from sqlalchemy import select
+=======
+from sqlalchemy import select, update
+>>>>>>> hotfix/concurrency-lock
 from models.leito_estado import LeitoEstado
 
 import logging
@@ -162,32 +166,37 @@ class LeitosController:
                 prontuario_aghu = leito.get('prontuario_atual')
                 alta_solicitada = leito.get('alta_solicitada', False)
                 if est.bloqueado_clinico and prontuario_aghu and str(prontuario_aghu).strip() not in ["", "0", "N/D"] and not alta_solicitada:
-                    # Serialização via lock assíncrono com checagem dupla para evitar duplicidades sob concorrência
-                    async with self._lock:
-                        result = await self.estado_provider.session.execute(
-                            select(LeitoEstado).where(LeitoEstado.lto_id == lto_id)
+                    # Executa um UPDATE condicional atômico direto no banco de dados.
+                    # O rowcount nos dirá se fomos nós que de fato alteramos o registro de True para False.
+                    try:
+                        stmt = (
+                            update(LeitoEstado)
+                            .where(LeitoEstado.lto_id == lto_id)
+                            .where(LeitoEstado.bloqueado_clinico == True)
+                            .values(bloqueado_clinico=False)
                         )
-                        db_est = result.scalar_one_or_none()
-                        if db_est and db_est.bloqueado_clinico:
-                            try:
-                                await self.estado_provider.salvar_bloqueio_clinico(lto_id, False)
-                                est.bloqueado_clinico = False
-                                leito['bloqueado_clinico'] = False
-                                
-                                if self.historico_provider:
-                                    await self.historico_provider.registrar(
-                                        operador="Sistema (Censo)",
-                                        tipo="cancelamento_reserva",
-                                        acao="Cancelou reserva de leito (Clínico/COB/HEM) - Auto-limpeza via censo",
-                                        detalhes=f"Reserva preventiva do leito {lto_id} limpa automaticamente devido à ocupação física do leito pelo prontuário {prontuario_aghu}.",
-                                        prontuario=None
-                                    )
-                            except Exception as e:
-                                logger.error(f"Erro na autolimpeza de bloqueio clinico do leito {lto_id}: {e}")
-                        elif db_est and not db_est.bloqueado_clinico:
-                            # Se outra requisição concorrente já limpou, apenas atualiza a referência local da listagem
+                        result = await self.estado_provider.session.execute(stmt)
+                        if result.rowcount > 0:
+                            # Confirmado: fomos nós que limpamos o bloqueio clínico. Commita imediatamente.
+                            await self.estado_provider.session.commit()
+                            
                             est.bloqueado_clinico = False
                             leito['bloqueado_clinico'] = False
+                            
+                            if self.historico_provider:
+                                await self.historico_provider.registrar(
+                                    operador="Sistema (Censo)",
+                                    tipo="cancelamento_reserva",
+                                    acao="Cancelou reserva de leito (Clínico/COB/HEM) - Auto-limpeza via censo",
+                                    detalhes=f"Reserva preventiva do leito {lto_id} limpa automaticamente devido à ocupação física do leito pelo prontuário {prontuario_aghu}.",
+                                    prontuario=None
+                                )
+                        else:
+                            # Outra requisição concorrente já limpou no banco de dados. Apenas atualiza a listagem local em memória.
+                            est.bloqueado_clinico = False
+                            leito['bloqueado_clinico'] = False
+                    except Exception as e:
+                        logger.error(f"Erro na autolimpeza de bloqueio clinico do leito {lto_id}: {e}")
 
                 prontuario_reserva = str(est.prontuario_proximo or "").strip()
                 
