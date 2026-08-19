@@ -3,11 +3,7 @@ from typing import List, Dict, Any, Optional
 from datetime import date, datetime, timedelta
 import asyncio
 import os
-<<<<<<< HEAD
-from sqlalchemy import select
-=======
 from sqlalchemy import select, update
->>>>>>> hotfix/concurrency-lock
 from models.leito_estado import LeitoEstado
 
 import logging
