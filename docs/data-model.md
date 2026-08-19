@@ -80,7 +80,7 @@ Campos atualmente usados (mock em frontend/src/views/Solicitacoes.vue):
 | status | enum(Pendente, Reservado) | controla botoes: reservar, cancelar, cancelar reserva |
 | turno | string | periodo do dia |
 | destino | string? | leito ou setor alvo quando reservado |
-| passagem_caso | string? | dados clínicos críticos da passagem de caso |
+| passagem_caso | string | dados clínicos da passagem de caso (obrigatório para cirurgia finalizada) |
 Sugestoes de campos uteis: data_solicitacao, prioridade (baixa/media/alta/critica), origem_solicitante (BC, NIR, PS), responsavel_solicitante, justificativa_clinica, SLA_max_horas, reservado_em/por, cancelado_em/motivo/por, previsao_ocupacao, anexos ou exames chave.
 
 ## Alta (e destino)
