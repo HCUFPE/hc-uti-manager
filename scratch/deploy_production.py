@@ -15,27 +15,18 @@ def main():
         
         # Sequência de comandos de deploy e limpeza
         commands = [
-            # 1. Descartar alterações locais na VM, buscar as tags/branches e fazer checkout do hotfix
-            "cd /var/app/hc-uti-manager && git restore . && git fetch origin && git checkout hotfix/concurrency-lock && git pull origin hotfix/concurrency-lock",
+            # 1. Descartar alterações locais na VM, buscar as tags/branches e fazer checkout do master
+            "cd /var/app/hc-uti-manager && git restore . && git fetch origin && git checkout master && git pull origin master",
             
-            # 2. Atualizar MOCK_BEDS para false (Tarefa 2.1)
+            # 2. Atualizar MOCK_BEDS para false
             "sed -i 's/MOCK_BEDS=true/MOCK_BEDS=false/g' /var/app/hc-uti-manager/.env",
             
-            # 3. Copiar o script para a pasta montada no container (data/)
-            "cp /var/app/hc-uti-manager/scratch/production_cleanup.py /var/app/hc-uti-manager/data/production_cleanup.py",
-            
-            # 4. Executar o script de limpeza dentro do container backend (Tarefa 2.2)
-            "podman exec -i hc-uti-backend python /app/data/production_cleanup.py",
-            
-            # 5. Remover o script temporário do volume
-            "rm -f /var/app/hc-uti-manager/data/production_cleanup.py",
-            
-            # 6. Reiniciar o serviço systemd para validar tudo (Tarefa 2.3)
+            # 3. Reiniciar o serviço systemd para atualizar os containers
             "systemctl restart hc-uti.service",
             # Aguarda a inicialização completa do container
             "until [ \"$(podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicializacao do container...'; sleep 3; done",
             
-            # 7. Executar migrações do Alembic no banco de dados de produção
+            # 4. Executar migrações do Alembic no banco de dados de produção
             "podman exec -i hc-uti-backend alembic upgrade head"
         ]
         
