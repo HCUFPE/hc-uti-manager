@@ -23,6 +23,19 @@ class AlertaProvider:
         return result.scalar_one_or_none()
 
     async def criar(self, data: dict) -> Alerta:
+        # Evita duplicatas em caso de execuções paralelas/concorrência
+        stmt = select(Alerta).where(
+            Alerta.titulo == data.get("titulo"),
+            Alerta.prontuario == data.get("prontuario"),
+            Alerta.perfil_alvo == data.get("perfil_alvo"),
+            Alerta.mensagem == data.get("mensagem"),
+            Alerta.criado_em == data.get("criado_em")
+        )
+        res = await self.session.execute(stmt)
+        existente = res.scalar_one_or_none()
+        if existente:
+            return existente
+
         alerta = Alerta(**data)
         self.session.add(alerta)
         await self.session.commit()

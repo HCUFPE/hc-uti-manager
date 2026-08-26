@@ -9,7 +9,16 @@
     </transition>
     <transition name="slide-up">
       <div v-if="show" class="fixed bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center z-50">
-        <div class="bg-white rounded-t-lg sm:rounded-lg shadow-xl w-full max-w-lg m-4">
+        <div
+          class="bg-white rounded-t-lg sm:rounded-lg shadow-xl w-full m-4"
+          :class="[
+            size === 'sm' ? 'max-w-sm' :
+            size === 'md' ? 'max-w-md' :
+            size === 'lg' ? 'max-w-2xl' :
+            size === 'xl' ? 'max-w-4xl' :
+            'max-w-lg'
+          ]"
+        >
           <div class="p-4 border-b flex justify-between items-center">
             <h2 class="text-xl font-semibold">
               <slot name="header">Modal Title</slot>
@@ -39,6 +48,10 @@ const props = defineProps({
   show: {
     type: Boolean,
     default: false,
+  },
+  size: {
+    type: String,
+    default: 'md',
   },
 });
 

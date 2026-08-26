@@ -41,6 +41,14 @@ class SolicitacaoLeito(Base):
         cirurgia_finalizada_local = (self.cirurgia_finalizada_em - timedelta(hours=3)) if self.cirurgia_finalizada_em else None
         encaminhamento_liberado_local = (self.encaminhamento_liberado_em - timedelta(hours=3)) if self.encaminhamento_liberado_em else None
         
+        import json
+        passagem_caso_parsed = None
+        if self.passagem_caso:
+            try:
+                passagem_caso_parsed = json.loads(self.passagem_caso)
+            except Exception:
+                passagem_caso_parsed = self.passagem_caso
+
         return {
             "id": self.id,
             "prontuario": self.prontuario,
@@ -57,7 +65,7 @@ class SolicitacaoLeito(Base):
             "prioridade_manual": bool(self.prioridade_manual),
             "destino": self.destino,
             "perfil_solicitante": self.perfil_solicitante,
-            "passagem_caso": self.passagem_caso,
+            "passagem_caso": passagem_caso_parsed,
             "cirurgia_finalizada": bool(self.cirurgia_finalizada),
             "encaminhamento_liberado": bool(self.encaminhamento_liberado),
             "cirurgia_finalizada_em": cirurgia_finalizada_local.isoformat() if cirurgia_finalizada_local else None,

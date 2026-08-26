@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from auth.roles import Role
 from typing import List, Dict, Any
+from pydantic import ValidationError
+from models.passagem_caso import PassagemCasoSchema
 from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
 from dependencies import get_solicitacao_leito_controller, get_historico_provider, get_app_db_session, check_role
 from providers.implementations.historico_provider import HistoricoProvider
@@ -10,6 +12,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.auth import auth_handler
 
 router = APIRouter(prefix="/api/solicitacoes", tags=["Solicitacoes"])
+
+@router.get("/{sol_id}")
+async def obter_solicitacao(
+    sol_id: int,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    current_user: dict = Depends(auth_handler.decode_token),
+):
+    """Obtém os detalhes de uma solicitação específica (incluindo passagem_caso)."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+    return solicitacao.to_dict()
 
 @router.get("", response_model=List[Dict[str, Any]])
 async def listar_solicitacoes(
@@ -271,15 +285,25 @@ async def marcar_cirurgia_finalizada(
     if not solicitacao:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
     
-    if not payload or not payload.get("passagem_caso") or not str(payload.get("passagem_caso")).strip():
+    if not payload or "passagem_caso" not in payload:
         raise HTTPException(status_code=400, detail="A passagem de caso é obrigatória para finalizar a cirurgia.")
         
-    passagem = str(payload.get("passagem_caso")).strip()
-    result = await controller.marcar_cirurgia_finalizada(sol_id, passagem_caso=passagem)
+    passagem_data = payload.get("passagem_caso")
+    try:
+        validated = PassagemCasoSchema(**passagem_data)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Erro de validação na passagem de caso: {e.errors()}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Dados de passagem de caso inválidos: {str(e)}")
+
+    import json
+    passagem_str = json.dumps(validated.dict())
+    
+    result = await controller.marcar_cirurgia_finalizada(sol_id, passagem_caso=passagem_str)
     
     detalhes_hist = f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) com cirurgia concluída."
-    if passagem:
-        detalhes_hist += f" Passagem de caso: {passagem}"
+    if passagem_str:
+        detalhes_hist += f" Passagem de caso estruturada preenchida."
         
     await historico.registrar(
         operador=current_user.get("username", "Sistema"),
@@ -290,9 +314,54 @@ async def marcar_cirurgia_finalizada(
     )
     return result
 
+@router.put("/{sol_id}/passagem-caso")
+async def editar_passagem_caso(
+    sol_id: int,
+    payload: dict = None,
+    controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
+    historico: HistoricoProvider = Depends(get_historico_provider),
+    current_user: dict = Depends(check_role([
+        Role.ADMIN, Role.BC, Role.BC_ADMIN, Role.COB, Role.COB_ADMIN, Role.HEM, Role.HEM_ADMIN
+    ])),
+):
+    """Permite ao Bloco Cirúrgico editar a passagem de caso, contanto que o encaminhamento ainda não tenha sido liberado."""
+    solicitacao = await controller.leito_provider.get_por_id(sol_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+        
+    if solicitacao.encaminhamento_liberado:
+        raise HTTPException(status_code=403, detail="Não é permitido editar a passagem de caso após a liberação do encaminhamento pela UTI.")
+
+    if not payload or "passagem_caso" not in payload:
+        raise HTTPException(status_code=400, detail="A passagem de caso é obrigatória.")
+
+    passagem_data = payload.get("passagem_caso")
+    try:
+        validated = PassagemCasoSchema(**passagem_data)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Erro de validação na passagem de caso: {e.errors()}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Dados de passagem de caso inválidos: {str(e)}")
+
+    import json
+    passagem_str = json.dumps(validated.dict())
+
+    solicitacao.passagem_caso = passagem_str
+    await controller.leito_provider.session.commit()
+
+    await historico.registrar(
+        operador=current_user.get("username", "Sistema"),
+        tipo="edicao_passagem",
+        acao="Editou Passagem de Caso",
+        detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) teve a passagem de caso atualizada.",
+        prontuario=str(solicitacao.prontuario)
+    )
+    return {"status": "success", "message": "Passagem de caso atualizada com sucesso."}
+
 @router.post("/{sol_id}/liberar-encaminhamento")
 async def liberar_encaminhamento(
     sol_id: int,
+    payload: dict = None,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -301,6 +370,22 @@ async def liberar_encaminhamento(
     solicitacao = await controller.leito_provider.get_por_id(sol_id)
     if not solicitacao:
         raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+    
+    if payload and "passagem_caso_avaliada" in payload:
+        avaliada = payload.get("passagem_caso_avaliada")
+        db_passagem = solicitacao.passagem_caso
+        if db_passagem:
+            import json
+            try:
+                db_parsed = json.loads(db_passagem) if isinstance(db_passagem, str) else db_passagem
+            except Exception:
+                db_parsed = db_passagem
+            
+            if db_parsed != avaliada:
+                raise HTTPException(
+                    status_code=409,
+                    detail="A passagem de caso foi alterada pelo Bloco Cirúrgico enquanto você a avaliava. Por favor, revise as novas informações antes de liberar."
+                )
     
     result = await controller.liberar_encaminhamento(sol_id)
     minutos = result.get("minutos_espera")

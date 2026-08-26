@@ -24,7 +24,8 @@ Campos atualmente usados:
 | cor | string | Pacientes.vue (detalhe) | valor livre |
 | idade | number | Home.vue, Solicitacoes.vue | derivado de dt_nascimento? atualmente mockado |
 | especialidade | string | Home.vue, Solicitacoes.vue | especialidade do atendimento atual |
-Sugestoes de campos uteis: contato_responsavel, alergias, risco_clinico/score, plano_de_saude, diagnostico_principal, data_admissao, data_alta_prevista, isolamento (boolean/motivo), origem_atendimento (PS, centro cirurgico etc.).
+Sugestoes de campos uteis: contato_responsavel, risco_clinico/score, plano_de_saude, diagnostico_principal, data_admissao, data_alta_prevista, origem_atendimento (PS, centro cirurgico etc.).
+*Nota: Alergias, Isolamento ("Não", "Contato", "Gotículas", "Aerossóis") e datas de criação de acessos venosos foram implementados no JSON estruturado de `passagem_caso`.*
 
 ### Mock de pacientes (CSV)
 - Arquivo: `data/pacientes.csv` (usado pelo `PacienteCsvProvider` quando `PACIENTE_PROVIDER_TYPE=CSV`).
@@ -80,7 +81,11 @@ Campos atualmente usados (mock em frontend/src/views/Solicitacoes.vue):
 | status | enum(Pendente, Reservado) | controla botoes: reservar, cancelar, cancelar reserva |
 | turno | string | periodo do dia |
 | destino | string? | leito ou setor alvo quando reservado |
-| passagem_caso | string | dados clínicos da passagem de caso (obrigatório para cirurgia finalizada) |
+| passagem_caso | string | dados clínicos da passagem de caso em formato JSON estruturado (obrigatório para cirurgia finalizada) |
+| cirurgia_finalizada | boolean | indica se a cirurgia foi finalizada pelo Bloco Cirúrgico |
+| encaminhamento_liberado | boolean | indica se o encaminhamento foi liberado pela UTI (Ciente da Passagem) |
+| cirurgia_finalizada_em | datetime | data/hora em que a cirurgia foi concluída (UTC) |
+| encaminhamento_liberado_em | datetime | data/hora em que a UTI liberou o encaminhamento (UTC) |
 Sugestoes de campos uteis: data_solicitacao, prioridade (baixa/media/alta/critica), origem_solicitante (BC, NIR, PS), responsavel_solicitante, justificativa_clinica, SLA_max_horas, reservado_em/por, cancelado_em/motivo/por, previsao_ocupacao, anexos ou exames chave.
 
 ## Alta (e destino)

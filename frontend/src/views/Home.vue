@@ -637,14 +637,16 @@ const handleCancelarReservaClinica = async (leito: Leito) => {
   }
 };
 
-const handleLiberarEncaminhamento = async (solicitacaoId: number) => {
+const handleLiberarEncaminhamento = async (solicitacaoId: number, passagemCasoAvaliada?: any) => {
   try {
-    await api.post(`/api/solicitacoes/${solicitacaoId}/liberar-encaminhamento`);
+    const payload = passagemCasoAvaliada ? { passagem_caso_avaliada: passagemCasoAvaliada } : {};
+    await api.post(`/api/solicitacoes/${solicitacaoId}/liberar-encaminhamento`, payload);
     toast.success('Encaminhamento do paciente liberado com sucesso.');
     await loadLeitos();
   } catch (error: any) {
     console.error(error);
-    toast.error('Erro ao liberar encaminhamento.');
+    const detail = error.response?.data?.detail || 'Erro ao liberar encaminhamento.';
+    toast.error(detail);
   }
 };
 

@@ -126,7 +126,11 @@ Armazena a fila de solicitações de vagas pós-operatórias ou reguladas para a
 *   `turno` (VARCHAR(50)): Turno da cirurgia (`Manha`, `Tarde`, `Noite`).
 *   `prioridade` (VARCHAR(10)): Rank sequencial na fila (ex: `P1`, `P2`, ...).
 *   `prioridade_manual` (BOOLEAN): Define se a prioridade foi fixada manualmente pelo operador.
-*   `passagem_caso` (VARCHAR): Observações clínicas e dados críticos de passagem de caso repassados pelo Bloco.
+*   `passagem_caso` (VARCHAR): Observações clínicas e dados críticos de passagem de caso em formato JSON.
+*   `cirurgia_finalizada` (BOOLEAN): Status informando se a cirurgia do paciente foi concluída no Bloco.
+*   `encaminhamento_liberado` (BOOLEAN): Status informando se a UTI deu o ciente e liberou a transferência.
+*   `cirurgia_finalizada_em` (DATETIME): Data e hora da conclusão da cirurgia (UTC).
+*   `encaminhamento_liberado_em` (DATETIME): Data e hora da liberação pela UTI (UTC).
 
 ### B. Tabela `leito_estados`
 Gere o estado e vínculos extras dos leitos físicos da UTI que não existem no AGHU.

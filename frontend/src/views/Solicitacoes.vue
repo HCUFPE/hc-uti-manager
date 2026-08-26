@@ -202,18 +202,37 @@
             <!-- Ações para Reservados -->
             <div v-if="authStore.isAdmin || authStore.isUTI || podeGerenciar(sol)" class="flex items-center gap-2 border-t border-emerald-50 bg-emerald-50/30 px-6 py-3">
               <template v-if="authStore.isSolicitante && podeGerenciar(sol)">
+                <!-- Botão Finalizar Cirurgia -->
                 <UiButton
+                  v-if="!sol.cirurgia_finalizada"
                   size="sm"
-                  :disabled="sol.cirurgia_finalizada"
-                  :class="[
-                    sol.cirurgia_finalizada 
-                      ? 'bg-emerald-600 border-none text-white font-bold px-4 shadow-sm opacity-100 cursor-not-allowed'
-                      : 'bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 border-none shadow-sm flex items-center gap-1'
-                  ]"
+                  class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 border-none shadow-sm flex items-center gap-1"
                   @click="abrirModalPassagemCaso(sol)"
                 >
                   <CheckIcon class="h-4 w-4 mr-1 text-white" />
-                  {{ sol.cirurgia_finalizada ? 'Cirurgia Concluída' : 'Finalizar Cirurgia' }}
+                  Finalizar Cirurgia
+                </UiButton>
+                
+                <!-- Botão Editar Passagem de Caso -->
+                <UiButton
+                  v-else-if="sol.cirurgia_finalizada && !sol.encaminhamento_liberado"
+                  size="sm"
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 border-none shadow-sm flex items-center gap-1"
+                  @click="abrirModalPassagemCaso(sol)"
+                >
+                  <PencilSquareIcon class="h-4 w-4 mr-1 text-white" />
+                  Editar Passagem
+                </UiButton>
+
+                <!-- Status de Cirurgia Concluída (quando já liberado pela UTI) -->
+                <UiButton
+                  v-else
+                  size="sm"
+                  disabled
+                  class="bg-emerald-600 border-none text-white font-bold px-4 shadow-sm opacity-100 cursor-not-allowed flex items-center gap-1"
+                >
+                  <CheckIcon class="h-4 w-4 mr-1 text-white" />
+                  Cirurgia Concluída
                 </UiButton>
                 <UiButton
                   size="sm"
@@ -539,27 +558,419 @@
     </Modal>
 
     <!-- Modal Passagem de Caso -->
-    <Modal :show="showModalPassagemCaso" @close="fecharModalPassagemCaso">
-      <template #header>Passagem de Caso - Prontuário {{ solSelecionada?.prontuario }}</template>
-      <div class="space-y-4 text-left">
-        <p class="text-sm text-slate-600">
-          Por favor, preencha as informações clínicas críticas do paciente (passagem de caso) para a equipe da UTI.
-        </p>
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Observações Clínicas (Obrigatório)</label>
-          <textarea
-            v-model="passagemCasoTexto"
-            placeholder="Digite os principais dados clínicos (DVA, drogas, acesso, ventilação, etc.)"
-            rows="4"
-            class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          ></textarea>
+    <Modal :show="showModalPassagemCaso" @close="fecharModalPassagemCaso" size="lg">
+      <template #header>
+        <div class="flex items-center justify-between w-full">
+          <span>{{ modoEdicaoPassagem ? 'Editar Passagem de Caso' : 'Passagem de Caso' }} - Prontuário {{ solSelecionada?.prontuario }}</span>
         </div>
+      </template>
+      <div class="space-y-6 text-left max-h-[70vh] overflow-y-auto overflow-x-hidden px-1">
+        
+        <!-- Identificação Básica -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Identificação Básica
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="cirurgia_nao_realizada" v-model="passagemCasoForm.cirurgia_nao_realizada" @change="lidarMudancaCirurgiaNaoRealizada" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <label for="cirurgia_nao_realizada" class="text-sm font-semibold text-red-600">CIRURGIA NÃO REALIZADA</label>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Procedimento Realizado *</label>
+              <input type="text" v-model="passagemCasoForm.procedimento_realizado" :disabled="passagemCasoForm.cirurgia_nao_realizada" placeholder="Nome do procedimento realizado" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-400" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Anestesia *</label>
+              <input type="text" v-model="passagemCasoForm.anestesia" placeholder="Ex: Geral, Raqui, Epidural" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Alergias *</label>
+              <div class="mt-2 space-y-2">
+                <div class="flex items-center gap-4">
+                  <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <input type="radio" value="Não" v-model="passagemCasoForm.alergias.opcao" /> Não
+                  </label>
+                  <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <input type="radio" value="Sim" v-model="passagemCasoForm.alergias.opcao" /> Sim
+                  </label>
+                </div>
+                <input v-if="passagemCasoForm.alergias.opcao === 'Sim'" type="text" v-model="passagemCasoForm.alergias.detalhe" placeholder="Quais alergias?" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Isolamento *</label>
+              <select 
+                v-model="passagemCasoForm.isolamento" 
+                class="mt-1 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+              >
+                <option value="" disabled>Selecione uma opção...</option>
+                <option value="Não">Não</option>
+                <option value="Contato">Contato</option>
+                <option value="Gotículas">Gotículas</option>
+                <option value="Aerossóis">Aerossóis</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Respiratório -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Respiratório *
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Via Aérea (Selecione uma opção)</span>
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" value="Espontânea" v-model="passagemCasoForm.respiratorio.via_aerea" @change="passagemCasoForm.respiratorio.via_aerea_outro_detalhe = ''" /> Espontânea
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" value="TOT" v-model="passagemCasoForm.respiratorio.via_aerea" @change="passagemCasoForm.respiratorio.via_aerea_outro_detalhe = ''" /> TOT
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" value="Traqueostomia" v-model="passagemCasoForm.respiratorio.via_aerea" @change="passagemCasoForm.respiratorio.via_aerea_outro_detalhe = ''" /> Traqueostomia
+                </label>
+                <div class="space-y-2">
+                  <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="radio" value="Outro" v-model="passagemCasoForm.respiratorio.via_aerea" /> Outro
+                  </label>
+                  <input v-if="passagemCasoForm.respiratorio.via_aerea === 'Outro'" type="text" v-model="passagemCasoForm.respiratorio.via_aerea_outro_detalhe" placeholder="Descreva a via aérea" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Suporte (Selecione uma opção)</span>
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" value="Ar ambiente" v-model="passagemCasoForm.respiratorio.suporte" /> Ar ambiente
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" value="O2 cateter" v-model="passagemCasoForm.respiratorio.suporte" /> O₂ cateter
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" value="Máscara" v-model="passagemCasoForm.respiratorio.suporte" /> Máscara
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" value="Ventilação mecânica" v-model="passagemCasoForm.respiratorio.suporte" /> Ventilação mecânica
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cardiovascular/Hemodinâmico -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Cardiovascular/Hemodinâmico *
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Hemodinâmica</span>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Estável" v-model="passagemCasoForm.cardiovascular.hemodinamica" /> Estável</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Instável" v-model="passagemCasoForm.cardiovascular.hemodinamica" /> Instável</label>
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Drogas Vasoativas</span>
+              <div class="space-y-2">
+                <div class="flex gap-4">
+                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Não" v-model="passagemCasoForm.cardiovascular.drogas_vasoativas.opcao" @change="passagemCasoForm.cardiovascular.drogas_vasoativas.detalhe = ''" /> Não</label>
+                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Sim" v-model="passagemCasoForm.cardiovascular.drogas_vasoativas.opcao" /> Sim</label>
+                </div>
+                <input v-if="passagemCasoForm.cardiovascular.drogas_vasoativas.opcao === 'Sim'" type="text" v-model="passagemCasoForm.cardiovascular.drogas_vasoativas.detalhe" placeholder="Droga/vazão" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Necessidade de reposição volêmica</span>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Não" v-model="passagemCasoForm.cardiovascular.reposicao_volemica" /> Não</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Sim" v-model="passagemCasoForm.cardiovascular.reposicao_volemica" /> Sim</label>
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Transfusão</span>
+              <div class="space-y-2">
+                <div class="flex gap-4">
+                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Não" v-model="passagemCasoForm.cardiovascular.transfusao.opcao" @change="passagemCasoForm.cardiovascular.transfusao.detalhe = ''" /> Não</label>
+                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Sim" v-model="passagemCasoForm.cardiovascular.transfusao.opcao" /> Sim</label>
+                </div>
+                <input v-if="passagemCasoForm.cardiovascular.transfusao.opcao === 'Sim'" type="text" v-model="passagemCasoForm.cardiovascular.transfusao.detalhe" placeholder="Hemocomponente/quantidade" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sangramento e Balanço -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Sangramento e Balanço *
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sangramento Estimado</span>
+              <select v-model="passagemCasoForm.sangramento_balanco.sangramento_estimado" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <option value="" disabled>Selecione uma opção</option>
+                <option value="Mínimo">Mínimo</option>
+                <option value="Pequeno">Pequeno</option>
+                <option value="Moderado">Moderado</option>
+                <option value="Importante">Importante</option>
+                <option value="Não se aplica">Não se aplica</option>
+              </select>
+              <div v-if="passagemCasoForm.sangramento_balanco.sangramento_estimado === 'Importante'" class="mt-2 flex items-center gap-2">
+                <span class="text-xs text-slate-500">Volume estimado:</span>
+                <input type="number" v-model="passagemCasoForm.sangramento_balanco.sangramento_volume" placeholder="mL" class="w-24 rounded-md border border-slate-200 px-2 py-1 text-xs focus:border-blue-500" />
+                <span class="text-xs text-slate-500">mL</span>
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Diurese Intraoperatória</span>
+              <div class="flex items-center gap-3">
+                <label class="flex items-center gap-1.5"><input type="radio" value="valor" v-model="passagemCasoForm.sangramento_balanco.diurese_intraoperatoria.opcao" /> Diurese (mL)</label>
+                <label class="flex items-center gap-1.5"><input type="radio" value="Não se aplica" v-model="passagemCasoForm.sangramento_balanco.diurese_intraoperatoria.opcao" /> Não se aplica</label>
+              </div>
+              <div v-if="passagemCasoForm.sangramento_balanco.diurese_intraoperatoria.opcao === 'valor'" class="mt-2 flex items-center gap-2">
+                <input type="number" v-model="passagemCasoForm.sangramento_balanco.diurese_intraoperatoria.valor" placeholder="Volume diurese" class="w-32 rounded-md border border-slate-200 px-2 py-1 text-xs focus:border-blue-500" />
+                <span class="text-xs text-slate-500">mL</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acessos, dispositivos e feridas -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Acessos, Dispositivos e Feridas *
+          </h3>
+          <div class="space-y-4 text-sm">
+            <div>
+              <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Acessos Venosos (Selecione pelo menos um) *</span>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                
+                <!-- Periferico -->
+                <div class="flex flex-col gap-1 border border-slate-100 rounded-lg p-2 bg-slate-50/50">
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="acesso_periferico" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.periferico" />
+                    <label for="acesso_periferico" class="text-sm font-semibold text-slate-700 cursor-pointer">Periférico</label>
+                  </div>
+                  <div v-if="passagemCasoForm.acessos_dispositivos.acessos_venosos.periferico" class="mt-1 space-y-1.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Local *:</span>
+                      <input type="text" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.periferico_local" placeholder="Ex: MSE" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Data Criação:</span>
+                      <input type="date" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.periferico_data" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500 bg-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CVC -->
+                <div class="flex flex-col gap-1 border border-slate-100 rounded-lg p-2 bg-slate-50/50">
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="acesso_cvc" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.cvc" />
+                    <label for="acesso_cvc" class="text-sm font-semibold text-slate-700 cursor-pointer">CVC</label>
+                  </div>
+                  <div v-if="passagemCasoForm.acessos_dispositivos.acessos_venosos.cvc" class="mt-1 space-y-1.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Local *:</span>
+                      <input type="text" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.cvc_local" placeholder="Ex: Subclávia D" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Data Criação:</span>
+                      <input type="date" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.cvc_data" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500 bg-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PICC -->
+                <div class="flex flex-col gap-1 border border-slate-100 rounded-lg p-2 bg-slate-50/50">
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="acesso_picc" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.picc" />
+                    <label for="acesso_picc" class="text-sm font-semibold text-slate-700 cursor-pointer">PICC</label>
+                  </div>
+                  <div v-if="passagemCasoForm.acessos_dispositivos.acessos_venosos.picc" class="mt-1 space-y-1.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Local *:</span>
+                      <input type="text" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.picc_local" placeholder="Ex: Basílica E" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Data Criação:</span>
+                      <input type="date" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.picc_data" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500 bg-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Outro -->
+                <div class="flex flex-col gap-1 border border-slate-100 rounded-lg p-2 bg-slate-50/50">
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="acesso_outro" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.outro" />
+                    <label for="acesso_outro" class="text-sm font-semibold text-slate-700 cursor-pointer">Outro Acesso Venoso</label>
+                  </div>
+                  <div v-if="passagemCasoForm.acessos_dispositivos.acessos_venosos.outro" class="mt-1 space-y-1.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Descrição *:</span>
+                      <input type="text" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.outro_detalhe" placeholder="Descreva o tipo e local" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-500 shrink-0">Data Criação:</span>
+                      <input type="date" v-model="passagemCasoForm.acessos_dispositivos.acessos_venosos.outro_data" class="flex-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500 bg-white" />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">PAI</span>
+                <div class="space-y-2">
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Não" v-model="passagemCasoForm.acessos_dispositivos.pai.opcao" @change="passagemCasoForm.acessos_dispositivos.pai.local = ''" /> Não</label>
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Sim" v-model="passagemCasoForm.acessos_dispositivos.pai.opcao" /> Sim</label>
+                  </div>
+                  <input v-if="passagemCasoForm.acessos_dispositivos.pai.opcao === 'Sim'" type="text" v-model="passagemCasoForm.acessos_dispositivos.pai.local" placeholder="Local" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sonda Vesical</span>
+                <div class="space-y-2">
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Não" v-model="passagemCasoForm.acessos_dispositivos.sonda_vesical.opcao" @change="passagemCasoForm.acessos_dispositivos.sonda_vesical.n_sonda = ''" /> Não</label>
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Sim" v-model="passagemCasoForm.acessos_dispositivos.sonda_vesical.opcao" /> Sim</label>
+                  </div>
+                  <input v-if="passagemCasoForm.acessos_dispositivos.sonda_vesical.opcao === 'Sim'" type="text" v-model="passagemCasoForm.acessos_dispositivos.sonda_vesical.n_sonda" placeholder="Nº da Sonda" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Ferida Operatória</span>
+                <div class="space-y-2">
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                      <input type="radio" :value="true" v-model="passagemCasoForm.acessos_dispositivos.ferida_operatoria.nao_se_aplica" @change="lidarMudancaNaoSeAplicaFerida" /> Não
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                      <input type="radio" :value="false" v-model="passagemCasoForm.acessos_dispositivos.ferida_operatoria.nao_se_aplica" /> Sim
+                    </label>
+                  </div>
+                  <input v-if="passagemCasoForm.acessos_dispositivos.ferida_operatoria.nao_se_aplica === false" type="text" v-model="passagemCasoForm.acessos_dispositivos.ferida_operatoria.local" placeholder="Local da Ferida" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Drenos</span>
+                <div class="space-y-2">
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Não" v-model="passagemCasoForm.acessos_dispositivos.drenos.opcao" @change="passagemCasoForm.acessos_dispositivos.drenos.tipo_local = ''" /> Não</label>
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Sim" v-model="passagemCasoForm.acessos_dispositivos.drenos.opcao" /> Sim</label>
+                  </div>
+                  <input v-if="passagemCasoForm.acessos_dispositivos.drenos.opcao === 'Sim'" type="text" v-model="passagemCasoForm.acessos_dispositivos.drenos.tipo_local" placeholder="Tipo e local" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+              </div>
+            </div>
+            
+            <div class="border-t pt-3">
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Outros Dispositivos (Opcional)</span>
+              <div class="flex flex-wrap gap-4">
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" v-model="passagemCasoForm.acessos_dispositivos.outros.sng_sne" /> SNG/SNE</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" v-model="passagemCasoForm.acessos_dispositivos.outros.ostomia" /> Ostomia</label>
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" v-model="passagemCasoForm.acessos_dispositivos.outros.outro" />
+                  <span>Outro:</span>
+                  <input v-if="passagemCasoForm.acessos_dispositivos.outros.outro" type="text" v-model="passagemCasoForm.acessos_dispositivos.outros.outro_detalhe" placeholder="Qual?" class="rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medicamentos -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Medicamentos
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Antibiótico *</span>
+              <div class="space-y-2">
+                <div class="flex gap-4">
+                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Não" v-model="passagemCasoForm.medicamentos.antibiotico.opcao" @change="passagemCasoForm.medicamentos.antibiotico.detalhe = ''" /> Não</label>
+                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="Sim" v-model="passagemCasoForm.medicamentos.antibiotico.opcao" /> Sim</label>
+                </div>
+                <input v-if="passagemCasoForm.medicamentos.antibiotico.opcao === 'Sim'" type="text" v-model="passagemCasoForm.medicamentos.antibiotico.detalhe" placeholder="Qual e horário" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Outras medicações relevantes</span>
+              <input type="text" v-model="passagemCasoForm.medicamentos.outras_medicacoes" placeholder="Outros medicamentos administrados" class="w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 mt-2" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Intercorrências durante o ato anestésico-cirúrgico -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Intercorrências durante o ato anestésico-cirúrgico
+          </h3>
+          <div class="text-sm space-y-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.nao_houve" @change="if(passagemCasoForm.intercorrencias.nao_houve) { passagemCasoForm.intercorrencias.hipotensao=false; passagemCasoForm.intercorrencias.hipertensao=false; passagemCasoForm.intercorrencias.arritmia=false; passagemCasoForm.intercorrencias.dessaturacao=false; passagemCasoForm.intercorrencias.broncoespasmo=false; passagemCasoForm.intercorrencias.sangramento_importante=false; passagemCasoForm.intercorrencias.reacao_medicamentosa=false;  passagemCasoForm.intercorrencias.parada_cardiorespiratoria=false; passagemCasoForm.intercorrencias.dificil_via_aerea=false; passagemCasoForm.intercorrencias.outro=false; }" /> Não houve</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.hipotensao" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Hipotensão</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.hipertensao" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Hipertensão</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.arritmia" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Arritmia</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.dessaturacao" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Dessaturação</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.broncoespasmo" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Broncoespasmo</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.sangramento_importante" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Sangramento importante</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.reacao_medicamentosa" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Reação medicamentosa</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.parada_cardiorespiratoria" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Parada cardiorrespiratória</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" v-model="passagemCasoForm.intercorrencias.dificil_via_aerea" :disabled="passagemCasoForm.intercorrencias.nao_houve" /> Difícil via aérea</label>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" v-model="passagemCasoForm.intercorrencias.outro" :disabled="passagemCasoForm.intercorrencias.nao_houve" />
+                <span>Outro:</span>
+                <input v-if="passagemCasoForm.intercorrencias.outro" type="text" v-model="passagemCasoForm.intercorrencias.outro_detalhe" placeholder="Descreva" class="rounded-md border border-slate-200 px-2 py-0.5 text-xs focus:border-blue-500" />
+              </div>
+            </div>
+            <div>
+              <span class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Descrição da intercorrência/conduta (Opcional)</span>
+              <textarea v-model="passagemCasoForm.intercorrencias.descricao_conduta" placeholder="Descreva condutas adotadas..." rows="3" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Responsável -->
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Profissional Responsável *
+          </h3>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Profissional responsável pela passagem *</label>
+            <input type="text" v-model="passagemCasoForm.profissional_responsavel" placeholder="Nome Completo / CRM / COREN" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+        </div>
+
+        <!-- Alerta de campos faltantes -->
+        <div v-if="listaCamposFaltantes.length > 0" class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1 mt-4">
+          <p class="font-bold flex items-center gap-1.5 text-amber-900">
+            <ExclamationTriangleIcon class="w-4 h-4 text-amber-600 shrink-0" />
+            Aguardando o preenchimento de campos obrigatórios:
+          </p>
+          <ul class="list-disc list-inside grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 pl-1">
+            <li v-for="err in listaCamposFaltantes" :key="err" class="text-amber-700">{{ err }}</li>
+          </ul>
+        </div>
+
       </div>
       <template #footer>
         <UiButton variant="outline" @click="fecharModalPassagemCaso" :disabled="submetendo">
           Cancelar
         </UiButton>
-        <UiButton @click="confirmarFinalizarComPassagem" :disabled="submetendo || !passagemCasoTexto.trim()" class="bg-blue-600 text-white hover:bg-blue-700">
+        
+        <UiButton v-if="modoEdicaoPassagem" @click="salvarEdicaoPassagemCaso" :disabled="submetendo || !formPassagemCasoValido" class="bg-blue-600 text-white hover:bg-blue-700">
+          {{ submetendo ? 'Salvando...' : 'Salvar Alterações' }}
+        </UiButton>
+        <UiButton v-else @click="confirmarFinalizarComPassagem" :disabled="submetendo || !formPassagemCasoValido" class="bg-blue-600 text-white hover:bg-blue-700">
           {{ submetendo ? 'Salvando...' : 'Salvar e Finalizar' }}
         </UiButton>
       </template>
@@ -661,8 +1072,267 @@ const showModalConfirmacaoTrocaProntuario = ref(false);
 const concluidaExpandida = ref(false);
 
 const showModalPassagemCaso = ref(false);
-const passagemCasoTexto = ref("");
 const idSolicitacaoFinalizacao = ref("");
+const modoEdicaoPassagem = ref(false);
+
+function criarFormPassagemCasoPadrao() {
+  return {
+    cirurgia_nao_realizada: false,
+    procedimento_realizado: "",
+    anestesia: "",
+    alergias: {
+      opcao: "",
+      detalhe: ""
+    },
+    isolamento: "",
+    respiratorio: {
+      via_aerea: "",
+      via_aerea_outro_detalhe: "",
+      suporte: ""
+    },
+    cardiovascular: {
+      hemodinamica: "",
+      drogas_vasoativas: {
+        opcao: "",
+        detalhe: ""
+      },
+      reposicao_volemica: "",
+      transfusao: {
+        opcao: "",
+        detalhe: ""
+      }
+    },
+    sangramento_balanco: {
+      sangramento_estimado: "",
+      sangramento_volume: null as number | null,
+      diurese_intraoperatoria: {
+        opcao: "",
+        valor: null as number | null
+      }
+    },
+    acessos_dispositivos: {
+      acessos_venosos: {
+        periferico: false,
+        periferico_local: "",
+        periferico_data: "",
+        cvc: false,
+        cvc_local: "",
+        cvc_data: "",
+        picc: false,
+        picc_local: "",
+        picc_data: "",
+        outro: false,
+        outro_detalhe: "",
+        outro_data: ""
+      },
+      pai: {
+        opcao: "",
+        local: ""
+      },
+      sonda_vesical: {
+        opcao: "",
+        n_sonda: ""
+      },
+      ferida_operatoria: {
+        local: "",
+        nao_se_aplica: null as any
+      },
+      drenos: {
+        opcao: "",
+        tipo_local: ""
+      },
+      outros: {
+        sng_sne: false,
+        ostomia: false,
+        outro: false,
+        outro_detalhe: ""
+      }
+    },
+    medicamentos: {
+      antibiotico: {
+        opcao: "",
+        detalhe: ""
+      },
+      outras_medicacoes: ""
+    },
+    intercorrencias: {
+      nao_houve: false,
+      hipotensao: false,
+      hipertensao: false,
+      arritmia: false,
+      dessaturacao: false,
+      broncoespasmo: false,
+      sangramento_importante: false,
+      reacao_medicamentosa: false,
+      parada_cardiorespiratoria: false,
+      dificil_via_aerea: false,
+      outro: false,
+      outro_detalhe: "",
+      descricao_conduta: ""
+    },
+    profissional_responsavel: ""
+  };
+}
+
+const passagemCasoForm = ref(criarFormPassagemCasoPadrao());
+
+
+function lidarMudancaNaoSeAplicaFerida() {
+  if (passagemCasoForm.value.acessos_dispositivos.ferida_operatoria.nao_se_aplica) {
+    passagemCasoForm.value.acessos_dispositivos.ferida_operatoria.local = "";
+  }
+}
+
+function lidarMudancaCirurgiaNaoRealizada() {
+  if (passagemCasoForm.value.cirurgia_nao_realizada) {
+    passagemCasoForm.value.procedimento_realizado = "";
+  }
+}
+
+const listaCamposFaltantes = computed(() => {
+  const f = passagemCasoForm.value;
+  const erros: string[] = [];
+
+  if (!f.cirurgia_nao_realizada && !f.procedimento_realizado.trim()) {
+    erros.push("Procedimento Realizado");
+  }
+
+  if (!f.anestesia.trim()) {
+    erros.push("Anestesia");
+  }
+
+  if (!f.isolamento) {
+    erros.push("Isolamento");
+  }
+
+  if (f.alergias.opcao !== 'Não' && f.alergias.opcao !== 'Sim') {
+    erros.push("Alergias");
+  } else if (f.alergias.opcao === 'Sim' && !f.alergias.detalhe.trim()) {
+    erros.push("Detalhe da Alergia");
+  }
+
+  if (!f.respiratorio.via_aerea) {
+    erros.push("Via Aérea");
+  } else if (f.respiratorio.via_aerea === 'Outro' && !f.respiratorio.via_aerea_outro_detalhe.trim()) {
+    erros.push("Especificação de Outro em Via Aérea");
+  }
+
+  if (!f.respiratorio.suporte) {
+    erros.push("Suporte Respiratório");
+  }
+
+  if (f.cardiovascular.hemodinamica !== 'Estável' && f.cardiovascular.hemodinamica !== 'Instável') {
+    erros.push("Hemodinâmica");
+  }
+
+  if (f.cardiovascular.drogas_vasoativas.opcao !== 'Não' && f.cardiovascular.drogas_vasoativas.opcao !== 'Sim') {
+    erros.push("Opção de Drogas Vasoativas");
+  } else if (f.cardiovascular.drogas_vasoativas.opcao === 'Sim' && !f.cardiovascular.drogas_vasoativas.detalhe.trim()) {
+    erros.push("Especificação de Drogas Vasoativas");
+  }
+
+  if (f.cardiovascular.reposicao_volemica !== 'Não' && f.cardiovascular.reposicao_volemica !== 'Sim') {
+    erros.push("Reposição Volêmica");
+  }
+
+  if (f.cardiovascular.transfusao.opcao !== 'Não' && f.cardiovascular.transfusao.opcao !== 'Sim') {
+    erros.push("Opção de Transfusão");
+  } else if (f.cardiovascular.transfusao.opcao === 'Sim' && !f.cardiovascular.transfusao.detalhe.trim()) {
+    erros.push("Especificação de Transfusão");
+  }
+
+  if (!f.sangramento_balanco.sangramento_estimado) {
+    erros.push("Sangramento Estimado");
+  } else if (f.sangramento_balanco.sangramento_estimado === 'Importante' && !f.sangramento_balanco.sangramento_volume) {
+    erros.push("Volume do Sangramento Estimado");
+  }
+
+  if (f.sangramento_balanco.diurese_intraoperatoria.opcao !== 'valor' && f.sangramento_balanco.diurese_intraoperatoria.opcao !== 'Não se aplica') {
+    erros.push("Opção de Diurese Intraoperatória");
+  } else if (f.sangramento_balanco.diurese_intraoperatoria.opcao === 'valor' && (f.sangramento_balanco.diurese_intraoperatoria.valor === null || String(f.sangramento_balanco.diurese_intraoperatoria.valor).trim() === '')) {
+    erros.push("Volume da Diurese");
+  }
+
+  const acessosChecked = f.acessos_dispositivos.acessos_venosos.periferico || 
+    f.acessos_dispositivos.acessos_venosos.cvc || 
+    f.acessos_dispositivos.acessos_venosos.picc || 
+    f.acessos_dispositivos.acessos_venosos.outro;
+
+  if (!acessosChecked) {
+    erros.push("Acessos Venosos (Selecione pelo menos um)");
+  } else {
+    if (f.acessos_dispositivos.acessos_venosos.periferico && !f.acessos_dispositivos.acessos_venosos.periferico_local.trim()) {
+      erros.push("Local do Acesso Periférico");
+    }
+    if (f.acessos_dispositivos.acessos_venosos.cvc && !f.acessos_dispositivos.acessos_venosos.cvc_local.trim()) {
+      erros.push("Local do Acesso CVC");
+    }
+    if (f.acessos_dispositivos.acessos_venosos.picc && !f.acessos_dispositivos.acessos_venosos.picc_local.trim()) {
+      erros.push("Local do Acesso PICC");
+    }
+    if (f.acessos_dispositivos.acessos_venosos.outro && !f.acessos_dispositivos.acessos_venosos.outro_detalhe.trim()) {
+      erros.push("Especificação de Outro Acesso Venoso");
+    }
+  }
+
+  if (f.acessos_dispositivos.pai.opcao !== 'Não' && f.acessos_dispositivos.pai.opcao !== 'Sim') {
+    erros.push("Opção de PAI");
+  } else if (f.acessos_dispositivos.pai.opcao === 'Sim' && !f.acessos_dispositivos.pai.local.trim()) {
+    erros.push("Local do PAI");
+  }
+
+  if (f.acessos_dispositivos.sonda_vesical.opcao !== 'Não' && f.acessos_dispositivos.sonda_vesical.opcao !== 'Sim') {
+    erros.push("Opção de Sonda Vesical");
+  } else if (f.acessos_dispositivos.sonda_vesical.opcao === 'Sim' && !f.acessos_dispositivos.sonda_vesical.n_sonda.trim()) {
+    erros.push("Nº da Sonda Vesical");
+  }
+
+  if (f.acessos_dispositivos.ferida_operatoria.nao_se_aplica === null || f.acessos_dispositivos.ferida_operatoria.nao_se_aplica === undefined) {
+    erros.push("Opção de Ferida Operatória");
+  } else if (!f.acessos_dispositivos.ferida_operatoria.nao_se_aplica && !f.acessos_dispositivos.ferida_operatoria.local.trim()) {
+    erros.push("Local da Ferida Operatória");
+  }
+
+  if (f.acessos_dispositivos.drenos.opcao !== 'Não' && f.acessos_dispositivos.drenos.opcao !== 'Sim') {
+    erros.push("Opção de Drenos");
+  } else if (f.acessos_dispositivos.drenos.opcao === 'Sim' && !f.acessos_dispositivos.drenos.tipo_local.trim()) {
+    erros.push("Tipo/local do Dreno");
+  }
+
+  if (f.medicamentos.antibiotico.opcao !== 'Não' && f.medicamentos.antibiotico.opcao !== 'Sim') {
+    erros.push("Opção de Antibiótico");
+  } else if (f.medicamentos.antibiotico.opcao === 'Sim' && !f.medicamentos.antibiotico.detalhe.trim()) {
+    erros.push("Qual/horário do Antibiótico");
+  }
+
+  const hasIntercorrencia = f.intercorrencias.nao_houve || 
+    f.intercorrencias.hipotensao || 
+    f.intercorrencias.hipertensao || 
+    f.intercorrencias.arritmia || 
+    f.intercorrencias.dessaturacao || 
+    f.intercorrencias.broncoespasmo || 
+    f.intercorrencias.sangramento_importante || 
+    f.intercorrencias.reacao_medicamentosa || 
+    f.intercorrencias.parada_cardiorespiratoria || 
+    f.intercorrencias.dificil_via_aerea || 
+    f.intercorrencias.outro;
+
+  if (!hasIntercorrencia) {
+    erros.push("Intercorrências (marque 'Não houve' ou pelo menos uma ocorrência)");
+  } else if (f.intercorrencias.outro && !f.intercorrencias.outro_detalhe.trim()) {
+    erros.push("Descrição do Outro em Intercorrências");
+  }
+
+  if (!f.profissional_responsavel.trim()) {
+    erros.push("Profissional Responsável");
+  }
+
+  return erros;
+});
+
+const formPassagemCasoValido = computed(() => {
+  return listaCamposFaltantes.value.length === 0;
+});
 
 const formNova = ref({
   prontuario: '',
@@ -1012,35 +1682,97 @@ function podeGerenciar(sol: any) {
 function abrirModalPassagemCaso(sol: any) {
   solSelecionada.value = sol;
   idSolicitacaoFinalizacao.value = sol.id;
-  passagemCasoTexto.value = "";
+  modoEdicaoPassagem.value = false;
+  
+  if (sol.passagem_caso) {
+    let parsed = sol.passagem_caso;
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {
+        console.error("Erro ao fazer parse da passagem de caso:", e);
+      }
+    }
+    
+    if (parsed && typeof parsed === 'object') {
+      // Faz o merge com os valores padrão para garantir reatividade total
+      const form = Object.assign(criarFormPassagemCasoPadrao(), JSON.parse(JSON.stringify(parsed)));
+      
+      // Converte dados respiratórios legados (objetos com booleans) para o novo formato flat string
+      if (parsed.respiratorio) {
+        if (typeof parsed.respiratorio.via_aerea === 'object' && parsed.respiratorio.via_aerea !== null) {
+          const va = parsed.respiratorio.via_aerea;
+          if (va.espontanea) form.respiratorio.via_aerea = "Espontânea";
+          else if (va.tot) form.respiratorio.via_aerea = "TOT";
+          else if (va.traqueostomia) form.respiratorio.via_aerea = "Traqueostomia";
+          else if (va.outro) {
+            form.respiratorio.via_aerea = "Outro";
+            form.respiratorio.via_aerea_outro_detalhe = va.outro_detalhe || "";
+          }
+        }
+        if (typeof parsed.respiratorio.suporte === 'object' && parsed.respiratorio.suporte !== null) {
+          const sup = parsed.respiratorio.suporte;
+          if (sup.ar_ambiente) form.respiratorio.suporte = "Ar ambiente";
+          else if (sup.o2_cateter) form.respiratorio.suporte = "O2 cateter";
+          else if (sup.mascara) form.respiratorio.suporte = "Máscara";
+          else if (sup.ventilacao_mecanica) form.respiratorio.suporte = "Ventilação mecânica";
+        }
+      }
+      
+      passagemCasoForm.value = form;
+      modoEdicaoPassagem.value = true;
+      showModalPassagemCaso.value = true;
+      return;
+    }
+  }
+  
+  passagemCasoForm.value = criarFormPassagemCasoPadrao();
+  if (sol.procedimento) {
+    passagemCasoForm.value.procedimento_realizado = sol.procedimento;
+  }
   showModalPassagemCaso.value = true;
 }
 
 function fecharModalPassagemCaso() {
   showModalPassagemCaso.value = false;
-  passagemCasoTexto.value = "";
   idSolicitacaoFinalizacao.value = "";
+  modoEdicaoPassagem.value = false;
+  passagemCasoForm.value = criarFormPassagemCasoPadrao();
 }
-
 
 async function confirmarFinalizarComPassagem() {
-  showModalPassagemCaso.value = false;
-  await executarConfirmarCirurgiaFinalizada(idSolicitacaoFinalizacao.value, passagemCasoTexto.value);
+  await executarConfirmarCirurgiaFinalizada(idSolicitacaoFinalizacao.value, passagemCasoForm.value);
 }
 
-async function executarConfirmarCirurgiaFinalizada(id: string, passagem: string | null) {
+async function salvarEdicaoPassagemCaso() {
   submetendo.value = true;
   try {
-    const payload = passagem ? { passagem_caso: passagem } : null;
+    const id = idSolicitacaoFinalizacao.value;
+    await api.put(`/api/solicitacoes/${id}/passagem-caso`, { passagem_caso: passagemCasoForm.value });
+    toast.success('Passagem de caso atualizada com sucesso.');
+    fecharModalPassagemCaso();
+    await carregarSolicitacoes();
+  } catch (error: any) {
+    console.error('Erro ao editar passagem de caso:', error);
+    toast.error(error.response?.data?.detail || 'Não foi possível atualizar passagem de caso.');
+  } finally {
+    submetendo.value = false;
+  }
+}
+
+async function executarConfirmarCirurgiaFinalizada(id: string, passagem: any) {
+  submetendo.value = true;
+  try {
+    const payload = { passagem_caso: passagem };
     await api.post(`/api/solicitacoes/${id}/cirurgia-finalizada`, payload);
     toast.success('Cirurgia sinalizada como finalizada.');
     await carregarSolicitacoes();
-  } catch (error) {
+    fecharModalPassagemCaso();
+  } catch (error: any) {
     console.error('Erro ao marcar cirurgia finalizada:', error);
-    toast.error('Não foi possível marcar cirurgia como finalizada.');
+    toast.error(error.response?.data?.detail || 'Não foi possível marcar cirurgia como finalizada.');
   } finally {
     submetendo.value = false;
-    fecharModalPassagemCaso();
   }
 }
 

@@ -137,6 +137,7 @@ class SolicitacaoLeitoController:
                 "destino": s.destino,
                 "cirurgia_finalizada": bool(s.cirurgia_finalizada),
                 "encaminhamento_liberado": bool(s.encaminhamento_liberado),
+                "passagem_caso": s.to_dict().get("passagem_caso"),
                 "dataHora": (s.criado_em - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M") if s.criado_em else "",
                 "atualizado_em": (s.atualizado_em - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M") if s.atualizado_em else "",
             }
@@ -687,33 +688,64 @@ class SolicitacaoLeitoController:
         return {"message": "Reserva cancelada. Solicitação voltou para Pendente."}
 
     async def marcar_cirurgia_finalizada(self, sol_id: int, passagem_caso: str = None) -> dict:
-        """Marca que a cirurgia do paciente foi finalizada."""
+        """Marca que a cirurgia do paciente foi finalizada usando update condicional atômico."""
         sol = await self.leito_provider.get_por_id(sol_id)
         if not sol:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+        
+        from sqlalchemy import update, or_
         from datetime import datetime
-        await self.leito_provider.atualizar(sol_id, {
-            "cirurgia_finalizada": True,
-            "cirurgia_finalizada_em": datetime.utcnow(),
-            "passagem_caso": passagem_caso
-        })
+        from models.solicitacao_leito import SolicitacaoLeito
+        
+        stmt = (
+            update(SolicitacaoLeito)
+            .where(SolicitacaoLeito.id == sol_id)
+            .where(or_(SolicitacaoLeito.cirurgia_finalizada == False, SolicitacaoLeito.cirurgia_finalizada == None))
+            .values(
+                cirurgia_finalizada=True,
+                cirurgia_finalizada_em=datetime.utcnow(),
+                passagem_caso=passagem_caso
+            )
+        )
+        
+        result_proxy = await self.leito_provider.session.execute(stmt)
+        await self.leito_provider.session.commit()
+        
+        if result_proxy.rowcount == 0:
+            raise HTTPException(status_code=400, detail="A cirurgia já foi concluída por outro usuário.")
+            
         return {"message": "Cirurgia finalizada com sucesso."}
 
     async def liberar_encaminhamento(self, sol_id: int) -> dict:
-        """Autoriza o encaminhamento do paciente para a UTI."""
+        """Autoriza o encaminhamento do paciente para a UTI usando update condicional atômico."""
         sol = await self.leito_provider.get_por_id(sol_id)
         if not sol:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+            
+        from sqlalchemy import update, or_
         from datetime import datetime
+        from models.solicitacao_leito import SolicitacaoLeito
         now_utc = datetime.utcnow()
         minutos_espera = None
         if sol.cirurgia_finalizada_em:
             minutos_espera = int((now_utc - sol.cirurgia_finalizada_em).total_seconds() / 60)
             
-        await self.leito_provider.atualizar(sol_id, {
-            "encaminhamento_liberado": True,
-            "encaminhamento_liberado_em": now_utc
-        })
+        stmt = (
+            update(SolicitacaoLeito)
+            .where(SolicitacaoLeito.id == sol_id)
+            .where(or_(SolicitacaoLeito.encaminhamento_liberado == False, SolicitacaoLeito.encaminhamento_liberado == None))
+            .values(
+                encaminhamento_liberado=True,
+                encaminhamento_liberado_em=now_utc
+            )
+        )
+        
+        result_proxy = await self.leito_provider.session.execute(stmt)
+        await self.leito_provider.session.commit()
+        
+        if result_proxy.rowcount == 0:
+            raise HTTPException(status_code=400, detail="O encaminhamento já foi liberado por outro usuário.")
+            
         return {
             "message": "Encaminhamento liberado com sucesso.",
             "minutos_espera": minutos_espera

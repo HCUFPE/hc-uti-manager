@@ -169,6 +169,15 @@
       >
         Cancelar Liberação
       </button>
+      <!-- Botão permanente Ver Passagem de Caso se houver passagem cadastrada -->
+      <button
+        v-if="props.passagemCaso"
+        class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+        @click="showModalHandover = true"
+      >
+        Ver Passagem
+      </button>
+
       <button
         v-if="proximoPaciente || bloqueadoClinico"
         class="inline-flex flex-1 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
@@ -186,14 +195,130 @@
     </div>
 
     <!-- Modal de Checkpoint de Passagem de Caso (UTI) -->
-    <Modal :show="showModalHandover" @close="showModalHandover = false">
+    <Modal :show="showModalHandover" @close="showModalHandover = false" size="lg">
       <template #header>Passagem de Caso - Prontuário {{ proximoPaciente?.prontuario }}</template>
-      <div class="space-y-4 text-left p-1">
+      <div class="space-y-4 text-left p-1 max-h-[70vh] overflow-y-auto">
         <p class="text-sm text-slate-600">
-          Atenção! Este paciente possui informações clínicas de passagem de caso fornecidas pelo Bloco Cirúrgico. Por favor, revise antes de liberar o transporte:
+          Atenção! Informações clínicas de passagem de caso fornecidas pelo Bloco Cirúrgico:
         </p>
-        <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-4 text-sm text-amber-900 font-medium whitespace-pre-wrap">
-          {{ passagemCaso }}
+        
+        <div v-if="parsedPassagemCaso" class="space-y-4">
+          <!-- Se for objeto estruturado (Formulário) -->
+          <div v-if="typeof parsedPassagemCaso === 'object' && parsedPassagemCaso !== null" class="space-y-4 text-xs">
+            
+             <!-- Identificação e Alergias -->
+             <div class="grid grid-cols-2 gap-2 border-b pb-2">
+               <div><strong>Procedimento:</strong> {{ parsedPassagemCaso.cirurgia_nao_realizada ? 'CIRURGIA NÃO REALIZADA' : parsedPassagemCaso.procedimento_realizado }}</div>
+               <div><strong>Anestesia:</strong> {{ parsedPassagemCaso.anestesia || 'Não informada' }}</div>
+                <div class="col-span-2 flex flex-wrap gap-x-4">
+                  <div><strong>Alergias:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.alergias?.opcao }} {{ ['SIM', 'Sim'].includes(parsedPassagemCaso.alergias?.opcao) ? `- ${parsedPassagemCaso.alergias?.detalhe}` : '' }}</span></div>
+                  <div><strong>Isolamento:</strong> <span class="text-slate-600 font-bold" :class="parsedPassagemCaso.isolamento !== 'Não' ? 'text-red-600' : 'text-slate-600'">{{ parsedPassagemCaso.isolamento || 'Não' }}</span></div>
+                </div>
+             </div>
+ 
+             <!-- Respiratório -->
+             <div class="border-b pb-2">
+               <h4 class="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Respiratório</h4>
+               <div class="grid grid-cols-2 gap-2">
+                 <div>
+                   <strong>Via aérea:</strong> <span class="text-slate-600">{{ typeof parsedPassagemCaso.respiratorio?.via_aerea === 'object' ? [parsedPassagemCaso.respiratorio?.via_aerea?.espontanea ? 'Espontânea' : '', parsedPassagemCaso.respiratorio?.via_aerea?.tot ? 'TOT' : '', parsedPassagemCaso.respiratorio?.via_aerea?.traqueostomia ? 'Traqueostomia' : '', parsedPassagemCaso.respiratorio?.via_aerea?.outro ? `Outro (${parsedPassagemCaso.respiratorio?.via_aerea?.outro_detalhe})` : ''].filter(Boolean).join(', ') : (parsedPassagemCaso.respiratorio?.via_aerea === 'Outro' ? `Outro (${parsedPassagemCaso.respiratorio?.via_aerea_outro_detalhe})` : parsedPassagemCaso.respiratorio?.via_aerea) }}</span>
+                 </div>
+                 <div>
+                   <strong>Suporte:</strong> <span class="text-slate-600">{{ typeof parsedPassagemCaso.respiratorio?.suporte === 'object' ? [parsedPassagemCaso.respiratorio?.suporte?.ar_ambiente ? 'Ar ambiente' : '', parsedPassagemCaso.respiratorio?.suporte?.o2_cateter ? 'O₂ cateter' : '', parsedPassagemCaso.respiratorio?.suporte?.mascara ? 'Máscara' : '', parsedPassagemCaso.respiratorio?.suporte?.ventilacao_mecanica ? 'Ventilação mecânica' : ''].filter(Boolean).join(', ') : parsedPassagemCaso.respiratorio?.suporte }}</span>
+                 </div>
+               </div>
+             </div>
+ 
+             <!-- Cardiovascular -->
+             <div class="border-b pb-2">
+               <h4 class="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Cardiovascular</h4>
+               <div class="grid grid-cols-2 gap-2">
+                 <div><strong>Hemodinâmica:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.cardiovascular?.hemodinamica }}</span></div>
+                 <div>
+                   <strong>Drogas vasoativas:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.cardiovascular?.drogas_vasoativas?.opcao }} {{ parsedPassagemCaso.cardiovascular?.drogas_vasoativas?.opcao === 'Sim' ? `- ${parsedPassagemCaso.cardiovascular?.drogas_vasoativas?.detalhe}` : '' }}</span>
+                 </div>
+                 <div><strong>Reposição volêmica:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.cardiovascular?.reposicao_volemica }}</span></div>
+                 <div>
+                   <strong>Transfusão:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.cardiovascular?.transfusao?.opcao }} {{ parsedPassagemCaso.cardiovascular?.transfusao?.opcao === 'Sim' ? `- ${parsedPassagemCaso.cardiovascular?.transfusao?.detalhe}` : '' }}</span>
+                 </div>
+               </div>
+             </div>
+ 
+             <!-- Sangramento e Balanço -->
+             <div class="border-b pb-2">
+               <h4 class="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Sangramento e Balanço</h4>
+               <div class="grid grid-cols-2 gap-2">
+                 <div>
+                   <strong>Sangramento estimado:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.sangramento_balanco?.sangramento_estimado }} {{ parsedPassagemCaso.sangramento_balanco?.sangramento_estimado === 'Importante' ? `- ${parsedPassagemCaso.sangramento_balanco?.sangramento_volume} mL` : '' }}</span>
+                 </div>
+                 <div>
+                   <strong>Diurese intraoperatória:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.sangramento_balanco?.diurese_intraoperatoria?.opcao === 'valor' ? `${parsedPassagemCaso.sangramento_balanco?.diurese_intraoperatoria?.valor} mL` : 'Não se aplica' }}</span>
+                 </div>
+               </div>
+             </div>
+ 
+             <!-- Acessos, Dispositivos e Feridas -->
+             <div class="border-b pb-2">
+               <h4 class="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Acessos, Dispositivos e Feridas</h4>
+               <div class="grid grid-cols-2 gap-2">
+                 <div>
+                   <strong>Acessos venosos:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.nao_se_aplica ? 'Não se aplica' : [parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.periferico ? `Periférico (${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.periferico_local}${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.periferico_data ? ' - Criação: ' + parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.periferico_data.split('-').reverse().join('/') : ''})` : '', parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.cvc ? `CVC (${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.cvc_local}${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.cvc_data ? ' - Criação: ' + parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.cvc_data.split('-').reverse().join('/') : ''})` : '', parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.picc ? `PICC (${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.picc_local}${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.picc_data ? ' - Criação: ' + parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.picc_data.split('-').reverse().join('/') : ''})` : '', parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.outro ? `Outro (${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.outro_detalhe}${parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.outro_data ? ' - Criação: ' + parsedPassagemCaso.acessos_dispositivos?.acessos_venosos?.outro_data.split('-').reverse().join('/') : ''})` : ''].filter(Boolean).join(', ') }}</span>
+                 </div>
+                 <div>
+                   <strong>PAI:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.acessos_dispositivos?.pai?.opcao }} {{ parsedPassagemCaso.acessos_dispositivos?.pai?.opcao === 'Sim' ? `- ${parsedPassagemCaso.acessos_dispositivos?.pai?.local}` : '' }}</span>
+                 </div>
+                 <div>
+                   <strong>Sonda vesical:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.acessos_dispositivos?.sonda_vesical?.opcao }} {{ parsedPassagemCaso.acessos_dispositivos?.sonda_vesical?.opcao === 'Sim' ? `- Nº ${parsedPassagemCaso.acessos_dispositivos?.sonda_vesical?.n_sonda}` : '' }}</span>
+                 </div>
+                 <div>
+                   <strong>Ferida operatória:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.acessos_dispositivos?.ferida_operatoria?.nao_se_aplica ? 'Não' : parsedPassagemCaso.acessos_dispositivos?.ferida_operatoria?.local }}</span>
+                 </div>
+                 <div>
+                   <strong>Drenos:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.acessos_dispositivos?.drenos?.opcao }} {{ parsedPassagemCaso.acessos_dispositivos?.drenos?.opcao === 'Sim' ? `- ${parsedPassagemCaso.acessos_dispositivos?.drenos?.tipo_local}` : '' }}</span>
+                 </div>
+                 <div>
+                   <strong>Outros dispositivos:</strong> <span class="text-slate-600">{{ [parsedPassagemCaso.acessos_dispositivos?.outros?.sng_sne ? 'SNG/SNE' : '', parsedPassagemCaso.acessos_dispositivos?.outros?.ostomia ? 'Ostomia' : '', parsedPassagemCaso.acessos_dispositivos?.outros?.outro ? `Outro (${parsedPassagemCaso.acessos_dispositivos?.outros?.outro_detalhe})` : ''].filter(Boolean).join(', ') || 'Nenhum' }}</span>
+                 </div>
+               </div>
+             </div>
+ 
+             <!-- Medicamentos -->
+             <div class="border-b pb-2">
+               <h4 class="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Medicamentos</h4>
+               <div class="grid grid-cols-2 gap-2">
+                 <div>
+                   <strong>Antibiótico:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.medicamentos?.antibiotico?.opcao }} {{ parsedPassagemCaso.medicamentos?.antibiotico?.opcao === 'Sim' ? `- ${parsedPassagemCaso.medicamentos?.antibiotico?.detalhe}` : '' }}</span>
+                 </div>
+                 <div><strong>Outras medicações:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.medicamentos?.outras_medicacoes || 'Nenhuma' }}</span></div>
+               </div>
+             </div>
+ 
+             <!-- Intercorrências -->
+             <div class="border-b pb-2">
+               <h4 class="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Intercorrências no ato</h4>
+               <div class="space-y-1">
+                 <div>
+                   <strong>Intercorrências:</strong> <span class="text-slate-600">{{ parsedPassagemCaso.intercorrencias?.nao_houve ? 'Não houve' : [parsedPassagemCaso.intercorrencias?.hipotensao ? 'Hipotensão' : '', parsedPassagemCaso.intercorrencias?.hipertensao ? 'Hipertensão' : '', parsedPassagemCaso.intercorrencias?.arritmia ? 'Arritmia' : '', parsedPassagemCaso.intercorrencias?.dessaturacao ? 'Dessaturação' : '', parsedPassagemCaso.intercorrencias?.broncoespasmo ? 'Broncoespasmo' : '', parsedPassagemCaso.intercorrencias?.sangramento_importante ? 'Sangramento importante' : '', parsedPassagemCaso.intercorrencias?.reacao_medicamentosa ? 'Reação medicamentosa' : '', parsedPassagemCaso.intercorrencias?.parada_cardiorespiratoria ? 'Parada cardiorrespiratória' : '', parsedPassagemCaso.intercorrencias?.dificil_via_aerea ? 'Difícil via aérea' : '', parsedPassagemCaso.intercorrencias?.outro ? `Outro (${parsedPassagemCaso.intercorrencias?.outro_detalhe})` : ''].filter(Boolean).join(', ') }}</span>
+                 </div>
+                 <div v-if="parsedPassagemCaso.intercorrencias?.descricao_conduta">
+                   <strong>Descrição/Conduta:</strong>
+                   <span class="text-slate-600 block bg-slate-50 p-2 rounded mt-1 whitespace-pre-wrap">{{ parsedPassagemCaso.intercorrencias?.descricao_conduta }}</span>
+                 </div>
+               </div>
+             </div>
+
+            <!-- Responsável -->
+            <div class="pt-1">
+              <strong>Profissional Responsável pela Passagem:</strong>
+              <span class="text-slate-700 font-semibold block text-sm mt-1 bg-blue-50/50 p-2 rounded border border-blue-100/50">{{ parsedPassagemCaso.profissional_responsavel }}</span>
+            </div>
+
+          </div>
+          
+          <!-- Se for string pura legada -->
+          <div v-else class="rounded-xl border border-amber-100 bg-amber-50/50 p-4 text-sm text-amber-900 font-medium whitespace-pre-wrap">
+            {{ parsedPassagemCaso }}
+          </div>
         </div>
       </div>
       <template #footer>
@@ -201,9 +326,10 @@
           class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
           @click="showModalHandover = false"
         >
-          Cancelar
+          {{ props.encaminhamentoLiberado ? 'Fechar' : 'Cancelar' }}
         </button>
         <button
+          v-if="!props.encaminhamentoLiberado"
           class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 cursor-pointer"
           @click="confirmarLiberacao"
         >
@@ -260,6 +386,16 @@ const authStore = useAuthStore();
 
 const showModalHandover = ref(false);
 
+const parsedPassagemCaso = computed(() => {
+  if (!props.passagemCaso) return null;
+  if (typeof props.passagemCaso === 'object') return props.passagemCaso;
+  try {
+    return JSON.parse(props.passagemCaso);
+  } catch (e) {
+    return props.passagemCaso;
+  }
+});
+
 const handleCliqueLiberar = () => {
   if (props.passagemCaso) {
     showModalHandover.value = true;
@@ -270,7 +406,7 @@ const handleCliqueLiberar = () => {
 
 const confirmarLiberacao = () => {
   showModalHandover.value = false;
-  emit('liberar-encaminhamento', props.solicitacaoId!);
+  emit('liberar-encaminhamento', props.solicitacaoId!, parsedPassagemCaso.value);
 };
 
 const emit = defineEmits<{
@@ -279,7 +415,7 @@ const emit = defineEmits<{
   'cancelar-reserva': [];
   'reservar-clinico': [];
   'cancelar-reserva-clinica': [];
-  'liberar-encaminhamento': [solicitacaoId: number];
+  'liberar-encaminhamento': [solicitacaoId: number, passagemCasoAvaliada?: any];
   'cancelar-liberacao': [solicitacaoId: number];
   'mudar-leito': [solicitacaoId: number, leitoNumero: string];
 }>();

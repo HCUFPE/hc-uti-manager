@@ -95,7 +95,10 @@ class LeitoEstadoProvider:
 *   `POST /api/leitos/{lto_id}/bloquear-clinico` — Ativa o bloqueio preventivo para o leito correspondente e registra log no histórico de auditoria.
 *   `POST /api/leitos/{lto_id}/cancelar-reserva-clinica` — Remove o bloqueio preventivo do leito correspondente e registra o log de cancelamento.
 
-### E. Endpoints REST da API (Passagem de Caso)
-*   `POST /api/solicitacoes/{sol_id}/cirurgia-finalizada` — Marca a cirurgia associada à solicitação como concluída. Exige um payload JSON contendo obrigatoriamente `{ "passagem_caso": "dados clínicos..." }` para persistir observações de passagem de caso.
+### D. Endpoints REST da API (Passagem de Caso)
+*   `POST /api/solicitacoes/{sol_id}/cirurgia-finalizada` — Marca a cirurgia associada à solicitação como concluída. Exige um payload JSON contendo obrigatoriamente `{ "passagem_caso": { ... } }` (objeto estruturado) para persistir as observações clínicas.
+*   `PUT /api/solicitacoes/{sol_id}/passagem-caso` — Permite ao Bloco Cirúrgico editar as informações de uma passagem de caso preexistente antes da liberação do encaminhamento.
+*   `GET /api/solicitacoes/{sol_id}` — Retorna os dados detalhados e estruturados de uma solicitação de leito específica por ID, incluindo o JSON de `passagem_caso`.
+*   `POST /api/solicitacoes/{sol_id}/liberar-encaminhamento` — Autoriza a transferência para a UTI. Opcionalmente aceita um payload JSON contendo `{ "passagem_caso_avaliada": { ... } }` para validação atômica de concorrência, retornando erro HTTP `409 Conflict` caso os dados tenham sido editados simultaneamente pelo Bloco.
 
 

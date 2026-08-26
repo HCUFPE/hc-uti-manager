@@ -2,31 +2,26 @@
 
 - [x] 1.1 Adicionar a coluna `passagem_caso = Column(String, nullable=True)` ao modelo `SolicitacaoLeito` em `src/models/solicitacao_leito.py`.
 - [x] 1.2 Criar e rodar uma migração do Alembic no banco local para incluir a coluna `passagem_caso` na tabela `solicitacoes_leito`.
+- [x] 1.3 Adaptar a serialização/deserialização no método `to_dict` do modelo `SolicitacaoLeito` para converter a string JSON gravada de volta para objeto estruturado, se for um JSON válido.
 
-## 2. Implementação no Backend (API)
+## 2. Implementação no Backend (API e Validações)
 
-- [x] 2.1 Ajustar a rota de finalizar cirurgia em `src/routers/solicitacoes_leito.py` para exigir um payload com `passagem_caso`.
-- [x] 2.2 Atualizar o controller correspondente em `src/controllers/solicitacao_leito_controller.py` para gravar a string no banco ao finalizar a cirurgia.
-- [x] 2.3 Ajustar a rota de listagem de leitos (`listar_leitos` em `src/controllers/leitos_controller.py` ou `src/providers/implementations/leito_estado_provider.py`) para recuperar e expor a passagem de caso no payload JSON do card de leito reservado.
+- [x] 2.1 Criar Pydantic Schemas detalhados representando o formulário estruturado e todas as suas validações em `src/models/solicitacao_leito.py` ou em arquivo de schemas.
+- [x] 2.2 Atualizar o endpoint `POST /api/solicitacoes/{sol_id}/cirurgia-finalizada` para aceitar e validar o novo payload estruturado (Pydantic), serializando-o para string JSON antes de salvar.
+- [x] 2.3 Criar o endpoint `PUT /api/solicitacoes/{sol_id}/passagem-caso` no controller e router, aplicando a regra que impede edições após a UTI ter efetuado a validação da liberação.
 
-## 3. Frontend do Solicitante (Conclusão de Cirurgia)
+## 3. Frontend do Solicitante (Formulário e Edição)
 
-- [x] 3.1 Adicionar o modal de preenchimento obrigatório de passagem de caso ao clicar em "Finalizar Cirurgia" em `Home.vue` / `Solicitacoes.vue`.
-- [x] 3.2 Implementar a caixa de texto (`textarea`) no modal do frontend para preenchimento.
-- [x] 3.3 Integrar o salvamento do campo `passagem_caso` no corpo da requisição enviada ao backend.
+- [x] 3.1 Construir a interface visual do formulário estruturado de passagem de caso (Checkboxes, inputs e condicionais como "Cirurgia não realizada") no modal de finalização em `Solicitacoes.vue`.
+- [x] 3.2 Implementar a reatividade de validação do frontend para habilitar o botão "Salvar e Finalizar" apenas com todos os critérios obrigatórios satisfeitos.
+- [x] 3.3 Adicionar o botão "Editar Passagem" no painel de solicitações e integrá-lo com o modal para atualizar a passagem de caso antes da liberação pela UTI.
 
-## 4. Frontend da UTI (Checkpoint na Liberação)
+## 4. Frontend da UTI (Leitura e Visualização Histórica)
 
-- [x] 4.1 Modificar o comportamento do botão "Liberar Encaminhamento" em `BedCard.vue`.
-- [x] 4.2 Exibir o modal de checkpoint com as informações clínicas da Passagem de Caso antes da liberação.
-- [x] 4.3 Implementar a ação "Ciente e Liberar" para confirmar e efetuar a liberação, e a ação "Cancelar" para abortar e fechar o modal.
+- [x] 4.1 Adaptar o modal de checkpoint de liberação da UTI em `BedCard.vue` para renderizar os dados estruturados da passagem de caso de forma clara e limpa.
+- [x] 4.2 Incluir o botão permanente "Ver Passagem de Caso" nos cards de leitos na UTI para permitir a leitura histórica e modo somente leitura a qualquer momento.
+- [x] 4.3 Disponibilizar a visualização da passagem de caso histórica a partir da tela de auditoria (Histórico de Ações), com tratamento adequado para registros legados.
 
-- [x] 5.1 Criar um script de teste de integração para simular o fluxo completo da API de passagem de caso.
-- [x] 5.2 Testar manualmente o fluxo completo no navegador.
+## 5. Testes e Validação
 
-## 6. Sincronização de Documentação e Requisitos
-
-- [x] 6.1 Atualizar os requisitos em `docs/projeto_inicial/02-requisitos.md` com a funcionalidade de Passagem de Caso.
-- [x] 6.2 Atualizar os fluxos e casos de uso em `docs/projeto_inicial/03-casos-uso.md`.
-- [x] 6.3 Sincronizar o modelo de dados físico/lógico em `docs/projeto_inicial/04-modelo-dados.md` e payloads de tela em `docs/data-model.md`.
-- [x] 6.4 Atualizar os contratos e endpoints de API em `docs/projeto_inicial/05-interfaces.md`.
+- [x] 5.1 Criar testes de integração simulando a submissão correta, submissão inválida, edição e consulta de passagem de caso estruturada.
