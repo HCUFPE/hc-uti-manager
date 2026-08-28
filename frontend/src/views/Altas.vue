@@ -37,9 +37,12 @@
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Prontuario</p>
             <p class="text-lg font-semibold text-slate-900">{{ alta.prontuario }}</p>
             <p v-if="alta.nomePaciente" class="mt-0.5 text-sm text-slate-700">{{ alta.nomePaciente }}</p>
-            <div class="mt-1 flex items-center gap-2 text-sm text-slate-600">
-              <ClockIcon class="h-4 w-4" />
-              <span>{{ alta.dataHora }}</span>
+            <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+              <span v-if="alta.especialidade" class="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{ alta.especialidade }}</span>
+              <div class="flex items-center gap-1 font-medium">
+                <ClockIcon class="h-3.5 w-3.5 text-slate-400" />
+                <span>{{ alta.dataHora }}</span>
+              </div>
             </div>
           </div>
           <UiBadge :class="statusClass[alta.status]">

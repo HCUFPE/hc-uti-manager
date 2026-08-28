@@ -76,15 +76,25 @@ const fetchBackgroundAlerts = async () => {
 const verificarETocarSomGlobal = async () => {
   if (!authStore.isAuthenticated) return;
   try {
-    const response = await api.get('/api/alertas/unread-count');
-    unreadCount.value = response.data.count;
+    const response = await api.get('/api/alertas');
+    const alertas = response.data || [];
+    const alertasNaoLidos = alertas.filter((a: any) => !a.lido);
+    unreadCount.value = alertasNaoLidos.length;
 
-    const temAlertaPendente = unreadCount.value > 0;
-    const utiDeveTocar = authStore.isUTI && temAlertaPendente;
-    const nirDeveTocar = authStore.isNIR && temAlertaPendente;
+    if (alertasNaoLidos.length > 0) {
+      const temAlertaPadrao = alertasNaoLidos.some((a: any) => a.tipo !== 'admissao_concluida');
+      const temAlertaAdmissao = alertasNaoLidos.some((a: any) => a.tipo === 'admissao_concluida');
 
-    if (utiDeveTocar || nirDeveTocar) {
-      uiStore.tocarAlertaSonoro();
+      const utiDeveTocar = authStore.isUTI;
+      const nirDeveTocar = authStore.isNIR;
+
+      if (utiDeveTocar || nirDeveTocar) {
+        if (temAlertaPadrao) {
+          uiStore.tocarAlertaSonoro();
+        } else if (temAlertaAdmissao) {
+          uiStore.tocarAlertaAdmissao();
+        }
+      }
     }
   } catch (error) {
     console.error('Erro ao verificar som de alertas globalmente:', error);

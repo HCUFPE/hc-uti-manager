@@ -361,6 +361,18 @@ class AlertaController:
                     "criado_em": criado_em_evento
                 })
 
+        # 6. Fluxo de Admissão Concluída pelo Censo (Alvo: NIR)
+        elif tipo == "conclusao":
+            novos_alertas.append({
+                "tipo": "admissao_concluida",
+                "categoria": "Gargalo",
+                "titulo": "Admissão Concluída (AGHU)",
+                "mensagem": detalhes,
+                "prontuario": pront_alerta,
+                "perfil_alvo": "NIR",
+                "criado_em": criado_em_evento
+            })
+
     def _parse_to_naive_utc(self, dt: Any) -> Any:
         if not dt:
             return None

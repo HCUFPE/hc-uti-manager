@@ -157,6 +157,7 @@ import {
   InformationCircleIcon,
   ClockIcon,
   ArrowLeftIcon,
+  CheckCircleIcon,
 } from '@heroicons/vue/24/outline';
 import UiBadge from '../components/ui/Badge.vue';
 import UiButton from '../components/ui/Button.vue';
@@ -165,7 +166,7 @@ import { computed, ref, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import api from '../services/api';
 
-type AlertType = 'critico' | 'aviso' | 'info';
+type AlertType = 'critico' | 'aviso' | 'info' | 'admissao_concluida';
 type AlertCategory = 'Infeccioso' | 'Permanencia' | 'Gargalo' | 'Limpeza' | 'Outros';
 
 type Alert = {
@@ -239,9 +240,20 @@ const alertConfig: Record<
     readClass: 'border-slate-200 bg-slate-50',
     iconBg: 'bg-blue-100',
   },
+  admissao_concluida: {
+    icon: CheckCircleIcon,
+    iconColor: 'text-emerald-600',
+    badgeClass: 'border border-emerald-200 bg-emerald-100 text-emerald-800',
+    cardClass: 'border-emerald-200 bg-emerald-100',
+    readClass: 'border-slate-200 bg-slate-50',
+    iconBg: 'bg-emerald-100',
+  },
 };
 
-const formatTipo = (_tipo: AlertType) => 'Alerta';
+const formatTipo = (tipo: AlertType) => {
+  if (tipo === 'admissao_concluida') return 'Admissão';
+  return 'Alerta';
+};
 
 const openModal = (alerta: Alert) => {
   selectedAlert.value = alerta;
