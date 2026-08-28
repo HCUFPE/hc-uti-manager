@@ -72,10 +72,10 @@ export const useUiStore = defineStore('ui', () => {
         osc.stop(audioCtx.currentTime + delay + duration);
       };
 
-      // Toca melodia ascendente de Dó Maior (C5 -> E5 -> G5) mais longa e suave com leve sobreposição
-      playBeep(0, 523.25, 0.7);    // Dó (inicia em 0.0s, dura 0.7s)
-      playBeep(0.45, 659.25, 0.7); // Mi (inicia em 0.45s, dura 0.7s)
-      playBeep(0.9, 783.99, 1.0);  // Sol (inicia em 0.9s, dura 1.0s)
+      // Toca melodia ascendente de Dó Maior (C5 -> E5 -> G5) ainda mais longa e suave com sobreposição
+      playBeep(0, 523.25, 1.0);     // Dó (inicia em 0.0s, dura 1.0s)
+      playBeep(0.65, 659.25, 1.0);  // Mi (inicia em 0.65s, dura 1.0s)
+      playBeep(1.3, 783.99, 1.3);   // Sol (inicia em 1.3s, dura 1.3s)
     } catch (error) {
       console.warn('Falha ao reproduzir áudio de alerta de admissão:', error);
     }
