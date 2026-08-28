@@ -64,18 +64,18 @@ export const useUiStore = defineStore('ui', () => {
         const gain = audioCtx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
-        gain.gain.setValueAtTime(0.4, audioCtx.currentTime + delay);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + duration);
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime + delay); // Volume menor por nota para evitar distorção no som somado
+        gain.gain.exponentialRampToValueAtTime(0.005, audioCtx.currentTime + delay + duration);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start(audioCtx.currentTime + delay);
         osc.stop(audioCtx.currentTime + delay + duration);
       };
 
-      // Toca um tom melódico ascendente (C5 -> E5 -> G5)
-      playBeep(0, 523.25, 0.25);
-      playBeep(0.25, 659.25, 0.25);
-      playBeep(0.5, 783.99, 0.4);
+      // Toca um acorde de Dó Maior harmonioso e simultâneo (C5 + E5 + G5) com duração mais longa
+      playBeep(0, 523.25, 0.85); // Dó
+      playBeep(0, 659.25, 0.85); // Mi
+      playBeep(0, 783.99, 0.85); // Sol
     } catch (error) {
       console.warn('Falha ao reproduzir áudio de alerta de admissão:', error);
     }
