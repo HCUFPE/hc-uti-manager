@@ -72,14 +72,8 @@
       </button>
       
       <!-- Informações da Versão -->
-      <div class="mt-2 px-4 py-2 border-t border-slate-100 text-[10px] text-slate-400 select-none font-medium leading-normal transition-opacity duration-200">
-        <div v-if="!collapsed" class="text-center">
-          v{{ APP_VERSION }}<br/>
-          <span class="text-[9px] text-slate-400/80">{{ LAST_UPDATE }}</span>
-        </div>
-        <div v-else class="text-center font-bold">
-          v{{ APP_VERSION }}
-        </div>
+      <div class="mt-2 px-4 py-2 border-t border-slate-100 text-[10px] text-slate-400 select-none font-medium text-center transition-opacity duration-200" :class="collapsed ? 'font-bold' : ''">
+        v{{ APP_VERSION }}
       </div>
     </div>
   </aside>
@@ -91,7 +85,7 @@ import { useRoute } from 'vue-router';
 import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
-import { APP_VERSION, LAST_UPDATE } from '../config/version';
+import { APP_VERSION } from '../config/version';
 import {
   Bed,
   FileText,
