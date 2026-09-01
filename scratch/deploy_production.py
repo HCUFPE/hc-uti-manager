@@ -21,7 +21,8 @@ def main():
             # 2. Atualizar MOCK_BEDS para false
             "sed -i 's/MOCK_BEDS=true/MOCK_BEDS=false/g' /var/app/hc-uti-manager/.env",
             
-            # 3. Reiniciar o serviço systemd para atualizar os containers
+            # 3. Remover containers antigos se existirem e reiniciar o serviço systemd
+            "podman rm -f hc-uti-backend hc-uti-nginx 2>/dev/null || true",
             "systemctl restart hc-uti.service",
             # Aguarda a inicialização completa do container
             "until [ \"$(podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicializacao do container...'; sleep 3; done",
