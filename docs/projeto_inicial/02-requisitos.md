@@ -20,6 +20,8 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF010** | KPIs e Indicadores | Dashboard com taxas de ocupação, total de admissões e segmentação de cancelamentos (separando os provocados pela UTI dos causados pelo Bloco). | Desejável |
 | **RF011** | Reserva Preventiva (Clínico/COB/HEM) | Permitir o bloqueio preventivo de leitos de UTI (incluindo leitos em limpeza ou com alta solicitada) para demandas clínicas, preservando o bloqueio no swap de leitos, autolimpando via censo e isolando estatísticas do BI. | Essencial |
 | **RF012** | Passagem de Caso | Exigir que o Bloco Cirúrgico insira obrigatoriamente observações clínicas ao finalizar cirurgias, exibindo um modal obrigatório de checkpoint na UTI antes de liberar o transporte do paciente, suportando auditoria retrospectiva e controle atômico de concorrência. | Essencial |
+| **RF013** | Alertas de Admissão Concluída e Áudio Sintetizado (NIR) | Notificação visual em verde esmeralda e melodia sintetizada via Web Audio API direcionada ao NIR quando a admissão de um paciente é confirmada pelo censo do AGHU. | Essencial |
+| **RF014** | Exibição de Especialidade nas Altas | Exibição destacada da especialidade médica clínica do paciente na listagem de solicitações de alta para facilitar o direcionamento pelo NIR. | Essencial |
 
 ---
 
@@ -63,3 +65,15 @@ Abaixo está o detalhamento estruturado de requisitos operacionais críticos do 
 *   **Action (Ação):** Implementar um semáforo de concorrência com `asyncio.Lock()` no ciclo de execução do `AlertaController.gerar_alertas()`.
 *   **Result (Resultado):** As requisições rodam de forma estritamente sequencial. A segunda requisição lê o banco após o commit da primeira e identifica que o alerta já existe, impedindo duplicidades.
 *   **Evaluation (Avaliação):** Zeramento de alertas com mesmo timestamp de criação e IDs duplicados para o mesmo evento de histórico.
+
+### [CARE-RF013] Alerta de Admissão Concluída e Áudio Sintetizado (NIR)
+*   **Context (Contexto):** O censo do AGHU confirma que o paciente encaminhado pela UTI deu entrada física no leito.
+*   **Action (Ação):** O `AlertaController` gera um alerta de tipo `admissao_concluida` direcionado especificamente ao NIR. O frontend detecta o alerta e aciona a Web Audio API tocando a melodia suave ascendente (Dó-Mi-Sol com notas prolongadas), formatando o card com borda e badge verde esmeralda.
+*   **Result (Resultado):** O regulação é notificada de forma visual e sonora não estressante sobre o encerramento do processo de alocação de leito.
+*   **Evaluation (Avaliação):** Verificação de renderização do card esmeralda na tela `Alertas.vue` e ausência de travamentos ou sobreposição no áudio global.
+
+### [CARE-RF014] Exibição de Especialidade nas Solicitações de Alta
+*   **Context (Contexto):** O NIR precisa visualizar a listagem de solicitações de alta da UTI para encaminhar os pacientes aos leitos de enfermaria adequados.
+*   **Action (Ação):** O frontend (`Altas.vue`) renderiza a especialidade médica do paciente (extraída do cadastro do AGHU ou payload de alta) como uma badge visual destacada antes da data e hora da solicitação.
+*   **Result (Resultado):** O regulador identifica imediatamente a especialidade clínica do paciente sem ter que abrir o prontuário completo, agilizando a regulação do leito de enfermaria.
+*   **Evaluation (Avaliação):** Renderização correta da badge de especialidade na tela de Solicitações de Alta.

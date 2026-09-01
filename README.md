@@ -122,9 +122,10 @@ O deployment da aplicacao na maquina virtual de producao e gerenciado de forma c
 
 A aplicação conta com dois mecanismos de backup para o banco de dados SQLite local (`app.db`):
 
-### 1. Backup Preventivo (Automático no Deploy)
-Durante a execução do script `scratch/git_pull_and_rebuild.py`, um backup a quente consistente é feito automaticamente antes de aplicar novas migrations e reiniciar os containers:
-- Arquivo gerado: `/var/app/hc-uti-manager/data/backup_pre_deploy.db`
+### 1. Deploy Automatizado
+A execução das rotinas de deploy em produção (`scratch/deploy_production.py`) e homologação (`scratch/deploy_homolog.py`) atualiza o código, roda as migrações do Alembic e gerencia a limpeza automática de contêineres:
+- Script de produção: `scratch/deploy_production.py`
+- Script de homologação: `scratch/deploy_homolog.py`
 
 ### 2. Backup Diário Rotativo (Cron Job na VM)
 Existe um script em `scratch/backup_db.sh` preparado para rodar rotineiramente.

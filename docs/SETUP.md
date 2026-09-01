@@ -186,7 +186,7 @@ Para atualizar a aplicacao na VM quando novos commits forem enviados para a bran
    podman exec hc-uti-backend alembic upgrade head
    ```
 
-*(Nota: O utilitario local `.venv/bin/python scratch/git_pull_and_rebuild.py` pode ser executado para rodar todos esses comandos na VM de forma remota via SSH).*
+*(Nota: O utilitario local `.venv/bin/python scratch/deploy_production.py` pode ser executado para rodar todos esses comandos na VM de producao de forma remota via SSH).*
 
 ### 10. Manutencao de Logs e Limpeza de Disco
 Para evitar quedas do container ou falhas de deploy por falta de espaco em disco, execute a limpeza periodica na VM:
