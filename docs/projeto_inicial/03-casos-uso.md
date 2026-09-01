@@ -24,6 +24,8 @@ flowchart LR
         UC7([UC007 - Acompanhar KPIs e Indicadores])
         UC8([UC008 - Reservar Leito Clínico/COB/HEM Preventivamente])
         UC9([UC009 - Realizar Passagem de Caso Clínica])
+        UC10([UC010 - Receber Alerta de Admissão Concluída no AGHU])
+        UC11([UC011 - Visualizar Especialidade do Paciente nas Altas])
     end
     
     %% Relacionamentos
@@ -41,6 +43,8 @@ flowchart LR
     
     NIR --- UC5
     NIR --- UC6
+    NIR --- UC10
+    NIR --- UC11
     
     ADM --- UC7
 ```
@@ -110,6 +114,20 @@ flowchart LR
     4. Na UTI, ao clicar em "Liberar Encaminhamento" para autorizar o transporte, o sistema exibe obrigatoriamente um modal de checkpoint com o conteúdo da Passagem de Caso.
     5. A equipe da UTI clica em "Ciente e Liberar" para confirmar a recepção e autorizar o transporte.
 
+### UC010 — Receber Alerta de Admissão Concluída no AGHU
+*   **Ator Principal:** Regulação NIR.
+*   **Fluxo Principal:**
+    1. O censo do AGHU detecta a ocupação física do leito de UTI por um paciente com encaminhamento liberado.
+    2. O motor de alertas gera um alerta de tipo `admissao_concluida` destinado ao perfil `NIR`.
+    3. O frontend do usuário NIR renderiza o card em destaque verde esmeralda com o ícone `CheckCircleIcon` e dispara a reprodução da melodia suave em Dó Maior (Dó-Mi-Sol).
+
+### UC011 — Visualizar Especialidade do Paciente nas Altas
+*   **Ator Principal:** Regulação NIR.
+*   **Fluxo Principal:**
+    1. O usuário com perfil NIR acessa o painel de Solicitações de Alta (`Altas.vue`).
+    2. O sistema exibe o card de solicitação de alta incluindo em destaque visual a especialidade médica do paciente (badge cinza antecedendo a data de solicitação).
+    3. O regulador utiliza a informação da especialidade para selecionar o leito de enfermaria de destino apropriado.
+
 ---
 
 ## 3. Detalhamento SDD (CARE)
@@ -141,3 +159,15 @@ flowchart LR
     2. A liberação de encaminhamento na UTI exige obrigatoriamente a leitura e confirmação da passagem de caso por meio do modal de checkpoint.
 *   **Result:** Garantia de segurança total e rastreabilidade na transferência de todos os pacientes cirúrgicos pós-operatórios para a UTI.
 *   **Evaluation:** Validado via testes unitários e no modal de tela do censo de leitos.
+
+### [CARE-UC010] Notificação de Admissão Concluída no AGHU
+*   **Context:** O paciente alocado deu entrada física no leito de UTI confirmado pelo censo.
+*   **Action:** O sistema emite alerta visual verde esmeralda e toca o tom sonoro sintetizado em C-E-G (Web Audio API) prioritariamente ao NIR.
+*   **Result:** Notificação em tempo real para a regulação sobre a conclusão da alocação do leito.
+*   **Evaluation:** Validação visual no painel do NIR e testes de áudio do navegador.
+
+### [CARE-UC011] Exibição de Especialidade na Tela de Altas
+*   **Context:** O NIR consulta as solicitações de alta da UTI para regulação de leito de enfermaria.
+*   **Action:** O sistema lê a especialidade vinculada ao prontuário ou solicitação e exibe a badge estilizada na listagem da tela `Altas.vue`.
+*   **Result:** Facilidade para o regulador identificar o perfil clínico do paciente sem abrir telas secundárias.
+*   **Evaluation:** Teste de renderização do componente Vue.

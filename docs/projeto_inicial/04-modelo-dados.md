@@ -75,7 +75,7 @@ erDiagram
     
     alertas {
         int id PK
-        string tipo "NOT NULL (critico/aviso/info)"
+        string tipo "NOT NULL (critico/aviso/info/admissao_concluida)"
         string titulo "NOT NULL"
         string mensagem "NOT NULL"
         string prontuario

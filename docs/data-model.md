@@ -94,6 +94,7 @@ Campos atualmente usados (frontend/src/views/Altas.vue):
 | --- | --- | --- |
 | id | string | identificador interno |
 | prontuario | string | paciente |
+| especialidade | string | especialidade médica do paciente (badge destacada em Altas.vue) |
 | leitoAtual | string | leito de origem |
 | leitoDestino | string | string livre; quando contem "Pendente" indica aguardo do NIR |
 | dataHora | string | timestamp textual |
