@@ -61,6 +61,11 @@ As especificações detalhadas de cada etapa do projeto estão distribuídas nos
 
 ### Fase 4: Recursos Avançados e Ajustes
 - [x] **[TASK-010]** Implementação de bloqueio e reserva clínica preventiva de leitos (Clínico/COB/HEM) com autolimpeza e swap.
+- [x] **[TASK-011]** Passagem de caso clínica obrigatória no Bloco Cirúrgico e modal de checkpoint na UTI.
+- [x] **[TASK-012]** Sistema de alertas de admissão concluída no AGHU em verde esmeralda com som melódico C-E-G (Web Audio API) para o NIR.
+- [x] **[TASK-013]** Exibição da especialidade médica do paciente na listagem de solicitações de alta (`Altas.vue`).
+- [x] **[TASK-014]** Módulo de gestão de perfis de usuário (`AdminConfig.vue`) com consulta ao AD LDAP e suporte a administradores setoriais.
+- [x] **[TASK-015]** Modo TV de exibição contínua com auto-scroll para monitores de parede e controle global de áudio (Mute/Unmute).
 
 ---
 

@@ -10,8 +10,9 @@ O frontend foi desenvolvido utilizando Vue.js com estilização moderna e respon
 
 *   **Painel de Censo (Bed Card Board):** Painel mestre de visualização que organiza os leitos da UTI em um grid de cards interativos. Cada card muda de cor de acordo com o estado do leito físico (`Disponivel` - cinza/azul sutil, `Ocupado` - vermelho/rosa clínico, `Alta` - verde suave, `Higienizacao` - amarelo suave, `Desativado` - cinza escuro).
 *   **Fila de Solicitações (Solicitantes):** Interface em tabela que lista as cirurgias do dia e solicitações ativas, mostrando prioridades (`P1` a `P10`), turnos e botões de ação dinâmica (Reservar, Editar via troca de paciente e Cancelar).
-*   **Painel NIR (Altas e Transferências):** Painel exclusivo para o Núcleo Interno de Regulação definir a enfermaria ou leito de destino de pacientes que receberam alta clínica da UTI.
-*   **Histórico de Ações (Auditoria):** Tela de consulta que exibe os logs de auditoria formatados por badges de cores dependendo do tipo de ação (solicitação, reserva, cancelamento, swap).
+*   **Painel NIR (Altas e Transferências):** Painel exclusivo para o Núcleo Interno de Regulação definir a enfermaria ou leito de destino de pacientes que receberam alta clínica da UTI, com exibição destacada da especialidade médica.
+*   **Histórico de Ações (Auditoria):** Tela de consulta que exibe os logs de auditoria formatados por badges de cores dependendo do tipo de ação (solicitação, reserva, cancelamento, swap), com suporte a modal de consulta retrospectiva da Passagem de Caso.
+*   **Gestão de Perfis e Acessos (`AdminConfig.vue`):** Tela administrativa restrita a gestores para busca automatizada de usuários do AD via LDAP e atribuição de permissões operacionais e hierarquia setorial (`UTI-Admin`, `NIR-Admin`, `COB-Admin`, `BC-Admin`, `HEM-Admin`).
 
 ---
 

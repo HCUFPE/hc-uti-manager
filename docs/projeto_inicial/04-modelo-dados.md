@@ -152,12 +152,14 @@ Controla os pedidos de transferência de pacientes que já receberam alta clíni
 *   `destino_disponivel` (INTEGER): Flag binário (0/1) indicando se a enfermaria já disponibilizou a vaga física.
 
 ### D. Tabela `usuarios_perfis`
-Define perfis de privilégios de acesso locais a partir da autenticação de usuários do AD.
+Define perfis de privilégios de acesso locais e hierarquia setorial a partir da autenticação de usuários do AD.
 
 *   `id` (INTEGER, PK, Autoincrement): Chave primária.
 *   `username` (VARCHAR(50), Unique): Usuário de rede do funcionário (Ebserh).
-*   `perfil` (VARCHAR(50)): Role operacional no sistema (`Administrador`, `UTI`, `NIR`, `Solicitante de Leito`, `Comum`).
-*   `nome_completo` (VARCHAR(100)): Nome social/profissional.
+*   `perfil` (VARCHAR(50)): Role operacional ou administrativa no sistema (`Admin`, `UTI-Admin`, `NIR-Admin`, `COB-Admin`, `BC-Admin`, `HEM-Admin`, `UTI`, `NIR`, `COB`, `BC`, `HEM`, `Comum`).
+*   `nome_completo` (VARCHAR(100)): Nome completo do profissional recuperado via LDAP do AD.
+*   `lotacao` (VARCHAR(100)): Setor/departamento de lotação oficial.
+*   `email` (VARCHAR(150)): E-mail institucional Ebserh.
 
 ### E. Tabela `refresh_tokens`
 Sessões de refresh token persistidas localmente para renovação segura de token JWT.

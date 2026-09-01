@@ -22,6 +22,10 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF012** | Passagem de Caso | Exigir que o Bloco Cirúrgico insira obrigatoriamente observações clínicas ao finalizar cirurgias, exibindo um modal obrigatório de checkpoint na UTI antes de liberar o transporte do paciente, suportando auditoria retrospectiva e controle atômico de concorrência. | Essencial |
 | **RF013** | Alertas de Admissão Concluída e Áudio Sintetizado (NIR) | Notificação visual em verde esmeralda e melodia sintetizada via Web Audio API direcionada ao NIR quando a admissão de um paciente é confirmada pelo censo do AGHU. | Essencial |
 | **RF014** | Exibição de Especialidade nas Altas | Exibição destacada da especialidade médica clínica do paciente na listagem de solicitações de alta para facilitar o direcionamento pelo NIR. | Essencial |
+| **RF015** | Gestão de Perfis de Usuários (RBAC) | Gerenciamento de permissões e atrelamento de papéis (UTI, NIR, BC, COB, HEM, Admin) via consulta do Active Directory Ebserh. | Essencial |
+| **RF016** | Modo TV de Exibição Contínua | Interface otimizada em tela cheia com ocultação de menus para exibição em monitores de parede nos plantões de regulação e UTI. | Desejável |
+| **RF017** | Auditoria Retrospectiva de Passagem de Caso | Modal de visualização detalhada da passagem de caso clínica acessível a partir do histórico de auditoria (`Historico.vue`). | Essencial |
+| **RF018** | Controle Global de Áudio (Mute/Unmute) | Alternância do som dos alertas do sistema no topo da interface com persistência do estado no painel global. | Desejável |
 
 ---
 
@@ -77,3 +81,27 @@ Abaixo está o detalhamento estruturado de requisitos operacionais críticos do 
 *   **Action (Ação):** O frontend (`Altas.vue`) renderiza a especialidade médica do paciente (extraída do cadastro do AGHU ou payload de alta) como uma badge visual destacada antes da data e hora da solicitação.
 *   **Result (Resultado):** O regulador identifica imediatamente a especialidade clínica do paciente sem ter que abrir o prontuário completo, agilizando a regulação do leito de enfermaria.
 *   **Evaluation (Avaliação):** Renderização correta da badge de especialidade na tela de Solicitações de Alta.
+
+### [CARE-RF015] Gestão Centralizada de Perfis (RBAC)
+*   **Context (Contexto):** Administradores gerais e de setor necessitam gerenciar permissões operacionais de usuários do AD.
+*   **Action (Ação):** A tela `AdminConfig.vue` consulta atributos do usuário via AD LDAP (`/api/admin/ad-search/{username}`) e persiste o perfil na tabela `usuarios_perfis`. Administradores setoriais possuem escopo restrito ao seu próprio departamento.
+*   **Result (Resultado):** Gestão segura de autorização e privilégios operacionais.
+*   **Evaluation (Avaliação):** Validação de rotas protegidas em `admin.py` e renderização de perfis na UI.
+
+### [CARE-RF016] Modo TV para Exibição Contínua em Monitores de Plantão
+*   **Context (Contexto):** As equipes de plantão necessitam monitorar o censo e alertas em telas de parede sem intervenção manual.
+*   **Action (Ação):** O acionamento do Modo TV (`uiStore.isTvMode`) expande a aplicação para tela cheia e ativa a rolagem dinâmica automática.
+*   **Result (Resultado):** Visualização panorâmica e contínua dos leitos da UTI.
+*   **Evaluation (Avaliação):** Verificação de expansão de tela e ocultação da barra lateral de navegação.
+
+### [CARE-RF017] Auditoria Retrospectiva da Passagem de Caso
+*   **Context (Contexto):** A equipe médica ou auditores necessitam consultar observações clínicas de transferências antigas.
+*   **Action (Ação):** O frontend (`Historico.vue`) identifica logs de histórico com payload de passagem de caso e disponibiliza o botão "Ver Passagem" para renderização do modal estruturado.
+*   **Result (Resultado):** Rastreabilidade clínica completa retrospectiva.
+*   **Evaluation (Avaliação):** Exibição correta dos dados no modal a partir de logs históricos do SQLite.
+
+### [CARE-RF018] Controle Global de Silenciamento de Áudio (Mute/Unmute)
+*   **Context (Contexto):** O operador necessita silenciar temporariamente os alertas sonoros do sistema no plantão.
+*   **Action (Ação):** O botão de mute no cabeçalho chaveia o estado `uiStore.isMuted`.
+*   **Result (Resultado):** Silenciamento imediato dos bipes e alertas sonoros da Web Audio API sem interromper os alertas visuais na tela.
+*   **Evaluation (Avaliação):** Validação de interrupção da execução do áudio quando `isMuted = true`.

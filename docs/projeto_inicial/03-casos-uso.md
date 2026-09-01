@@ -26,6 +26,9 @@ flowchart LR
         UC9([UC009 - Realizar Passagem de Caso Clínica])
         UC10([UC010 - Receber Alerta de Admissão Concluída no AGHU])
         UC11([UC011 - Visualizar Especialidade do Paciente nas Altas])
+        UC12([UC012 - Gerenciar Perfis de Usuários no AD])
+        UC13([UC013 - Ativar Modo TV de Exibição Contínua])
+        UC14([UC014 - Consultar Passagem de Caso no Histórico])
     end
     
     %% Relacionamentos
@@ -40,13 +43,18 @@ flowchart LR
     UTI --- UC6
     UTI --- UC8
     UTI --- UC9
+    UTI --- UC13
+    UTI --- UC14
     
     NIR --- UC5
     NIR --- UC6
     NIR --- UC10
     NIR --- UC11
+    NIR --- UC13
     
     ADM --- UC7
+    ADM --- UC12
+    ADM --- UC14
 ```
 
 ---
@@ -128,6 +136,27 @@ flowchart LR
     2. O sistema exibe o card de solicitação de alta incluindo em destaque visual a especialidade médica do paciente (badge cinza antecedendo a data de solicitação).
     3. O regulador utiliza a informação da especialidade para selecionar o leito de enfermaria de destino apropriado.
 
+### UC012 — Gerenciar Perfis de Usuários no AD
+*   **Ator Principal:** Gestor / Admin.
+*   **Fluxo Principal:**
+    1. O administrador acessa a tela de configuração de perfis (`AdminConfig.vue`).
+    2. O usuário pesquisa um login do Active Directory para autocompletar nome, lotação e e-mail.
+    3. O administrador seleciona o perfil operacional (ex: `UTI`, `NIR`, `BC`, `Admin`, ou admins de setor como `UTI-Admin`) e salva no banco de dados local.
+
+### UC013 — Ativar Modo TV de Exibição Contínua
+*   **Atores:** UTI e Regulação NIR.
+*   **Fluxo Principal:**
+    1. O operador clica no botão "Modo TV" no cabeçalho ou menu lateral.
+    2. O sistema expande a aplicação para tela cheia e oculta menus laterais e cabeçalho.
+    3. O painel ativa a rolagem automática inteligente para monitoramento contínuo em telas de parede.
+
+### UC014 — Consultar Passagem de Caso no Histórico
+*   **Atores:** UTI e Gestor / Admin.
+*   **Fluxo Principal:**
+    1. O usuário acessa a tela de Histórico de Auditoria (`Historico.vue`).
+    2. Nos registros de finalização de cirurgia ou encaminhamento, o usuário clica no botão "Ver Passagem".
+    3. O sistema abre o modal com as observações clínicas salvas para consulta retrospectiva.
+
 ---
 
 ## 3. Detalhamento SDD (CARE)
@@ -171,3 +200,21 @@ flowchart LR
 *   **Action:** O sistema lê a especialidade vinculada ao prontuário ou solicitação e exibe a badge estilizada na listagem da tela `Altas.vue`.
 *   **Result:** Facilidade para o regulador identificar o perfil clínico do paciente sem abrir telas secundárias.
 *   **Evaluation:** Teste de renderização do componente Vue.
+
+### [CARE-UC012] Atribuição de Perfis e Hierarquia Setorial (RBAC)
+*   **Context:** O Administrador atribui permissões de uso a um novo funcionário da rede.
+*   **Action:** O backend aceita atribuições de perfil validando a hierarquia (Admins de setor só concedem o seu papel específico ou Comum).
+*   **Result:** Controle estrito de autorização e escopo setorial no sistema.
+*   **Evaluation:** Testes de requisição HTTP com perfil de admin setorial.
+
+### [CARE-UC013] Visualização em Modo TV
+*   **Context:** O painel de leitos é exibido em uma TV fixa de monitoramento.
+*   **Action:** O estado `uiStore.isTvMode` remove o menu lateral e aciona o script de autoscroll suave.
+*   **Result:** Acompanhamento contínuo à distância da taxa de ocupação da UTI.
+*   **Evaluation:** Verificação visual de exibição em tela cheia.
+
+### [CARE-UC014] Consulta Retrospectiva da Passagem de Caso
+*   **Context:** Um usuário revisa o histórico de auditoria para consultar os dados do paciente no momento da transferência.
+*   **Action:** O frontend renderiza o modal com as informações clínicas deserializadas do evento.
+*   **Result:** Auditoria completa e rastreabilidade histórica.
+*   **Evaluation:** Validação de renderização do modal no histórico.
