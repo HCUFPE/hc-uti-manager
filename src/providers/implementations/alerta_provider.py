@@ -26,15 +26,16 @@ class AlertaProvider:
         # Evita duplicatas em caso de execuções paralelas/concorrência
         stmt = select(Alerta).where(
             Alerta.titulo == data.get("titulo"),
-            Alerta.prontuario == data.get("prontuario"),
-            Alerta.perfil_alvo == data.get("perfil_alvo"),
-            Alerta.mensagem == data.get("mensagem"),
-            Alerta.criado_em == data.get("criado_em")
+            Alerta.prontuario == str(data.get("prontuario")),
+            Alerta.mensagem == data.get("mensagem")
         )
+        if data.get("perfil_alvo"):
+            stmt = stmt.where(Alerta.perfil_alvo == data.get("perfil_alvo"))
+
         res = await self.session.execute(stmt)
-        existente = res.scalar_one_or_none()
-        if existente:
-            return existente
+        existentes = res.scalars().all()
+        if existentes:
+            return existentes[0]
 
         alerta = Alerta(**data)
         self.session.add(alerta)
