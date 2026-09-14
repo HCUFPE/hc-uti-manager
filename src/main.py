@@ -1,5 +1,5 @@
 # versao para 27/07/2026 as 14:05h
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 import os
@@ -184,6 +184,17 @@ app = FastAPI(
     version=VERSION,
     lifespan=lifespan,
 )
+
+# Middleware de Cabeçalhos de Segurança HTTP (Security Headers)
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 # Placeholder para incluir os roteadores da API
 from routers import paciente, auth, admin, leito, altas, solicitacoes_leito, alertas, indicadores, historico, health
