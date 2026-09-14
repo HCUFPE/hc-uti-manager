@@ -6,4 +6,4 @@
 ## 2. Verification & Validation
 
 - [x] 2.1 Testar execução do backend FastAPI localmente e validar o retorno dos cabeçalhos HTTP na resposta
-- [ ] 2.2 Subir as alterações para a branch `homologacao` e validar o deploy na VM de Homologação
+- [x] 2.2 Subir as alterações para a branch `homologacao` e validar o deploy na VM de Homologação
