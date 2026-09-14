@@ -1,4 +1,3 @@
-# versao para 27/07/2026 as 14:05h
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
