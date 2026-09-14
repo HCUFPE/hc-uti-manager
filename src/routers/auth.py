@@ -44,13 +44,18 @@ async def login(
         stmt = select(UsuarioPerfil).where(UsuarioPerfil.username == user["username"])
         result = await db.execute(stmt)
         perfil_obj = result.scalar_one_or_none()
-        
-        # Se não tiver perfil, assume "Comum" (Perfil 5)
-        # Usuários que são Administradores por padrão (Super Admins)
-        if user["username"] in ["admin", "daniel.turmina"]:
+        # 2. Super Administradores liberados por padrão (para nunca travar o sistema)
+        SUPER_ADMINS = ["admin", "daniel.turmina"]
+        if user["username"] in SUPER_ADMINS:
             user["perfil"] = "Administrador"
+        elif perfil_obj is not None:
+            user["perfil"] = perfil_obj.perfil
         else:
-            user["perfil"] = perfil_obj.perfil if perfil_obj else "Comum"
+            # ⛔ BLOQUEIO: Se não estiver cadastrado no banco local, NÃO ENTRA!
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"O usuário '{user['username']}' é válido, mas não possui autorização de acesso neste sistema. Solicite o cadastro ao Administrador do UTI Manager."
+            )
 
         # Sincronizar dados do AD para a tabela local se o perfil existir
         if perfil_obj:

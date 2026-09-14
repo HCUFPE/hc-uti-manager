@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const isAuthenticated = computed(() => !!accessToken.value);
-  
+
   const perfil = computed(() => user.value?.perfil || 'Comum');
 
   const isAdmin = computed(() => perfil.value === 'Administrador');
@@ -43,12 +43,12 @@ export const useAuthStore = defineStore('auth', () => {
     'HEM', 'HEM-Admin',
     'Administrador'
   ].includes(perfil.value));
-  
+
   const isAnyAdmin = computed(() => [
-    'Administrador', 'UTI-Admin', 'NIR-Admin', 
+    'Administrador', 'UTI-Admin', 'NIR-Admin',
     'COB-Admin', 'BC-Admin', 'HEM-Admin'
   ].includes(perfil.value));
-  
+
   // Para manter compatibilidade com componentes que usam isCoordination
   const isCoordination = computed(() => ['Administrador', 'UTI', 'UTI-Admin', 'NIR', 'NIR-Admin'].includes(perfil.value));
 
@@ -56,16 +56,16 @@ export const useAuthStore = defineStore('auth', () => {
   function getAssignableProfiles(): string[] {
     if (isAdmin.value) {
       return [
-        'Administrador', 'UTI-Admin', 'NIR-Admin', 
+        'Administrador', 'UTI-Admin', 'NIR-Admin',
         'COB-Admin', 'BC-Admin', 'HEM-Admin',
-        'UTI', 'NIR', 'COB', 'BC', 'HEM', 'Comum'
+        'UTI', 'NIR', 'COB', 'BC', 'HEM'
       ];
     }
-    if (perfil.value === 'UTI-Admin') return ['UTI', 'Comum'];
-    if (perfil.value === 'NIR-Admin') return ['NIR', 'Comum'];
-    if (perfil.value === 'COB-Admin') return ['COB', 'Comum'];
-    if (perfil.value === 'BC-Admin') return ['BC', 'Comum'];
-    if (perfil.value === 'HEM-Admin') return ['HEM', 'Comum'];
+    if (perfil.value === 'UTI-Admin') return ['UTI'];
+    if (perfil.value === 'NIR-Admin') return ['NIR'];
+    if (perfil.value === 'COB-Admin') return ['COB'];
+    if (perfil.value === 'BC-Admin') return ['BC'];
+    if (perfil.value === 'HEM-Admin') return ['HEM'];
     return [];
   }
 
@@ -163,12 +163,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { 
-    accessToken, 
-    user, 
+  return {
+    accessToken,
+    user,
     perfil,
-    isAuthenticated, 
-    isAdmin, 
+    isAuthenticated,
+    isAdmin,
     isAnyAdmin,
     isUTI,
     isNIR,
@@ -176,7 +176,7 @@ export const useAuthStore = defineStore('auth', () => {
     isCoordination,
     getAssignableProfiles,
     canManageUser,
-    login, 
+    login,
     logout,
     setToken,
     clearToken,

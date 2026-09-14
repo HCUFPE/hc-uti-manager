@@ -102,4 +102,24 @@ class LeitoEstadoProvider:
 *   `GET /api/solicitacoes/{sol_id}` — Retorna os dados detalhados e estruturados de uma solicitação de leito específica por ID, incluindo o JSON de `passagem_caso`.
 *   `POST /api/solicitacoes/{sol_id}/liberar-encaminhamento` — Autoriza a transferência para a UTI. Opcionalmente aceita um payload JSON contendo `{ "passagem_caso_avaliada": { ... } }` para validação atômica de concorrência, retornando erro HTTP `409 Conflict` caso os dados tenham sido editados simultaneamente pelo Bloco.
 
+### E. Telemetria e Monitoramento de Saúde (`/api/health`)
+*   `GET /api/health` — Endpoint público de monitoramento e sondas de infraestrutura (Uptime Kuma, Zabbix, K8s). Executa `SELECT 1` no banco principal SQLite (`app_db`) e checa o banco secundário AGHU (`aghu_postgres`).
+*   **Contrato de Resposta (HTTP 200 OK ou HTTP 503 Service Unavailable):**
+    ```json
+    {
+      "status": "healthy",
+      "app_name": "string (ex: HC-UTI Manager)",
+      "system_title": "string (ex: Gestão de Leitos UTI)",
+      "version": "string (versão semântica dinâmica lida de src/version.py)",
+      "last_update": "string (timestamp/data legível da última atualização)",
+      "organization": "Hospital das Clínicas da UFPE (HC-UFPE / EBSERH)",
+      "department": "Setor de Tecnologia da Informação e Saúde Digital — SETISD",
+      "timestamp": "ISO 8601 UTC timestamp",
+      "databases": {
+        "app_db": "connected | error: ... | not_initialized",
+        "aghu_postgres": "connected | error: ... | disabled_or_not_configured"
+      }
+    }
+    ```
+
 

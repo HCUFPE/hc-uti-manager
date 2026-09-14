@@ -114,15 +114,15 @@ async def salvar_perfil(
     if user_perfil != Role.ADMIN:
         allowed_profiles = []
         if user_perfil == Role.UTI_ADMIN:
-            allowed_profiles = [Role.UTI, Role.COMUM]
+            allowed_profiles = [Role.UTI]
         elif user_perfil == Role.NIR_ADMIN:
-            allowed_profiles = [Role.NIR, Role.COMUM]
+            allowed_profiles = [Role.NIR]
         elif user_perfil == Role.COB_ADMIN:
-            allowed_profiles = [Role.COB, Role.COMUM]
+            allowed_profiles = [Role.COB]
         elif user_perfil == Role.BC_ADMIN:
-            allowed_profiles = [Role.BC, Role.COMUM]
+            allowed_profiles = [Role.BC]
         elif user_perfil == Role.HEM_ADMIN:
-            allowed_profiles = [Role.HEM, Role.COMUM]
+            allowed_profiles = [Role.HEM]
             
         if perfil not in allowed_profiles:
             raise HTTPException(status_code=403, detail="Você só pode atribuir usuários ao seu próprio setor.")

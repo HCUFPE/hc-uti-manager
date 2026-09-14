@@ -1,9 +1,7 @@
-# usuario-config Specification
+# usuario-config Delta Specification
 
-## Purpose
-Especificação da gestão de configuração e perfis de usuários na interface administrativa e cabeçalho da aplicação.
+## MODIFIED Requirements
 
-## Requirements
 ### Requirement: Preenchimento Automático de Dados do AD no Cadastro
 O sistema MUST expor um endpoint no backend que busque os dados do usuário no Active Directory (AD) pelo `username` e o formulário de inclusão na tela de administração MUST exigir a validação prévia deste usuário no Active Directory antes de permitir o salvamento. Os dados validados (Nome Completo, Lotação e E-mail) MUST ser exibidos em um painel/card de confirmação visual e preencher automaticamente os campos correspondentes do cadastro.
 

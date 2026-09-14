@@ -67,6 +67,12 @@ As especificações detalhadas de cada etapa do projeto estão distribuídas nos
 - [x] **[TASK-014]** Módulo de gestão de perfis de usuário (`AdminConfig.vue`) com consulta ao AD LDAP e suporte a administradores setoriais.
 - [x] **[TASK-015]** Modo TV de exibição contínua com auto-scroll para monitores de parede e controle global de áudio (Mute/Unmute).
 
+### Fase 5: Versão 1.7.0 — SSOT, Telemetria & Governança Estrita
+- [x] **[TASK-016]** Padronização de versão em Fonte Única da Verdade (`src/version.py`) com consumo reativo no frontend.
+- [x] **[TASK-017]** Endpoint oficial de monitoramento de saúde e telemetria (`GET /api/health`).
+- [x] **[TASK-018]** Bloqueio estrito de login (HTTP 403) para credenciais AD não cadastradas no banco local e expurgo do perfil Comum.
+- [x] **[TASK-019]** Remodelação da interface `AdminConfig.vue` com pré-validação no Active Directory corporativo e botão "+ Novo Usuário".
+
 ---
 
 ## 5. Critérios de Verificação Global
@@ -74,3 +80,4 @@ As especificações detalhadas de cada etapa do projeto estão distribuídas nos
 - [x] Build limpo de produção via Podman Compose na VM de produção.
 - [x] Cobertura contra duplicidades concorrentes de alertas (zero registros com mesmo microssegundo).
 - [x] Registro inalterável e rastreável de todas as ações de auditoria LGPD no banco de dados.
+- [x] Sincronização automática de versão entre backend e frontend via `/api/health`.

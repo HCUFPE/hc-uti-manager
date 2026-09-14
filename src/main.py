@@ -176,15 +176,18 @@ async def lifespan(app: FastAPI):
         await app.state.app_db.close_connection()
         print("App SQLite connection pool closed.")
 
+from version import VERSION, APP_NAME
+
 app = FastAPI(
-    title="HC-UTI Manager",
+    title=APP_NAME,
     description="Aplicação Backend monolítica (API REST) em Python/FastAPI.",
-    version="1.5.0",
+    version=VERSION,
     lifespan=lifespan,
 )
 
 # Placeholder para incluir os roteadores da API
-from routers import paciente, auth, admin, leito, altas, solicitacoes_leito, alertas, indicadores, historico
+from routers import paciente, auth, admin, leito, altas, solicitacoes_leito, alertas, indicadores, historico, health
+app.include_router(health.router)
 app.include_router(paciente.router)
 app.include_router(auth.router)
 app.include_router(admin.router)

@@ -8,7 +8,7 @@
         </div>
         <button 
           @click="abrirModalNovo"
-          class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+          class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition flex items-center gap-2"
         >
           <PlusIcon class="h-4 w-4" />
           Novo Usuário
@@ -100,28 +100,55 @@
     <!-- Modal Adicionar/Editar -->
     <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
       <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+        <!-- Cabeçalho do Modal -->
         <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <h3 class="font-bold text-slate-800">{{ isEditing ? 'Editar Perfil' : 'Atribuir Perfil' }}</h3>
+          <h3 class="font-bold text-slate-800">
+            {{ isEditing ? 'Editar Usuário' : 'Novo Usuário' }}
+          </h3>
           <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600">
             <XMarkIcon class="h-5 w-5" />
           </button>
         </div>
+
         <div class="p-6 space-y-4">
+          <!-- Campo Login com botão Consultar Login -->
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Login da Rede (AD)</label>
-            <div class="relative">
+            <label class="block text-sm font-medium text-slate-700 mb-1">Login da Rede</label>
+            <div class="flex gap-2">
               <input 
                 v-model="form.username"
                 type="text" 
                 placeholder="ex: daniel.turmina"
-                :disabled="isEditing"
-                class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition disabled:bg-slate-100 disabled:text-slate-500"
+                :disabled="isEditing || searchingAd"
+                @keydown.enter.prevent="consultarAD"
+                class="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition disabled:bg-slate-100"
               />
+              <button
+                v-if="!isEditing"
+                type="button"
+                @click="consultarAD"
+                :disabled="!form.username.trim() || searchingAd"
+                class="px-4 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 border border-blue-200 rounded-lg transition whitespace-nowrap"
+              >
+                {{ searchingAd ? 'Buscando...' : '🔍 Consultar Login' }}
+              </button>
             </div>
+            <p class="text-xs text-slate-400 mt-1">Digite o login institucional do colaborador e clique em Consultar Login.</p>
           </div>
 
+          <!-- Banner verde quando o usuário é validado no AD -->
+          <div v-if="adValidatedUser" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 space-y-1 text-xs text-emerald-900">
+            <p class="font-bold text-sm flex items-center gap-1 text-emerald-800">
+              ✓ Usuário localizado
+            </p>
+            <p><strong class="text-slate-800">Nome:</strong> {{ adValidatedUser.nome_completo }}</p>
+            <p><strong class="text-slate-800">Lotação:</strong> {{ adValidatedUser.lotacao }}</p>
+            <p v-if="adValidatedUser.email"><strong class="text-slate-800">E-mail:</strong> {{ adValidatedUser.email }}</p>
+          </div>
+
+          <!-- Seleção de Perfil -->
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Perfil de Acesso</label>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Perfil de Acesso no Sistema</label>
             <select 
               v-model="form.perfil"
               class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition bg-white"
@@ -130,6 +157,8 @@
             </select>
           </div>
         </div>
+
+        <!-- Rodapé do Modal com botão Salvar -->
         <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
           <button 
             @click="showAddModal = false"
@@ -139,7 +168,7 @@
           </button>
           <button 
             @click="salvar"
-            :disabled="submitting || !form.username"
+            :disabled="submitting || !form.username || (!isEditing && !adValidatedUser)"
             class="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition"
           >
             {{ submitting ? 'Salvando...' : 'Salvar Usuário' }}
@@ -163,6 +192,9 @@ const availableProfiles = computed(() => authStore.getAssignableProfiles());
 const toast = useToast();
 const loading = ref(false);
 const submitting = ref(false);
+const searchingAd = ref(false);
+const adValidatedUser = ref<{ nome_completo: string; lotacao: string; email: string } | null>(null);
+
 const showAddModal = ref(false);
 const isEditing = ref(false);
 const perfis = ref<any[]>([]);
@@ -173,8 +205,7 @@ const expandedGroups = ref<Record<string, boolean>>({
   bc: false,
   hem: false,
   cob: false,
-  admin: false,
-  comum: false
+  admin: false
 });
 
 const groupedPerfis = computed(() => {
@@ -182,7 +213,6 @@ const groupedPerfis = computed(() => {
     admin: { label: "Administrador", roles: ["Administrador"], users: [] },
     bc: { label: "Bloco Cirúrgico (BC) / BC-Admin", roles: ["BC", "BC-Admin"], users: [] },
     cob: { label: "Centro Obstétrico (COB) / COB-Admin", roles: ["COB", "COB-Admin"], users: [] },
-    comum: { label: "Comum", roles: ["Comum"], users: [] },
     hem: { label: "Hemodinâmica (HEM) / HEM-Admin", roles: ["HEM", "HEM-Admin"], users: [] },
     nir: { label: "NIR / NIR-Admin", roles: ["NIR", "NIR-Admin"], users: [] },
     uti: { label: "UTI / UTI-Admin", roles: ["UTI", "UTI-Admin"], users: [] }
@@ -196,7 +226,6 @@ const groupedPerfis = computed(() => {
         return;
       }
     }
-    groups.comum.users.push(user);
   });
 
   // Alphabetical sort within each group by complex name or username
@@ -213,14 +242,16 @@ const groupedPerfis = computed(() => {
 
 const form = ref({
   username: '',
-  perfil: 'Comum',
+  perfil: 'UTI',
   nome_completo: '',
   lotacao: '',
   email: ''
 });
 
 function abrirModalNovo() {
-  form.value = { username: '', perfil: 'Comum', nome_completo: '', lotacao: '', email: '' };
+  const initialPerfil = availableProfiles.value[0] || 'UTI';
+  form.value = { username: '', perfil: initialPerfil, nome_completo: '', lotacao: '', email: '' };
+  adValidatedUser.value = null;
   isEditing.value = false;
   showAddModal.value = true;
 }
@@ -231,8 +262,39 @@ function abrirModalEdicao(item: any) {
   form.value.nome_completo = item.nome_completo || '';
   form.value.lotacao = item.lotacao || '';
   form.value.email = item.email || '';
+  adValidatedUser.value = {
+    nome_completo: item.nome_completo || item.username,
+    lotacao: item.lotacao || 'N/D',
+    email: item.email || 'N/D'
+  };
   isEditing.value = true;
   showAddModal.value = true;
+}
+
+async function consultarAD() {
+  const login = form.value.username.trim().toLowerCase();
+  if (!login) return;
+  searchingAd.value = true;
+  adValidatedUser.value = null;
+  try {
+    const { data } = await api.get(`/api/admin/ad-search/${login}`);
+    
+    // Autopreencha os dados que vieram do AD
+    form.value.nome_completo = data.nome_completo;
+    form.value.lotacao = data.lotacao;
+    form.value.email = data.email;
+    adValidatedUser.value = {
+      nome_completo: data.nome_completo,
+      lotacao: data.lotacao,
+      email: data.email
+    };
+    toast.success(`Usuário validado: ${data.nome_completo}`);
+  } catch (error: any) {
+    const msg = error.response?.data?.detail || `Usuário '${login}' não localizado no Active Directory.`;
+    toast.error(msg);
+  } finally {
+    searchingAd.value = false;
+  }
 }
 
 async function carregarPerfis() {
@@ -251,19 +313,21 @@ async function salvar() {
   submitting.value = true;
   try {
     await api.post('/api/admin/perfis', form.value);
-    toast.success('Perfil atualizado com sucesso!');
+    toast.success('Usuário salvo com sucesso!');
     showAddModal.value = false;
-    form.value = { username: '', perfil: 'Comum', nome_completo: '', lotacao: '', email: '' };
+    adValidatedUser.value = null;
+    form.value = { username: '', perfil: 'UTI', nome_completo: '', lotacao: '', email: '' };
     await carregarPerfis();
-  } catch (error) {
-    toast.error('Erro ao salvar perfil.');
+  } catch (error: any) {
+    const msg = error.response?.data?.detail || 'Erro ao salvar usuário.';
+    toast.error(msg);
   } finally {
     submitting.value = false;
   }
 }
 
 async function removerPerfil(username: string) {
-  if (!confirm(`Deseja remover o perfil customizado de ${username}? ele voltará a ser "Comum".`)) return;
+  if (!confirm(`Deseja remover o usuário ${username} do sistema? Ele perderá o acesso ao HC-UTI Manager.`)) return;
   
   try {
     await api.delete(`/api/admin/perfis/${username}`);

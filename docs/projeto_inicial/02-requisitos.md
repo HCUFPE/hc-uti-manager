@@ -22,10 +22,12 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF012** | Passagem de Caso | Exigir que o Bloco Cirúrgico insira obrigatoriamente observações clínicas ao finalizar cirurgias, exibindo um modal obrigatório de checkpoint na UTI antes de liberar o transporte do paciente, suportando auditoria retrospectiva e controle atômico de concorrência. | Essencial |
 | **RF013** | Alertas de Admissão Concluída e Áudio Sintetizado (NIR) | Notificação visual em verde esmeralda e melodia sintetizada via Web Audio API direcionada ao NIR quando a admissão de um paciente é confirmada pelo censo do AGHU. | Essencial |
 | **RF014** | Exibição de Especialidade nas Altas | Exibição destacada da especialidade médica clínica do paciente na listagem de solicitações de alta para facilitar o direcionamento pelo NIR. | Essencial |
-| **RF015** | Gestão de Perfis de Usuários (RBAC) | Gerenciamento de permissões e atrelamento de papéis (UTI, NIR, BC, COB, HEM, Admin) via consulta do Active Directory Ebserh. | Essencial |
+| **RF015** | Gestão de Perfis de Usuários (RBAC) | Gerenciamento de permissões e atrelamento de papéis (UTI, NIR, BC, COB, HEM, Admin) via consulta e validação antecipada no Active Directory Ebserh. | Essencial |
 | **RF016** | Modo TV de Exibição Contínua | Interface otimizada em tela cheia com ocultação de menus para exibição em monitores de parede nos plantões de regulação e UTI. | Desejável |
 | **RF017** | Auditoria Retrospectiva de Passagem de Caso | Modal de visualização detalhada da passagem de caso clínica acessível a partir do histórico de auditoria (`Historico.vue`). | Essencial |
 | **RF018** | Controle Global de Áudio (Mute/Unmute) | Alternância do som dos alertas do sistema no topo da interface com persistência do estado no painel global. | Desejável |
+| **RF019** | Endpoint de Telemetria e Monitoramento (/api/health) | Exposição de endpoint REST de verificação ativa de saúde do servidor e dos bancos de dados (`app_db` e `aghu_postgres`), versão oficial e metadados institucionais. | Essencial |
+| **RF020** | Autorização Híbrida Estrita (AD + Banco Local) | Bloqueio automático de login (HTTP 403) para usuários autenticados no AD mas não cadastrados previamente na gestão de perfis local, com expurgo do perfil Comum. | Essencial |
 
 ---
 
@@ -39,6 +41,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RNF004** | Segurança de Sessão | Autenticação baseada em Access Token (JWT em memória) e Refresh Token (armazenado em cookie seguro `HttpOnly`). |
 | **RNF005** | Resiliência e Infra | Deploy via Podman Compose gerenciado como serviço systemd de inicialização automática na VM. |
 | **RNF006** | Manutenibilidade | Rotinas automáticas de backup diário rotativo do banco SQLite e limpeza de logs do journald/Podman. |
+| **RNF007** | Fonte Única da Verdade (SSOT) | Centralização de versão e identidade no backend (`src/version.py`) consumida dinamicamente pelo Swagger e pela store reativa do frontend. |
 
 ---
 

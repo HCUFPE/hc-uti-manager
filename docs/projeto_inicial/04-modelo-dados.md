@@ -210,6 +210,37 @@ Schema utilizado pelas APIs do backend para validação das requisições recebi
 }
 ```
 
+### 3.1. Schema JSON de Telemetria e Saúde (`/api/health`)
+
+Schema padronizado de resposta para observabilidade e sondas do sistema:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HealthCheckResponse",
+  "type": "object",
+  "properties": {
+    "status": { "type": "string", "enum": ["healthy", "unhealthy"] },
+    "app_name": { "type": "string" },
+    "system_title": { "type": "string" },
+    "version": { "type": "string" },
+    "last_update": { "type": "string" },
+    "organization": { "type": "string" },
+    "department": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "databases": {
+      "type": "object",
+      "properties": {
+        "app_db": { "type": "string" },
+        "aghu_postgres": { "type": "string" }
+      },
+      "required": ["app_db"]
+    }
+  },
+  "required": ["status", "app_name", "system_title", "version", "timestamp", "databases"]
+}
+```
+
 ---
 
 ## 4. Regras de Integridade de Dados
