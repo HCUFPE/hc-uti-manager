@@ -6,4 +6,4 @@
 ## 2. Verification & Deploy
 
 - [x] 2.1 Testar que requisições anônimas para `/api/leitos` retornam 401 Unauthorized
-- [ ] 2.2 Subir a alteração para a branch `homologacao` e atualizar o container na VM de Homologação
+- [x] 2.2 Subir a alteração para a branch `homologacao` e atualizar o container na VM de Homologação
