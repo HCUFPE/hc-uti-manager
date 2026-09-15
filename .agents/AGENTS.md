@@ -10,6 +10,7 @@
    * **Casos de Uso:** [03-casos-uso.md](./docs/projeto_inicial/03-casos-uso.md) — Adicionar novos fluxos de usuários ou diagramas Mermaid de fluxo de dados.
    * **Modelo de Dados:** [04-modelo-dados.md](./docs/projeto_inicial/04-modelo-dados.md) — Atualizar entidades, relacionamentos ou payloads JSON do banco.
    * **Interfaces & APIs:** [05-interfaces.md](./docs/projeto_inicial/05-interfaces.md) — Documentar novos endpoints REST, parâmetros e contratos de payload.
+   * **Histórico de Versões:** [CHANGELOG.md](./CHANGELOG.md) — Registrar obrigatoriamente toda nova versão (Major, Minor ou Patch/Bugfix) por menor que seja.
    * **Metas e Progresso:** [SPEC.md](./docs/projeto_inicial/SPEC.md) — Manter o Task Breakdown e metas sincronizados.
    * **Manuais e Guias de Desenvolvimento:**
      * [docs/SETUP.md](./docs/SETUP.md) — Manter atualizadas as rotinas e comandos de deploy, backup e configuração do ambiente.
