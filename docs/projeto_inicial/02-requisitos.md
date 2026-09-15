@@ -28,6 +28,8 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF018** | Controle Global de Áudio (Mute/Unmute) | Alternância do som dos alertas do sistema no topo da interface com persistência do estado no painel global. | Desejável |
 | **RF019** | Endpoint de Telemetria e Monitoramento (/api/health) | Exposição de endpoint REST de verificação ativa de saúde do servidor e dos bancos de dados (`app_db` e `aghu_postgres`), versão oficial e metadados institucionais. | Essencial |
 | **RF020** | Autorização Híbrida Estrita (AD + Banco Local) | Bloqueio automático de login (HTTP 403) para usuários autenticados no AD mas não cadastrados previamente na gestão de perfis local, com expurgo do perfil Comum. | Essencial |
+| **RF021** | Middleware de Cabeçalhos de Segurança HTTP (Security Headers) | Injeção automática de cabeçalhos HTTP de segurança (`X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Cache-Control: no-store`, `Pragma: no-cache`) em todas as respostas da API REST para impedir cache de dados sensíveis e ataques XSS/Clickjacking. | Essencial |
+| **RF022** | Proteção Estrita de Autenticação na Consulta de Leitos | Bloqueio obrigatório de requisições anônimas/não autenticadas (HTTP 401 Unauthorized) para a listagem e censo de leitos (`GET /api/leitos` e `GET /api/leitos/disponiveis`). | Essencial |
 
 ---
 
@@ -42,6 +44,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RNF005** | Resiliência e Infra | Deploy via Podman Compose gerenciado como serviço systemd de inicialização automática na VM. |
 | **RNF006** | Manutenibilidade | Rotinas automáticas de backup diário rotativo do banco SQLite e limpeza de logs do journald/Podman. |
 | **RNF007** | Fonte Única da Verdade (SSOT) | Centralização de versão e identidade no backend (`src/version.py`) consumida dinamicamente pelo Swagger e pela store reativa do frontend. |
+| **RNF008** | Segurança HTTP | Conformidade total com o padrão oficial do Framework SETISD para cabeçalhos de segurança HTTP e bloqueio de cache de dados hospitalares em terminais públicos. |
 
 ---
 

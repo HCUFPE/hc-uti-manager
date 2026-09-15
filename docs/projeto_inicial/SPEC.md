@@ -72,6 +72,8 @@ As especificações detalhadas de cada etapa do projeto estão distribuídas nos
 - [x] **[TASK-017]** Endpoint oficial de monitoramento de saúde e telemetria (`GET /api/health`).
 - [x] **[TASK-018]** Bloqueio estrito de login (HTTP 403) para credenciais AD não cadastradas no banco local e expurgo do perfil Comum.
 - [x] **[TASK-019]** Remodelação da interface `AdminConfig.vue` com pré-validação no Active Directory corporativo e botão "+ Novo Usuário".
+- [x] **[TASK-020]** Adição do Middleware de HTTP Security Headers (`X-Content-Type-Options`, `X-Frame-Options`, `Cache-Control: no-store`) em `src/main.py`.
+- [x] **[TASK-021]** Proteção estrita de autenticação JWT na rota `GET /api/leitos` e `GET /api/leitos/disponiveis`.
 
 ---
 
