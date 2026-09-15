@@ -152,6 +152,7 @@ async def cancelar_reserva_clinica(
 @router.get("", response_model=List[Dict[str, Any]])
 async def listar_leitos(
     controller: LeitosController = Depends(get_leito_controller),
+    current_user: dict = Depends(auth_handler.auth_wrapper),
 ):
     """Retorna todos os leitos da unidade selecionada, com dados unificados do banco local e AGHU."""
     return await controller.listar_leitos()
@@ -159,6 +160,7 @@ async def listar_leitos(
 @router.get("/disponiveis")
 async def listar_leitos_disponiveis_para_reserva(
     incluir_reservados: bool = Query(False, description="Incluir leitos com reserva ativa na listagem"),
-    controller: LeitosController = Depends(get_leito_controller)
+    controller: LeitosController = Depends(get_leito_controller),
+    current_user: dict = Depends(auth_handler.auth_wrapper),
 ):
     return await controller.listar_leitos_disponiveis_para_reserva(incluir_reservados=incluir_reservados)
