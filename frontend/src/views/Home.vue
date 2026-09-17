@@ -378,9 +378,11 @@ const loadLeitos = async () => {
     }
 
     leitos.value = novosLeitos;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar leitos:', error);
-    toast.error('Falha ao carregar leitos. Verifique a conexao.');
+    if (error.response?.status !== 401 && authStore.isAuthenticated) {
+      toast.error('Falha ao carregar leitos. Verifique a conexao.');
+    }
   }
 };
 

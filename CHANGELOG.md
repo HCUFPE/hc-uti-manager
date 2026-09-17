@@ -14,6 +14,15 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 
 ---
 
+## [1.7.1] - 2026-09-17
+
+### Corrigido (Fixed) & Ajustado (Adjusted)
+- **Supressão de Toast Fantasma no Redirecionamento 401**: Ajustado o tratamento de exceção em `Home.vue` (`loadLeitos`) para ignorar erros HTTP `401 Unauthorized` ou quando o usuário não estiver autenticado. Isso impede que o alerta vermelho "Falha ao carregar leitos. Verifique a conexao." seja exibido indevidamente sobre a tela de login durante o redirecionamento automático de sessão expirada.
+- **Duração do Token de Acesso ("Lembrar de Mim")**: Ajustado em `src/routers/auth.py` para que credenciais que marquem a opção "Lembrar de mim" no login emitam token JWT válido por **7 dias** (168 horas), mantendo **24 horas** no login padrão sem a opção marcada.
+- **Bump de Versão SSOT**: Versão atualizada para `1.7.1` em `src/version.py` e `frontend/package.json`.
+
+---
+
 ## [1.7.0] - 2026-09-15
 
 ### Adicionado (Added) & Segurança

@@ -108,6 +108,12 @@ Abaixo está o detalhamento estruturado de requisitos operacionais críticos do 
 
 ### [CARE-RF018] Controle Global de Silenciamento de Áudio (Mute/Unmute)
 *   **Context (Contexto):** O operador necessita silenciar temporariamente os alertas sonoros do sistema no plantão.
-*   **Action (Ação):** O botão de mute no cabeçalho chaveia o estado `uiStore.isMuted`.
-*   **Result (Resultado):** Silenciamento imediato dos bipes e alertas sonoros da Web Audio API sem interromper os alertas visuais na tela.
-*   **Evaluation (Avaliação):** Validação de interrupção da execução do áudio quando `isMuted = true`.
+*   **Action (Ação):** Botão flutuante no cabeçalho permite alternar o estado de áudio (`uiStore.isMuted`).
+*   **Result (Resultado):** Interrupção de todos os sinais sonoros emitidos pela Web Audio API.
+*   **Evaluation (Avaliação):** Validação de silenciamento dos alertas sonoros.
+
+### [CARE-RF019] Gestão de Sessão JWT e Expiração Silenciosa de Redirecionamento
+*   **Context (Contexto):** O usuário acessa o sistema com ou sem a opção "Lembrar de mim", ou a sessão expira enquanto a página está aberta.
+*   **Action (Ação):** No login, a opção "Lembrar de mim" emite token JWT com validade de 7 dias (168h), enquanto o acesso padrão possui validade de 24h. Em caso de expiração (erro 401), a transição para `/login` é silenciosa no frontend sem emissão de alertas indevidos de falha de conexão.
+*   **Result (Resultado):** Experiência de login fluida sem falsos alertas de queda de rede e sessões duradouras para usuários autorizados.
+*   **Evaluation (Avaliação):** Teste de redirecionamento de 401 e verificação da validade do token JWT emitido pelo backend.

@@ -107,7 +107,7 @@ async def login(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
 
-    access_token_expires = timedelta(minutes=15) if remember_me else timedelta(hours=JWT_EXP_HOURS)
+    access_token_expires = timedelta(days=7) if remember_me else timedelta(hours=JWT_EXP_HOURS)
     access_token = auth_handler.create_access_token(
         data=user,
         expires_delta=access_token_expires
