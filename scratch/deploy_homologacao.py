@@ -24,10 +24,7 @@ def main():
             # 1. Descartar alterações locais na VM, buscar e fazer checkout de homologacao
             "cd /var/app/hc-uti-manager && git restore . && git fetch origin && git checkout homologacao && git pull origin homologacao",
             
-            # 2. Reconstruir imagem podman (se aplicável)
-            "cd /var/app/hc-uti-manager && podman build --no-cache -t localhost/hc-uti-manager_backend:latest . 2>&1 || true",
-            
-            # 3. Remover containers antigos se existirem e reiniciar o serviço systemd
+            # 2. Remover containers antigos se existirem e reiniciar o serviço systemd
             "podman rm -f hc-uti-backend hc-uti-nginx 2>/dev/null || true",
             "systemctl restart hc-uti.service 2>/dev/null || systemctl restart hc-uti-manager.service 2>/dev/null || true",
             
