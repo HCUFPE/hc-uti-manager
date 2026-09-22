@@ -102,11 +102,12 @@ class LeitosController:
             leito['lto_lto_id'] = lto_id 
             leito['status_aghu_original'] = str(leito.get('status', '')).lower()
             
+            leito['idade_atual'] = self._calcular_idade(leito.get('data_nascimento'))
+            
             # SIMULAÇÃO EM HOMOLOGAÇÃO: Força o Leito UTI-02 reservado a vir com status em higienizacao se ENV=development/homologacao
             if os.getenv("ENV") in ["development", "homologacao"] and lto_id == "UTI-02":
                 leito['status_aghu_original'] = 'higienizacao'
                 leito['bloqueado_clinico'] = True
-                leito['idade_atual'] = self._calcular_idade(leito['data_nascimento'])
             
             # Altas
             if lto_id in altas_map:
