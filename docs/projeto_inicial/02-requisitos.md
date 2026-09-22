@@ -117,3 +117,9 @@ Abaixo está o detalhamento estruturado de requisitos operacionais críticos do 
 *   **Action (Ação):** No login, a opção "Lembrar de mim" emite token JWT com validade de 7 dias (168h), enquanto o acesso padrão possui validade de 24h. Em caso de expiração (erro 401), a transição para `/login` é silenciosa no frontend sem emissão de alertas indevidos de falha de conexão.
 *   **Result (Resultado):** Experiência de login fluida sem falsos alertas de queda de rede e sessões duradouras para usuários autorizados.
 *   **Evaluation (Avaliação):** Teste de redirecionamento de 401 e verificação da validade do token JWT emitido pelo backend.
+
+### [CARE-RF020] Sinalização de Higienização Física em Leito Reservado
+*   **Context (Contexto):** O leito possui reserva ativa (`bloqueadoClinico = True`), mas no censo físico do AGHU seu status é `Higienização` / `Limpeza`.
+*   **Action (Ação):** O leito mantém o badge principal como `Reservado` (roxo) e exibe uma sub-legenda em fonte reduzida com ícone (`✨ Higienização`) posicionada logo abaixo da badge principal.
+*   **Result (Resultado):** Clareza visual para a equipe de plantão sobre o estado de preparação física do leito reservado.
+*   **Evaluation (Avaliação):** Validação da renderização da legenda em leitos reservado com status de higienização no AGHU.

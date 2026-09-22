@@ -286,6 +286,7 @@ type Leito = {
   solicitacaoId?: number;
   bloqueadoClinico?: boolean;
   passagemCaso?: string;
+  statusAghuOriginal?: string;
 };
 
 const leitos = ref<Leito[]>([]);
@@ -353,6 +354,7 @@ const loadLeitos = async () => {
       solicitacaoId: l.solicitacao_id,
       bloqueadoClinico: l.bloqueado_clinico || false,
       passagemCaso: l.passagem_caso || undefined,
+      statusAghuOriginal: l.status_aghu_original || undefined,
     }));
 
     // Identificar leitos com cirurgia concluída e encaminhamento pendente de liberação
