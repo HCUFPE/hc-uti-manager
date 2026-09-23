@@ -1,7 +1,5 @@
 # Modelo dos Dados e Entidades (frontend)
 
-Última atualização: 04 Ago 2026
-
 ## API endpoints atualmente chamados
 - `POST /api/login` (body form: username, password, remember_me) -> `{ access_token }`
 - `POST /api/logout` (fire and forget)
