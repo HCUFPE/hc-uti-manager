@@ -17,7 +17,7 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 ## [1.7.2] - 2026-09-22
 
 ### Adicionado (Added) & Ajustado (Adjusted)
-- **Sub-Legenda Visual de Higienização em Leitos Reservados**: Quando um leito possui reserva ativa (`bloqueadoClinico = True`), mas seu status físico no censo do AGHU permanece em `Limpeza` / `Higienização`, o badge principal é mantido como `Reservado` (roxo) e uma legenda em fonte menor com brilho discreto (`✨ Higienização`) é exibida logo abaixo do badge fora do container principal.
+- **Pílula Visual de Higienização em Leitos Reservados**: Quando um leito possui qualquer tipo de reserva ativa (Reserva de Cirurgia `proximoPaciente` ou Reserva Preventiva da UTI `bloqueadoClinico`), mas seu status físico no censo do AGHU permanece em `Limpeza` / `Higienização`, o badge principal de status é preservado e uma pílula amarela de status (`bg-amber-50 text-amber-700 border-amber-200/80 shadow-sm`) com o ícone de atualização/setas circulares (`ArrowPathIcon`) e o texto `Higienização` é exibida logo abaixo.
 - **Simulação em Homologação**: Injeção condicional no leito `UTI-02` no ambiente de desenvolvimento e homologação para validação da UI pelo usuário.
 - **Bump de Versão SSOT**: Versão atualizada para `1.7.2` em `src/version.py`, `frontend/package.json` e `frontend/src/config/version.ts`.
 

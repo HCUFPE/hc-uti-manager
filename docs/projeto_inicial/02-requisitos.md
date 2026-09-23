@@ -119,7 +119,7 @@ Abaixo está o detalhamento estruturado de requisitos operacionais críticos do 
 *   **Evaluation (Avaliação):** Teste de redirecionamento de 401 e verificação da validade do token JWT emitido pelo backend.
 
 ### [CARE-RF020] Sinalização de Higienização Física em Leito Reservado
-*   **Context (Contexto):** O leito possui reserva ativa (`bloqueadoClinico = True`), mas no censo físico do AGHU seu status é `Higienização` / `Limpeza`.
-*   **Action (Ação):** O leito mantém o badge principal como `Reservado` (roxo) e exibe uma sub-legenda em fonte reduzida com ícone (`✨ Higienização`) posicionada logo abaixo da badge principal.
-*   **Result (Resultado):** Clareza visual para a equipe de plantão sobre o estado de preparação física do leito reservado.
-*   **Evaluation (Avaliação):** Validação da renderização da legenda em leitos reservado com status de higienização no AGHU.
+*   **Context (Contexto):** O leito possui reserva ativa (seja Reserva de Cirurgia `proximoPaciente` ou Reserva Preventiva da UTI `bloqueadoClinico`), mas no censo físico do AGHU seu status permanece em `Higienização` / `Limpeza`.
+*   **Action (Ação):** O leito mantém seu badge principal de status (ex: `Reservado`) e exibe uma pílula visual amarela de status (`bg-amber-50 text-amber-700 border-amber-200/80 shadow-sm`) com o ícone de atualização/setas circulares (`ArrowPathIcon`) e o texto `Higienização` posicionada logo abaixo do badge principal.
+*   **Result (Resultado):** Clareza visual padronizada para a equipe de plantão sobre o processo de limpeza/higienização física em andamento para qualquer tipo de leito reservado.
+*   **Evaluation (Avaliação):** Validação da renderização da pílula de higienização amarela nos cards dos leitos com reserva ativa e status de limpeza no AGHU.

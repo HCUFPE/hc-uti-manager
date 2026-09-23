@@ -5,12 +5,9 @@ Quando um leito é reservado no sistema (ex: para paciente cirúrgico ou transfe
 ## What Changes
 
 - **Preservação e Exibição Visual de Higienização no Leito Reservado**:
-  - Manter a badge principal como `Reservado` (roxa).
-  - Adicionar abaixo do badge principal, em fonte menor (`text-xs` / `text-[11px]`) e fora do badge, um indicador visual textual em tom discreto de alerta/higienização: `🧹 Leito em Higienização (AGHU)`.
-- **Simulação em Homologação**:
-  - Implementar uma chave/parâmetro de simulação temporária em Homologação para que um dos leitos fique forçadamente com reserva + status AGHU de limpeza, permitindo visualização imediata da interface.
-- **Deploy Inicial Restrito a Homologação**:
-  - Garantir a entrega inicial exclusivamente no ambiente de Homologação (`10.34.0.151`) para validação visual pelo usuário antes da produção.
+  - Manter o badge principal de status (ex: `Reservado`).
+  - Adicionar abaixo do badge principal uma pílula amarela de status (`bg-amber-50 text-amber-700 border-amber-200/80 shadow-sm`) com ícone `ArrowPathIcon` e o texto `Higienização`.
+  - Exibir a pílula para qualquer leito reservado (seja de cirurgia ou bloqueio clínico da UTI) quando o status AGHU for limpeza/higienização.
 
 ## Capabilities
 
