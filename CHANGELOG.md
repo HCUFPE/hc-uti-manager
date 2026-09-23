@@ -14,6 +14,17 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 
 ---
 
+## [1.7.3] - 2026-09-23
+
+### Adicionado (Added) & Segurança (Framework SETISD)
+- **Default-Private Router Pattern (`altas.py`)**: Aplicação da dependência global de autenticação JWT `dependencies=[Depends(auth_handler.decode_token)]` no `APIRouter` de solicitações de alta.
+- **Tabela Unificada de Auditoria Imutável (`audit_logs`)**: Criação da entidade `AuditLog` (`src/models/audit_log.py`) e da função utilitária `registrar_auditoria()` (`src/utils/audit_helper.py`) armazenando estados imutáveis (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`) com payloads JSON `estado_anterior` e `estado_novo`.
+- **Central de Configurações e Boot Seguro (`src/config.py`)**: Validação automatizada no boot do servidor via Pydantic Settings que impede a inicialização em ambiente de produção se `SECRET_KEY` for fraca ou faltarem variáveis no arquivo `.env`.
+- **Documentação de Segredos**: Criação do guia `docs/SECRETS_E_CONFIGURACOES.md`.
+- **Bump de Versão SSOT**: Versão atualizada para `1.7.3` em `src/version.py`, `frontend/package.json` e `frontend/src/config/version.ts`.
+
+---
+
 ## [1.7.2] - 2026-09-22
 
 ### Adicionado (Added) & Ajustado (Adjusted)

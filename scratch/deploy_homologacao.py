@@ -19,20 +19,38 @@ def main():
         ssh.connect(host, username=user, password=secret, timeout=15)
         print("Conexão SSH estabelecida com sucesso!")
         
-        # Sequência de comandos de deploy para a branch homologacao
+        # 1. Enviar arquivos locais atualizados para a VM de homologação via SFTP
+        sftp = ssh.open_sftp()
+        local_root = r"c:\Users\daniel.turmina\Documents\HC-uti-manager"
+        
+        def upload_dir(local, remote):
+            try: sftp.mkdir(remote)
+            except: pass
+            for item in os.listdir(local):
+                l_path = os.path.join(local, item)
+                r_path = f"{remote}/{item}"
+                if os.path.isdir(l_path):
+                    if item not in [".git", "node_modules", ".venv", "__pycache__", ".agents", "scratch"]:
+                        upload_dir(l_path, r_path)
+                else:
+                    if not item.endswith('.pyc') and not item.startswith('.'):
+                        sftp.put(l_path, r_path)
+
+        upload_dir(os.path.join(local_root, "src"), "/var/app/hc-uti-manager/src")
+        upload_dir(os.path.join(local_root, "frontend"), "/var/app/hc-uti-manager/frontend")
+        sftp.close()
+
+        # Sequência de comandos de deploy na VM de homologação
         commands = [
-            # 1. Descartar alterações locais na VM, buscar e fazer checkout de homologacao
-            "cd /var/app/hc-uti-manager && git restore . && git fetch origin && git checkout homologacao && git pull origin homologacao",
+            # 2. Reiniciar containers via podman-compose re-building imagens
+            "cd /var/app/hc-uti-manager && podman-compose down 2>/dev/null || true",
+            "cd /var/app/hc-uti-manager && podman-compose up -d --build",
             
-            # 2. Remover containers antigos se existirem e reiniciar o serviço systemd
-            "podman rm -f hc-uti-backend hc-uti-nginx 2>/dev/null || true",
-            "systemctl restart hc-uti.service 2>/dev/null || systemctl restart hc-uti-manager.service 2>/dev/null || true",
+            # 3. Aguarda a inicialização completa do container
+            "until [ \"$(podman inspect -f '{{.State.Running}}' hc-uti-backend-homolog 2>/dev/null || podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicializacao do container...'; sleep 3; done",
             
-            # 4. Aguarda a inicialização completa do container
-            "until [ \"$(podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicialização do container...'; sleep 3; done",
-            
-            # 5. Executar migrações do Alembic se houver
-            "podman exec -i hc-uti-backend alembic upgrade head 2>&1 || true"
+            # 4. Executar migrações do Alembic se houver
+            "podman exec -i hc-uti-backend-homolog alembic upgrade head 2>&1 || podman exec -i hc-uti-backend alembic upgrade head 2>&1 || true"
         ]
         
         for cmd in commands:

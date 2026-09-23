@@ -113,6 +113,19 @@ Campos atualmente usados (frontend/src/views/Historico.vue):
 | tipo | enum(solicitacao, nova_solicitacao, conclusao, reserva, cancelamento_reserva, cancelamento_solicitante, destino, alteracao_destino, destino_disponivel, destino_pendente, alta, conclusao_alta, cancelamento, exclusao_solicitacao, status, edicao) | direciona cor da badge |
 Sugestoes de campos uteis: entidade (paciente/leito/solicitacao) e referencia_id, valores_anteriores/novos, criado_em (ISO), criado_por_id, terminal_ip, resultado (sucesso/erro), correlacao (request_id) para auditoria.
 
+## AuditLog (Auditoria Imutável)
+Tabela PostgreSQL/SQLite `audit_logs` para registro imutável do sistema:
+| Campo | Tipo | Observações |
+| --- | --- | --- |
+| id | Integer | Chave primária auto-incremento |
+| timestamp | DateTime | Data e hora automática do registro |
+| categoria | String(50) | Categoria: `SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO` |
+| acao | String(100) | Título curto da ação efetuada |
+| usuario_id | String(100) | Identificador do usuário operador |
+| detalhes | Text | Descrição textual complementar |
+| estado_anterior | Text (JSON) | Payload JSON com estado antes da operação |
+| estado_novo | Text (JSON) | Payload JSON com estado depois da operação |
+
 ## Alerta do sistema
 Campos atualmente usados (frontend/src/views/Alertas.vue):
 | Campo | Tipo | Observacoes |

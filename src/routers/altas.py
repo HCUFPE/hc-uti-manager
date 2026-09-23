@@ -6,7 +6,11 @@ from dependencies import get_altas_controller, get_historico_provider, check_rol
 from providers.implementations.historico_provider import HistoricoProvider
 from auth.auth import auth_handler
 
-router = APIRouter(prefix="/api/altas", tags=["Altas"])
+router = APIRouter(
+    prefix="/api/altas",
+    tags=["Altas"],
+    dependencies=[Depends(auth_handler.decode_token)]
+)
 
 
 @router.get("", response_model=List[Dict[str, Any]])

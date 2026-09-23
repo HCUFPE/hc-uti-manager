@@ -137,6 +137,16 @@ async def login(
 
 
 
+        from utils.audit_helper import registrar_auditoria
+        from models.audit_log import CategoriaAuditoria
+        await registrar_auditoria(
+            session=db,
+            categoria=CategoriaAuditoria.SEGURANCA,
+            acao="LOGIN_SUCESSO",
+            usuario_id=user["username"],
+            detalhes=f"Usuário {user['username']} efetuou login com perfil {user.get('perfil')}"
+        )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 

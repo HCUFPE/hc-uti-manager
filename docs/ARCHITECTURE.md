@@ -60,3 +60,16 @@ def get_paciente_provider(
 - **Desacoplamento Real:** A logica de negocio no controller nunca e afetada pela tecnologia ou infraestrutura de banco de dados.
 - **Testabilidade:** Permite mockar facilmente as interfaces dos provedores para testes unitarios ou de integracao.
 - **Eficiencia:** Conexoes com os respectivos bancos de dados (Postgres ou SQLite) so sao abertas se a rota executada realmente precisar do provedor correspondente.
+
+## Padrões de Segurança e Auditoria (Framework SETISD)
+
+1. **Default-Private Router Pattern:**
+   - Todo roteador de negócios (`APIRouter`) declara autenticação global por padrão via `dependencies=[Depends(auth_handler.decode_token)]`, impedindo a exposição acidental de rotas no backend.
+
+2. **Central de Configurações e Boot Seguro (`src/config.py`):**
+   - Centraliza o carregamento de variáveis de ambiente com `pydantic-settings`.
+   - Executa validações estritas no boot: bloqueia a subida da aplicação se `ENVIRONMENT=production` contiver segredos fracos ou ausentes no arquivo `.env`.
+
+3. **Subsistema de Auditoria Imutável (`AuditLog`):**
+   - Modelo `AuditLog` (`src/models/audit_log.py`) e helper `registrar_auditoria()` (`src/utils/audit_helper.py`).
+   - Registra eventos imutáveis com categorização (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`), capturando `estado_anterior` e `estado_novo` em formato JSON estruturado.

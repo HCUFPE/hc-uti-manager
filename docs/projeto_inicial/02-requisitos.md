@@ -30,6 +30,8 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF020** | Autorização Híbrida Estrita (AD + Banco Local) | Bloqueio automático de login (HTTP 403) para usuários autenticados no AD mas não cadastrados previamente na gestão de perfis local, com expurgo do perfil Comum. | Essencial |
 | **RF021** | Middleware de Cabeçalhos de Segurança HTTP (Security Headers) | Injeção automática de cabeçalhos HTTP de segurança (`X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Cache-Control: no-store`, `Pragma: no-cache`) em todas as respostas da API REST para impedir cache de dados sensíveis e ataques XSS/Clickjacking. | Essencial |
 | **RF022** | Proteção Estrita de Autenticação na Consulta de Leitos | Bloqueio obrigatório de requisições anônimas/não autenticadas (HTTP 401 Unauthorized) para a listagem e censo de leitos (`GET /api/leitos` e `GET /api/leitos/disponiveis`). | Essencial |
+| **RF023** | Tabela Unificada de Auditoria Imutável (AuditLog) | Registro estruturado imutável de todas as ações (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`) armazenando estado anterior e novo em JSON na tabela `audit_logs`. | Essencial |
+| **RF024** | Central de Configurações e Boot Seguro | Validação rigorosa de variáveis de ambiente e rejeição de boot com segredos fracos em ambiente de produção via `src/config.py`. | Essencial |
 
 ---
 
@@ -45,6 +47,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RNF006** | Manutenibilidade | Rotinas automáticas de backup diário rotativo do banco SQLite e limpeza de logs do journald/Podman. |
 | **RNF007** | Fonte Única da Verdade (SSOT) | Centralização de versão e identidade no backend (`src/version.py`) consumida dinamicamente pelo Swagger e pela store reativa do frontend. |
 | **RNF008** | Segurança HTTP | Conformidade total com o padrão oficial do Framework SETISD para cabeçalhos de segurança HTTP e bloqueio de cache de dados hospitalares em terminais públicos. |
+| **RNF009** | Default-Private Router Pattern | Proteção global no nível do APIRouter para todos os roteadores de negócio do backend (ex: `altas.py`), garantindo que nenhum endpoint fique acidentalmente desprotegido sem autenticação. |
 
 ---
 
