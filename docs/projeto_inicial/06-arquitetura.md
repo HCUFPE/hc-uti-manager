@@ -36,8 +36,10 @@ O sistema implementa autenticação integrada e controle de permissões baseada 
 
 ## 3. Conformidade LGPD e Rastreabilidade
 
-*   **Log de Auditoria Inalterável:** A tabela `historico_acoes` registra toda e qualquer inserção, edição ou exclusão de solicitações e reservas de leito, indicando o operador responsável, o prontuário do paciente, o timestamp exato e o detalhe do valor alterado.
-*   **Exclusão Lógica e Histórico:** O sistema não realiza a exclusão direta de logs de histórico de ações (tabela append-only). O cancelamento de solicitações inativa o registro lógico de fila, mas preserva o dado para conformidade regulatória.
+*   **Log de Auditoria Imutável (AuditLog):** Além da tabela `historico_acoes`, a tabela `audit_logs` registra imutavelmente eventos de `SEGURANCA` (autenticação, login, atribuição e exclusão de perfis de usuários), `NEGOCIO_CLINICO` e `CONFIGURACAO`, armazenando o operador, timestamp, detalhes e os payloads JSON `estado_anterior` e `estado_novo`.
+*   **Padrão Default-Private Router Pattern:** Todos os roteadores FastAPI (`APIRouter`) declaram autenticação obrigatória via `dependencies=[Depends(auth_handler.decode_token)]`, garantindo que nenhum endpoint fique exposto sem proteção por omissão.
+*   **Central de Configurações e Boot Seguro:** Validação automática de variáveis de ambiente no boot (`src/config.py` com Pydantic Settings) que impede a inicialização do servidor em ambiente de produção se segredos forem fracos ou ausentes.
+*   **Exclusão Lógica e Histórico:** O sistema não realiza a exclusão direta de logs de histórico de ações ou auditoria (tabelas append-only). O cancelamento de solicitações inativa o registro lógico de fila, mas preserva o dado para conformidade regulatória.
 *   **Tratamento Concorrente Seguro:** Processamento atômico garantido por locks concorrentes assíncronos no motor de alertas, impedindo que requisições paralelas gerem duplicidades de dados sensíveis de pacientes.
 
 ---

@@ -106,6 +106,17 @@ erDiagram
         date data PK
         float taxa_ocupacao "NOT NULL"
     }
+
+    audit_logs {
+        int id PK
+        datetime timestamp "NOT NULL"
+        string categoria "NOT NULL (SEGURANCA/NEGOCIO_CLINICO/CONFIGURACAO)"
+        string acao "NOT NULL"
+        string usuario_id
+        text detalhes
+        text estado_anterior "JSON"
+        text estado_novo "JSON"
+    }
 ```
 
 ---
@@ -175,8 +186,45 @@ Consolida histórico diário para geração de gráficos estatísticos do painel
 *   `data` (DATE, PK): Data de fechamento do indicador.
 *   `taxa_ocupacao` (FLOAT): Porcentagem de ocupação agregada naquele dia.
 
+### G. Tabela `audit_logs` (Auditoria Imutável)
+Histórico imutável de todas as ações de segurança, negócio clínico e configurações do sistema (Framework SETISD).
+
+*   `id` (INTEGER, PK, Autoincrement): Chave primária.
+*   `timestamp` (DATETIME, Index): Timestamp de gravação automática do evento.
+*   `categoria` (VARCHAR(50), Index): Categoria funcional (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`).
+*   `acao` (VARCHAR(100), Index): Nome da ação executada (ex: `LOGIN_SUCESSO`, `ATRIBUIR_PERFIL_USUARIO`, `EXCLUIR_PERFIL_USUARIO`).
+*   `usuario_id` (VARCHAR(100), Index): Username do operador responsável pela ação.
+*   `detalhes` (TEXT): Descrição textual legível e complementar.
+*   `estado_anterior` (TEXT): Payload JSON serializado do estado do recurso antes da operação.
+*   `estado_novo` (TEXT): Payload JSON serializado do estado do recurso após a operação.
 
 ---
+
+## 3. Schemas de Validação de Payloads JSON
+
+### 3.1. Schema JSON de Log de Auditoria (`AuditLog`)
+
+Schema estruturado do registro imutável gravado no sistema:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuditLogPayload",
+  "type": "object",
+  "properties": {
+    "categoria": {
+      "type": "string",
+      "enum": ["SEGURANCA", "NEGOCIO_CLINICO", "CONFIGURACAO"]
+    },
+    "acao": { "type": "string" },
+    "usuario_id": { "type": ["string", "null"] },
+    "detalhes": { "type": ["string", "null"] },
+    "estado_anterior": { "type": ["object", "array", "string", "null"] },
+    "estado_novo": { "type": ["object", "array", "string", "null"] }
+  },
+  "required": ["categoria", "acao"]
+}
+```
 
 ## 3. Schema JSON de Validação (Criação de Solicitação)
 
