@@ -14,7 +14,7 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 
 ---
 
-## [1.7.3] - 2026-09-23
+## [1.7.3] - 2026-09-23 14:33
 
 ### Adicionado (Added) & Segurança (Framework SETISD)
 - **Default-Private Router Pattern (`altas.py`)**: Aplicação da dependência global de autenticação JWT `dependencies=[Depends(auth_handler.decode_token)]` no `APIRouter` de solicitações de alta.

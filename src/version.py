@@ -6,6 +6,6 @@ Este é o ÚNICO lugar onde você precisa alterar o número da versão ou nome d
 VERSION = "1.7.3"
 APP_NAME = "HC-UTI Manager"
 SYSTEM_TITLE = "Gestão de Leitos UTI"
-LAST_UPDATE = "23/09/2026 às 10:15h"
+LAST_UPDATE = "23/09/2026 às 14:33h"
 ORGANIZATION = "Hospital das Clínicas da UFPE (HC-UFPE / EBSERH)"
 DEPARTMENT = "Setor de Tecnologia da Informação e Saúde Digital — SETISD"

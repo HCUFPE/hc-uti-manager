@@ -8,7 +8,7 @@ import api from '../services/api';
 
 // Valores padrão enquanto a API responde
 export const APP_VERSION = ref('1.7.3');
-export const LAST_UPDATE = ref('23/09/2026 às 10:15h');
+export const LAST_UPDATE = ref('23/09/2026 às 14:33h');
 export const APP_NAME = ref('HC-UTI Manager');
 export const SYSTEM_TITLE = ref('Gestão de Leitos UTI');
 
