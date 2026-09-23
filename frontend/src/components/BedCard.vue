@@ -36,7 +36,7 @@
       <div class="flex flex-col items-end gap-1 shrink-0">
         <StatusBadge :status="bloqueadoClinico ? 'reservado' : status" />
         <span 
-          v-if="bloqueadoClinico && (status === 'higienizacao' || statusAghuOriginal === 'higienizacao')" 
+          v-if="(bloqueadoClinico || proximoPaciente) && (status === 'higienizacao' || (statusAghuOriginal && ['higienizacao', 'limpeza'].includes(statusAghuOriginal)))" 
           class="text-[11px] font-medium text-slate-500 mt-0.5"
         >
           Higienização
