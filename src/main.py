@@ -21,6 +21,7 @@ from models.solicitacao_leito import SolicitacaoLeito
 from models.historico_acao import HistoricoAcao
 from models.usuario_perfil import UsuarioPerfil
 from models.historico_ocupacao import HistoricoOcupacao
+from models.audit_log import AuditLog
 
 async def preencher_dias_passados_semana_atual(app):
     from datetime import date, timedelta

@@ -40,6 +40,7 @@ from models.refresh_token import RefreshToken
 from models.alerta import Alerta
 from models.historico_acao import HistoricoAcao
 from models.usuario_perfil import UsuarioPerfil
+from models.audit_log import AuditLog
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
