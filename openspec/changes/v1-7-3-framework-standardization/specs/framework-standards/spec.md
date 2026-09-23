@@ -7,9 +7,13 @@ O sistema MUST manter um registro de auditoria imutável na tabela `audit_logs` 
 - **WHEN** um usuário realiza a alta de um paciente ou leito
 - **THEN** o sistema grava um novo registro em `audit_logs` com categoria `NEGOCIO_CLINICO`, capturando o estado do leito antes e depois da operação.
 
-#### Scenario: Registro de auditoria de autenticação
-- **WHEN** ocorre um evento de autenticação ou falha de login
-- **THEN** o sistema grava um registro de auditoria com categoria `SEGURANCA`.
+#### Scenario: Registro de auditoria de autenticação e gestão de usuários
+- **WHEN** ocorre um evento de autenticação, atribuição ou exclusão de perfil de usuário em AdminConfig.vue
+- **THEN** o sistema grava um registro de auditoria com categoria `SEGURANCA` capturando o estado do usuário antes e depois da operação.
+
+#### Scenario: Registro automático de operações médicas e clínicas
+- **WHEN** qualquer operador realiza uma ação clínica (reserva, solicitação de alta, cancelamento, swap ou passagem de caso)
+- **THEN** o sistema intercepta via `HistoricoProvider.registrar()` e salva uma entrada em `audit_logs` sob a categoria `NEGOCIO_CLINICO`.
 
 ## ADDED Requirements
 

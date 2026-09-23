@@ -43,6 +43,23 @@ class HistoricoProvider:
         self.session.add(entrada)
         await self.session.commit()
         await self.session.refresh(entrada)
+
+        # Gravar na tabela unificada de audit_logs (NEGOCIO_CLINICO)
+        try:
+            from utils.audit_helper import registrar_auditoria
+            from models.audit_log import CategoriaAuditoria
+            await registrar_auditoria(
+                session=self.session,
+                categoria=CategoriaAuditoria.NEGOCIO_CLINICO,
+                acao=acao.upper().replace(" ", "_"),
+                usuario_id=operador,
+                detalhes=f"[{tipo.upper()}] {detalhes or ''} (Prontuário: {prontuario or 'N/D'})",
+                estado_anterior=None,
+                estado_novo={"tipo": tipo, "acao": acao, "detalhes": detalhes, "prontuario": prontuario}
+            )
+        except Exception as err:
+            pass
+
         return entrada
 
     async def listar(

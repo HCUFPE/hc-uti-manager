@@ -18,7 +18,9 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 
 ### Adicionado (Added) & Segurança (Framework SETISD)
 - **Default-Private Router Pattern (`altas.py`)**: Aplicação da dependência global de autenticação JWT `dependencies=[Depends(auth_handler.decode_token)]` no `APIRouter` de solicitações de alta.
-- **Tabela Unificada de Auditoria Imutável (`audit_logs`)**: Criação da entidade `AuditLog` (`src/models/audit_log.py`) e da função utilitária `registrar_auditoria()` (`src/utils/audit_helper.py`) armazenando estados imutáveis (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`) com payloads JSON `estado_anterior` e `estado_novo`.
+- **Tabela Unificada de Auditoria Imutável (`audit_logs`)**: Criação da entidade `AuditLog` (`src/models/audit_log.py`) e do helper `registrar_auditoria()` (`src/utils/audit_helper.py`) armazenando estados imutáveis (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`) com payloads JSON `estado_anterior` e `estado_novo`.
+- **Auditoria Automática de Operações Clínicas (`HistoricoProvider`)**: Integração automática no `HistoricoProvider.registrar()` para que todas as ações da UTI, Bloco Cirúrgico e NIR (solicitação de alta, reservas, cancelamentos, swaps, bloqueio clínico e passagens de caso) gravem simultaneamente registros na tabela `audit_logs` sob a categoria `NEGOCIO_CLINICO`.
+- **Auditoria de Gestão de Usuários (`admin.py`)**: Registro automático de eventos de `SEGURANCA` para atribuição (`ATRIBUIR_PERFIL_USUARIO`) e exclusão (`EXCLUIR_PERFIL_USUARIO`) de perfis em `AdminConfig.vue`.
 - **Central de Configurações e Boot Seguro (`src/config.py`)**: Validação automatizada no boot do servidor via Pydantic Settings que impede a inicialização em ambiente de produção se `SECRET_KEY` for fraca ou faltarem variáveis no arquivo `.env`.
 - **Documentação de Segredos**: Criação do guia `docs/SECRETS_E_CONFIGURACOES.md`.
 - **Bump de Versão SSOT**: Versão atualizada para `1.7.3` em `src/version.py`, `frontend/package.json` e `frontend/src/config/version.ts`.

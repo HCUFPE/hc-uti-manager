@@ -12,9 +12,10 @@ Para elevar o nível de segurança, conformidade e maturidade da aplicação `HC
 - **Proteção de Rotas (Default-Private Router Pattern)**:
   - Atualização do router `src/routers/alta.py` para injetar a dependência de autenticação JWT em nível de router (`dependencies=[Depends(get_current_user)]`), alinhando-o aos demais routers da aplicação.
 - **Sistema de Auditoria Unificada (`audit_log.py` e `audit_helper.py`)**:
-  - Nova tabela/entidade `audit_logs` no PostgreSQL via SQLAlchemy.
+  - Nova tabela/entidade `audit_logs` no SQLite local e PostgreSQL via SQLAlchemy.
   - Função auxiliar `registrar_auditoria()` que grava logs estruturados imutáveis com `categoria` (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`), `acao`, `usuario_id`, `detalhes` e payloads JSON `estado_anterior` e `estado_novo`.
-  - Inclusão de auditoria nas ações de alta médica, transferências e alterações de leitos/configurações.
+  - Integração automática no `HistoricoProvider.registrar()` para que **todas as ações operacionais da UTI, Bloco Cirúrgico e NIR** (solicitação de alta, reservas, cancelamentos, swaps, bloqueio clínico e passagens de caso) gravem cópias imutáveis em `audit_logs` sob a categoria `NEGOCIO_CLINICO`.
+  - Inclusão de auditoria de `SEGURANCA` para login, atribuição (`ATRIBUIR_PERFIL_USUARIO`) e exclusão (`EXCLUIR_PERFIL_USUARIO`) de perfis em `AdminConfig.vue`.
 - **Central de Configurações e Validação de Segredos**:
   - Módulo centralizado `src/config.py` utilizando Pydantic / pydantic-settings para carregamento e validação estrita de variáveis de ambiente.
   - Validação de boot: se `ENVIRONMENT=production`, bloqueia a subida da aplicação se `SECRET_KEY` for fraca/default ou se variáveis obrigatórias estiverem ausentes.
