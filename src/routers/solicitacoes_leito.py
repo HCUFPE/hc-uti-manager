@@ -222,6 +222,7 @@ async def cancelar_solicitacao(
 async def reservar_leito(
     sol_id: int,
     payload: dict,
+    request: Request,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -239,13 +240,15 @@ async def reservar_leito(
         tipo="reserva",
         acao="Reservou leito para solicitação",
         detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) para Leito {leito_id}",
-        prontuario=str(prontuario)
+        prontuario=str(prontuario),
+        ip_origem=get_client_ip(request)
     )
     return result
 
 @router.post("/{sol_id}/cancelar-reserva")
 async def cancelar_reserva(
     sol_id: int,
+    request: Request,
     motivo: str = Query(..., description="Motivo do cancelamento da reserva"),
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -275,13 +278,15 @@ async def cancelar_reserva(
         tipo="cancelamento_reserva",
         acao="Cancelou reserva de leito",
         detalhes=detalhes_hist,
-        prontuario=str(solicitacao.prontuario)
+        prontuario=str(solicitacao.prontuario),
+        ip_origem=get_client_ip(request)
     )
     return result
 
 @router.post("/{sol_id}/cirurgia-finalizada")
 async def marcar_cirurgia_finalizada(
     sol_id: int,
+    request: Request,
     payload: dict = None,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -319,13 +324,15 @@ async def marcar_cirurgia_finalizada(
         tipo="cirurgia_finalizada",
         acao="Cirurgia Finalizada",
         detalhes=detalhes_hist,
-        prontuario=str(solicitacao.prontuario)
+        prontuario=str(solicitacao.prontuario),
+        ip_origem=get_client_ip(request)
     )
     return result
 
 @router.put("/{sol_id}/passagem-caso")
 async def editar_passagem_caso(
     sol_id: int,
+    request: Request,
     payload: dict = None,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -363,13 +370,15 @@ async def editar_passagem_caso(
         tipo="edicao_passagem",
         acao="Editou Passagem de Caso",
         detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) teve a passagem de caso atualizada.",
-        prontuario=str(solicitacao.prontuario)
+        prontuario=str(solicitacao.prontuario),
+        ip_origem=get_client_ip(request)
     )
     return {"status": "success", "message": "Passagem de caso atualizada com sucesso."}
 
 @router.post("/{sol_id}/liberar-encaminhamento")
 async def liberar_encaminhamento(
     sol_id: int,
+    request: Request,
     payload: dict = None,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -412,13 +421,15 @@ async def liberar_encaminhamento(
         tipo="encaminhamento_liberado",
         acao="Liberou encaminhamento",
         detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Encaminhamento liberado para {solicitacao.destino or 'UTI'}.{duration_str}",
-        prontuario=str(solicitacao.prontuario)
+        prontuario=str(solicitacao.prontuario),
+        ip_origem=get_client_ip(request)
     )
     return result
 
 @router.post("/{sol_id}/cancelar-liberacao")
 async def cancelar_liberacao(
     sol_id: int,
+    request: Request,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -434,7 +445,8 @@ async def cancelar_liberacao(
         tipo="encaminhamento_cancelado",
         acao="Cancelou liberação de encaminhamento",
         detalhes=f"Solicitação #{sol_id} (Prontuário {solicitacao.prontuario}) - Liberação de encaminhamento cancelada pela UTI.",
-        prontuario=str(solicitacao.prontuario)
+        prontuario=str(solicitacao.prontuario),
+        ip_origem=get_client_ip(request)
     )
     return result
 
@@ -442,6 +454,7 @@ async def cancelar_liberacao(
 async def remanejar_reserva(
     sol_id: int,
     payload: dict,
+    request: Request,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -459,6 +472,8 @@ async def remanejar_reserva(
     swap_ocorreu = result.get("swap_ocorreu", False)
     swap_clinico_ocorreu = result.get("swap_clinico_ocorreu", False)
     
+    client_ip = get_client_ip(request)
+
     if swap_ocorreu:
         prontuario_destino = result.get("prontuario_destino", "?")
         # Registrar histórico para o paciente de origem (A)
@@ -467,7 +482,8 @@ async def remanejar_reserva(
             tipo="remanejamento_reserva",
             acao="Remanejou reserva (Troca)",
             detalhes=f"Reserva trocada com Prontuário {prontuario_destino}: transferida do Leito {leito_origem} para o Leito {leito_destino}",
-            prontuario=str(prontuario)
+            prontuario=str(prontuario),
+            ip_origem=client_ip
         )
         # Registrar histórico para o paciente de destino (B)
         await historico.registrar(
@@ -475,7 +491,8 @@ async def remanejar_reserva(
             tipo="remanejamento_reserva",
             acao="Remanejou reserva (Troca)",
             detalhes=f"Reserva trocada com Prontuário {prontuario}: transferida do Leito {leito_destino} para o Leito {leito_origem}",
-            prontuario=str(prontuario_destino)
+            prontuario=str(prontuario_destino),
+            ip_origem=client_ip
         )
     elif swap_clinico_ocorreu:
         # Registrar histórico para o paciente remanejado
@@ -484,7 +501,8 @@ async def remanejar_reserva(
             tipo="remanejamento_reserva",
             acao="Remanejou reserva (Troca)",
             detalhes=f"Reserva trocada com Clínico/COB/HEM: transferida do Leito {leito_origem} para o Leito {leito_destino}.",
-            prontuario=str(prontuario)
+            prontuario=str(prontuario),
+            ip_origem=client_ip
         )
         # Registrar histórico para o leito que herdou a reserva clínica
         await historico.registrar(
@@ -492,7 +510,8 @@ async def remanejar_reserva(
             tipo="remanejamento_reserva",
             acao="Remanejou reserva (Troca)",
             detalhes=f"Reserva de Clínico/COB/HEM trocada com Prontuário {prontuario}: transferida do Leito {leito_destino} para o Leito {leito_origem}.",
-            prontuario=None
+            prontuario=None,
+            ip_origem=client_ip
         )
     else:
         # Sem swap (caso normal)
@@ -501,7 +520,8 @@ async def remanejar_reserva(
             tipo="remanejamento_reserva",
             acao="Remanejou reserva de leito",
             detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) transferida do Leito {leito_origem} para o Leito {leito_destino}",
-            prontuario=str(prontuario)
+            prontuario=str(prontuario),
+            ip_origem=client_ip
         )
         
     return result
