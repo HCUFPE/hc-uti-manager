@@ -224,6 +224,19 @@ async def salvar_perfil(
         db.add(novo_usuario)
     
     await db.commit()
+
+    from utils.audit_helper import registrar_auditoria
+    from models.audit_log import CategoriaAuditoria
+    await registrar_auditoria(
+        session=db,
+        categoria=CategoriaAuditoria.SEGURANCA,
+        acao="ATRIBUIR_PERFIL_USUARIO",
+        usuario_id=current_user.get("username"),
+        detalhes=f"Atribuiu perfil '{perfil}' ao usuário '{username}'",
+        estado_anterior={"perfil": usuario.perfil} if usuario else None,
+        estado_novo={"username": username, "perfil": perfil, "nome_completo": nome_completo, "lotacao": lotacao, "email": email}
+    )
+
     return {"message": f"Perfil do usuário {username} atualizado para {perfil}"}
 
 @router.delete("/admin/perfis/{username}")
@@ -236,11 +249,11 @@ async def excluir_perfil(
     user_perfil = current_user.get("perfil")
     
     # Verifica perfil atual do alvo para admins setoriais
+    stmt_check = select(UsuarioPerfil).where(UsuarioPerfil.username == username.lower())
+    result_check = await db.execute(stmt_check)
+    alvo = result_check.scalar_one_or_none()
+
     if user_perfil != Role.ADMIN:
-        stmt_check = select(UsuarioPerfil).where(UsuarioPerfil.username == username.lower())
-        result_check = await db.execute(stmt_check)
-        alvo = result_check.scalar_one_or_none()
-        
         if alvo:
             target_perfil = alvo.perfil
             has_permission = False
@@ -258,7 +271,22 @@ async def excluir_perfil(
             if not has_permission:
                 raise HTTPException(status_code=403, detail="Você não tem permissão para remover perfis fora do seu setor.")
 
+    estado_ant = alvo.to_dict() if alvo else None
+
     stmt = delete(UsuarioPerfil).where(UsuarioPerfil.username == username.lower())
     await db.execute(stmt)
     await db.commit()
+
+    from utils.audit_helper import registrar_auditoria
+    from models.audit_log import CategoriaAuditoria
+    await registrar_auditoria(
+        session=db,
+        categoria=CategoriaAuditoria.SEGURANCA,
+        acao="EXCLUIR_PERFIL_USUARIO",
+        usuario_id=current_user.get("username"),
+        detalhes=f"Excluiu perfil do usuário '{username}'",
+        estado_anterior=estado_ant,
+        estado_novo=None
+    )
+
     return {"message": f"Perfil do usuário {username} removido (agora é Comum)"}
