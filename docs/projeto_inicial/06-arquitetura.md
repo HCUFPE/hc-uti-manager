@@ -36,7 +36,7 @@ O sistema implementa autenticação integrada e controle de permissões baseada 
 
 ## 3. Conformidade LGPD e Rastreabilidade
 
-*   **Log de Auditoria Imutável (AuditLog):** Além da tabela `historico_acoes`, a tabela `audit_logs` registra imutavelmente eventos de `SEGURANCA` (autenticação, login, atribuição e exclusão de perfis de usuários), `NEGOCIO_CLINICO` e `CONFIGURACAO`, armazenando o operador, timestamp, detalhes e os payloads JSON `estado_anterior` e `estado_novo`.
+*   **Log de Auditoria Imutável (AuditLog):** Além da tabela `historico_acoes`, a tabela `audit_logs` registra imutavelmente eventos de `SEGURANCA` (autenticação, login, atribuição e exclusão de perfis de usuários), `NEGOCIO_CLINICO` e `CONFIGURACAO`, armazenando o operador, IP de origem (`ip_origem`), timestamp, detalhes e os payloads JSON `estado_anterior` e `estado_novo`.
 *   **Padrão Default-Private Router Pattern:** Todos os roteadores FastAPI (`APIRouter`) declaram autenticação obrigatória via `dependencies=[Depends(auth_handler.decode_token)]`, garantindo que nenhum endpoint fique exposto sem proteção por omissão.
 *   **Central de Configurações e Boot Seguro:** Validação automática de variáveis de ambiente no boot (`src/config.py` com Pydantic Settings) que impede a inicialização do servidor em ambiente de produção se segredos forem fracos ou ausentes.
 *   **Exclusão Lógica e Histórico:** O sistema não realiza a exclusão direta de logs de histórico de ações ou auditoria (tabelas append-only). O cancelamento de solicitações inativa o registro lógico de fila, mas preserva o dado para conformidade regulatória.

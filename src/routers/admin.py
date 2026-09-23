@@ -95,8 +95,11 @@ async def listar_perfis(
     result = await db.execute(stmt)
     return [p.to_dict() for p in result.scalars().all()]
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
 @router.post("/admin/perfis")
 async def salvar_perfil(
+    request: Request,
     payload: dict,
     db: AsyncSession = Depends(get_app_db_session),
     current_user: dict = Depends(verify_admin_group)
@@ -225,6 +228,10 @@ async def salvar_perfil(
     
     await db.commit()
 
+    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "desconhecido")
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
     from utils.audit_helper import registrar_auditoria
     from models.audit_log import CategoriaAuditoria
     await registrar_auditoria(
@@ -232,6 +239,7 @@ async def salvar_perfil(
         categoria=CategoriaAuditoria.SEGURANCA,
         acao="ATRIBUIR_PERFIL_USUARIO",
         usuario_id=current_user.get("username"),
+        ip_origem=client_ip,
         detalhes=f"Atribuiu perfil '{perfil}' ao usuário '{username}'",
         estado_anterior={"perfil": usuario.perfil} if usuario else None,
         estado_novo={"username": username, "perfil": perfil, "nome_completo": nome_completo, "lotacao": lotacao, "email": email}
@@ -242,6 +250,7 @@ async def salvar_perfil(
 @router.delete("/admin/perfis/{username}")
 async def excluir_perfil(
     username: str,
+    request: Request,
     db: AsyncSession = Depends(get_app_db_session),
     current_user: dict = Depends(verify_admin_group)
 ):
@@ -284,6 +293,7 @@ async def excluir_perfil(
         categoria=CategoriaAuditoria.SEGURANCA,
         acao="EXCLUIR_PERFIL_USUARIO",
         usuario_id=current_user.get("username"),
+        ip_origem=client_ip,
         detalhes=f"Excluiu perfil do usuário '{username}'",
         estado_anterior=estado_ant,
         estado_novo=None

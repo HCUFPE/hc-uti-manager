@@ -72,4 +72,4 @@ def get_paciente_provider(
 
 3. **Subsistema de Auditoria Imutável (`AuditLog`):**
    - Modelo `AuditLog` (`src/models/audit_log.py`) e helper `registrar_auditoria()` (`src/utils/audit_helper.py`).
-   - Registra eventos imutáveis com categorização (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`), capturando `estado_anterior` e `estado_novo` em formato JSON estruturado.
+   - Registra eventos imutáveis com categorização (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`), capturando IP de origem (`ip_origem`), operador, detalhes, `estado_anterior` e `estado_novo` em formato JSON estruturado.

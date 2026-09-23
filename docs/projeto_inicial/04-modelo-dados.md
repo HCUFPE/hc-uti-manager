@@ -194,6 +194,7 @@ Histórico imutável de todas as ações de segurança, negócio clínico e conf
 *   `categoria` (VARCHAR(50), Index): Categoria funcional (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`).
 *   `acao` (VARCHAR(100), Index): Nome da ação executada (ex: `LOGIN_SUCESSO`, `ATRIBUIR_PERFIL_USUARIO`, `EXCLUIR_PERFIL_USUARIO`).
 *   `usuario_id` (VARCHAR(100), Index): Username do operador responsável pela ação.
+*   `ip_origem` (VARCHAR(45)): Endereço IP (IPv4 ou IPv6) de origem da requisição do cliente.
 *   `detalhes` (TEXT): Descrição textual legível e complementar.
 *   `estado_anterior` (TEXT): Payload JSON serializado do estado do recurso antes da operação.
 *   `estado_novo` (TEXT): Payload JSON serializado do estado do recurso após a operação.
@@ -218,6 +219,7 @@ Schema estruturado do registro imutável gravado no sistema:
     },
     "acao": { "type": "string" },
     "usuario_id": { "type": ["string", "null"] },
+    "ip_origem": { "type": ["string", "null"] },
     "detalhes": { "type": ["string", "null"] },
     "estado_anterior": { "type": ["object", "array", "string", "null"] },
     "estado_novo": { "type": ["object", "array", "string", "null"] }

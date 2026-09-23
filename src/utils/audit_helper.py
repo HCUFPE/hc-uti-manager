@@ -11,6 +11,7 @@ async def registrar_auditoria(
     categoria: str,
     acao: str,
     usuario_id: Optional[str] = None,
+    ip_origem: Optional[str] = None,
     detalhes: Optional[str] = None,
     estado_anterior: Optional[Any] = None,
     estado_novo: Optional[Any] = None
@@ -26,6 +27,7 @@ async def registrar_auditoria(
             categoria=categoria,
             acao=acao,
             usuario_id=usuario_id,
+            ip_origem=ip_origem,
             detalhes=detalhes,
             estado_anterior=str_anterior,
             estado_novo=str_novo

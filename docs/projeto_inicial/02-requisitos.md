@@ -30,7 +30,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF020** | Autorização Híbrida Estrita (AD + Banco Local) | Bloqueio automático de login (HTTP 403) para usuários autenticados no AD mas não cadastrados previamente na gestão de perfis local, com expurgo do perfil Comum. | Essencial |
 | **RF021** | Middleware de Cabeçalhos de Segurança HTTP (Security Headers) | Injeção automática de cabeçalhos HTTP de segurança (`X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Cache-Control: no-store`, `Pragma: no-cache`) em todas as respostas da API REST para impedir cache de dados sensíveis e ataques XSS/Clickjacking. | Essencial |
 | **RF022** | Proteção Estrita de Autenticação na Consulta de Leitos | Bloqueio obrigatório de requisições anônimas/não autenticadas (HTTP 401 Unauthorized) para a listagem e censo de leitos (`GET /api/leitos` e `GET /api/leitos/disponiveis`). | Essencial |
-| **RF023** | Tabela Unificada de Auditoria Imutável (AuditLog) | Registro estruturado imutável de todas as ações (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`) armazenando estado anterior e novo em JSON na tabela `audit_logs`. | Essencial |
+| **RF023** | Tabela Unificada de Auditoria Imutável (AuditLog) | Registro estruturado imutável de todas as ações (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`) armazenando IP de origem (`ip_origem`), operador, detalhes e estado anterior e novo em JSON na tabela `audit_logs`. | Essencial |
 | **RF024** | Central de Configurações e Boot Seguro | Validação rigorosa de variáveis de ambiente e rejeição de boot com segredos fracos em ambiente de produção via `src/config.py`. | Essencial |
 
 ---

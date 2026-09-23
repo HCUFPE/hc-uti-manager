@@ -16,6 +16,7 @@ class AuditLog(Base):
     categoria = Column(String(50), nullable=False, default=CategoriaAuditoria.NEGOCIO_CLINICO, index=True)
     acao = Column(String(100), nullable=False, index=True)
     usuario_id = Column(String(100), nullable=True, index=True)
+    ip_origem = Column(String(45), nullable=True)  # Suporta IPv4 e IPv6
     detalhes = Column(Text, nullable=True)
     estado_anterior = Column(Text, nullable=True)  # JSON serializado
     estado_novo = Column(Text, nullable=True)      # JSON serializado

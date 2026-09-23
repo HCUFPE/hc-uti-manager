@@ -122,6 +122,7 @@ Tabela PostgreSQL/SQLite `audit_logs` para registro imutável do sistema:
 | categoria | String(50) | Categoria: `SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO` |
 | acao | String(100) | Título curto da ação efetuada |
 | usuario_id | String(100) | Identificador do usuário operador |
+| ip_origem | String(45) | Endereço IP (IPv4/IPv6) do cliente requisitante |
 | detalhes | Text | Descrição textual complementar |
 | estado_anterior | Text (JSON) | Payload JSON com estado antes da operação |
 | estado_novo | Text (JSON) | Payload JSON com estado depois da operação |

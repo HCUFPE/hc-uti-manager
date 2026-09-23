@@ -28,6 +28,7 @@ from sqlalchemy import select
 
 @router.post("/login")
 async def login(
+    request: Request,
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     remember_me: bool = Form(False),
@@ -135,17 +136,20 @@ async def login(
 
         )
 
+    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "desconhecido")
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
 
-
-        from utils.audit_helper import registrar_auditoria
-        from models.audit_log import CategoriaAuditoria
-        await registrar_auditoria(
-            session=db,
-            categoria=CategoriaAuditoria.SEGURANCA,
-            acao="LOGIN_SUCESSO",
-            usuario_id=user["username"],
-            detalhes=f"Usuário {user['username']} efetuou login com perfil {user.get('perfil')}"
-        )
+    from utils.audit_helper import registrar_auditoria
+    from models.audit_log import CategoriaAuditoria
+    await registrar_auditoria(
+        session=db,
+        categoria=CategoriaAuditoria.SEGURANCA,
+        acao="LOGIN_SUCESSO",
+        usuario_id=user["username"],
+        ip_origem=client_ip,
+        detalhes=f"Usuário {user['username']} efetuou login com perfil {user.get('perfil')}"
+    )
 
     return {"access_token": access_token, "token_type": "bearer"}
 
