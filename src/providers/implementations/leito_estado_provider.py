@@ -58,10 +58,12 @@ class LeitoEstadoProvider:
         result = await self.session.execute(select(LeitoEstado).where(LeitoEstado.lto_id == lto_id))
         estado = result.scalar_one_or_none()
 
-        data = {"sol_id": None, "prontuario": None}
+        data = {"sol_id": None, "prontuario": None, "alterou": False}
         if estado:
+            tinha_reserva = bool(estado.solicitacao_id or estado.prontuario_proximo)
             data["sol_id"] = estado.solicitacao_id
             data["prontuario"] = estado.prontuario_proximo
+            data["alterou"] = tinha_reserva
             
             estado.prontuario_proximo = None
             estado.idade_proximo = None

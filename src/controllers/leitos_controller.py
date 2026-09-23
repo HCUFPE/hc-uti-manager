@@ -320,7 +320,8 @@ class LeitosController:
         return {
             "message": f"Reserva do leito {lto_id} cancelada.",
             "solicitacao": solicitacao,
-            "prontuario": prontuario
+            "prontuario": prontuario,
+            "alterou": dados_reserva.get("alterou", False)
         }
     
     async def solicitar_alta(self, leito_id: str):

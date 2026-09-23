@@ -44,7 +44,12 @@ async def cancelar_reserva(
     result = await controller.cancelar_reserva(leito_id, solicitacao_provider)
     solicitacao = result.get("solicitacao")
     prontuario_reserva = result.get("prontuario")
-    
+    alterou = result.get("alterou", True)
+
+    # Proteção contra duplo-clique: Se nada mudou e o leito já estava sem reserva, ignora a gravação duplicada no histórico
+    if not alterou and not solicitacao and not prontuario_reserva:
+        return result
+
     detalhes = f"Leito {leito_id}"
     prontuario_log = None
 
