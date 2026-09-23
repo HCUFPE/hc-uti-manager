@@ -286,8 +286,9 @@ async def excluir_perfil(
     await db.execute(stmt)
     await db.commit()
 
-    from utils.audit_helper import registrar_auditoria
+    from utils.audit_helper import registrar_auditoria, get_client_ip
     from models.audit_log import CategoriaAuditoria
+    client_ip = get_client_ip(request)
     await registrar_auditoria(
         session=db,
         categoria=CategoriaAuditoria.SEGURANCA,
