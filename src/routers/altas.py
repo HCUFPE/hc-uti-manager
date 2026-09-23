@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from auth.roles import Role
 from typing import List, Dict, Any
 from controllers.altas_controller import AltasController
 from dependencies import get_altas_controller, get_historico_provider, check_role
 from providers.implementations.historico_provider import HistoricoProvider
+from utils.audit_helper import get_client_ip
 from auth.auth import auth_handler
 
 router = APIRouter(
@@ -25,6 +26,7 @@ async def listar_altas(
 @router.post("/{lto_id}")
 async def solicitar_alta(
     lto_id: str,
+    request: Request,
     payload: dict = {},
     controller: AltasController = Depends(get_altas_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -44,6 +46,7 @@ async def solicitar_alta(
         acao="Solicitou alta",
         detalhes=f"Leito {lto_id}",
         prontuario=prontuario,
+        ip_origem=get_client_ip(request)
     )
     return result
 
@@ -52,27 +55,30 @@ async def solicitar_alta(
 async def atualizar_destino(
     alta_id: int,
     payload: dict,
+    request: Request,
     controller: AltasController = Depends(get_altas_controller),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.NIR, Role.NIR_ADMIN])),
 ):
     """Atualiza o destino e/ou necessidades especiais de uma solicitação de alta."""
-    return await controller.atualizar_destino(alta_id, payload, operador=current_user.get("username", "NIR"))
+    return await controller.atualizar_destino(alta_id, payload, operador=current_user.get("username", "NIR"), ip_origem=get_client_ip(request))
 
 @router.patch("/{alta_id}/disponivel")
 async def marcar_destino_disponivel(
     alta_id: int,
     payload: dict,
+    request: Request,
     controller: AltasController = Depends(get_altas_controller),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.NIR, Role.NIR_ADMIN]))
 ):
     """NIR confirma que o destino já está disponível (leito vago e pronto)."""
     disponivel = payload.get("disponivel", True)
-    return await controller.atualizar_destino_disponivel(alta_id, disponivel, operador=current_user.get("username", "NIR"))
+    return await controller.atualizar_destino_disponivel(alta_id, disponivel, operador=current_user.get("username", "NIR"), ip_origem=get_client_ip(request))
 
 
 @router.delete("/{alta_id}", status_code=204)
 async def cancelar_alta(
     alta_id: int,
+    request: Request,
     motivo: str = None,
     controller: AltasController = Depends(get_altas_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -101,5 +107,6 @@ async def cancelar_alta(
         tipo="cancelamento",
         acao="Cancelou solicitação de alta",
         detalhes=detalhes_hist,
-        prontuario=str(prontuario)
+        prontuario=str(prontuario),
+        ip_origem=get_client_ip(request)
     )

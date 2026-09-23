@@ -20,6 +20,7 @@ class HistoricoProvider:
         acao: str,
         detalhes: Optional[str] = None,
         prontuario: Optional[str] = None,
+        ip_origem: Optional[str] = None,
     ) -> HistoricoAcao:
         """Persiste uma nova entrada no histórico.
 
@@ -29,6 +30,7 @@ class HistoricoProvider:
             acao: Descrição curta da ação realizada.
             detalhes: Informação complementar (prontuário, leito, etc).
             prontuario: Número do prontuário do paciente (opcional).
+            ip_origem: Endereço IP do cliente requisitante (opcional).
 
         Returns:
             O objeto HistoricoAcao criado.
@@ -53,6 +55,7 @@ class HistoricoProvider:
                 categoria=CategoriaAuditoria.NEGOCIO_CLINICO,
                 acao=acao.upper().replace(" ", "_"),
                 usuario_id=operador,
+                ip_origem=ip_origem,
                 detalhes=f"[{tipo.upper()}] {detalhes or ''} (Prontuário: {prontuario or 'N/D'})",
                 estado_anterior=None,
                 estado_novo={"tipo": tipo, "acao": acao, "detalhes": detalhes, "prontuario": prontuario}

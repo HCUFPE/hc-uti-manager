@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Query
+from fastapi import APIRouter, Depends, status, HTTPException, Query, Request
 from auth.roles import Role
 from controllers.leitos_controller import LeitosController
 from models.reserva_leito import ReservaLeitoInput
@@ -6,6 +6,7 @@ from dependencies import get_leito_controller, get_solicitacao_leito_provider, g
 from typing import List, Dict, Any, Optional
 from providers.implementations.solicitacao_leito_provider import SolicitacaoLeitoProvider
 from providers.implementations.historico_provider import HistoricoProvider
+from utils.audit_helper import get_client_ip
 from auth.auth import auth_handler
 
 router = APIRouter(prefix="/api/leitos", tags=["Leitos"])
@@ -14,6 +15,7 @@ router = APIRouter(prefix="/api/leitos", tags=["Leitos"])
 async def reservar_leito(
     lto_lto_id: str,
     payload: ReservaLeitoInput,
+    request: Request,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -24,13 +26,15 @@ async def reservar_leito(
         tipo="reserva",
         acao="Reservou leito",
         detalhes=f"Leito {lto_lto_id} para prontuário {payload.prontuario}",
-        prontuario=str(payload.prontuario)
+        prontuario=str(payload.prontuario),
+        ip_origem=get_client_ip(request)
     )
     return result
 
 @router.delete("/{leito_id}/reserva", status_code=status.HTTP_200_OK)
 async def cancelar_reserva(
     leito_id: str,
+    request: Request,
     motivo: str = Query(..., description="Motivo do cancelamento da reserva"),
     controller: LeitosController = Depends(get_leito_controller),
     solicitacao_provider: SolicitacaoLeitoProvider = Depends(get_solicitacao_leito_provider),
@@ -59,7 +63,8 @@ async def cancelar_reserva(
         tipo="cancelamento_reserva",
         acao="Cancelou reserva",
         detalhes=detalhes,
-        prontuario=prontuario_log
+        prontuario=prontuario_log,
+        ip_origem=get_client_ip(request)
     )
     return result
 
@@ -69,6 +74,7 @@ async def cancelar_reserva(
 )
 async def solicitar_alta(
     leito_id: str,
+    request: Request,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -84,7 +90,8 @@ async def solicitar_alta(
         tipo="alta",
         acao="Solicitou alta",
         detalhes=f"Leito {leito_id}",
-        prontuario=prontuario
+        prontuario=prontuario,
+        ip_origem=get_client_ip(request)
     )
 
 @router.delete(
@@ -93,6 +100,7 @@ async def solicitar_alta(
 )
 async def cancelar_alta(
     leito_id: str,
+    request: Request,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -108,7 +116,8 @@ async def cancelar_alta(
         tipo="cancelamento",
         acao="Cancelou alta",
         detalhes=f"Leito {leito_id}",
-        prontuario=prontuario
+        prontuario=prontuario,
+        ip_origem=get_client_ip(request)
     )
 
 @router.post(
@@ -117,6 +126,7 @@ async def cancelar_alta(
 )
 async def bloquear_clinico(
     leito_id: str,
+    request: Request,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -127,7 +137,8 @@ async def bloquear_clinico(
         tipo="reserva",
         acao="Reservou leito para Clínico/COB/HEM",
         detalhes=f"Leito {leito_id} reservado preventivamente para Clínico/COB/HEM.",
-        prontuario=None
+        prontuario=None,
+        ip_origem=get_client_ip(request)
     )
 
 @router.post(
@@ -136,6 +147,7 @@ async def bloquear_clinico(
 )
 async def cancelar_reserva_clinica(
     leito_id: str,
+    request: Request,
     controller: LeitosController = Depends(get_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -146,7 +158,8 @@ async def cancelar_reserva_clinica(
         tipo="cancelamento_reserva",
         acao="Cancelou reserva de leito (Clínico/COB/HEM)",
         detalhes=f"Reserva do leito {leito_id} para Clínico/COB/HEM cancelada manualmente pelo operador.",
-        prontuario=None
+        prontuario=None,
+        ip_origem=get_client_ip(request)
     )
 
 @router.get("", response_model=List[Dict[str, Any]])

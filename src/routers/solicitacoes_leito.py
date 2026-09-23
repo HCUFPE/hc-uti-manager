@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from auth.roles import Role
 from typing import List, Dict, Any
 from pydantic import ValidationError
@@ -7,6 +7,7 @@ from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
 from dependencies import get_solicitacao_leito_controller, get_historico_provider, get_app_db_session, check_role
 from providers.implementations.historico_provider import HistoricoProvider
 from models.usuario_perfil import UsuarioPerfil
+from utils.audit_helper import get_client_ip
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from auth.auth import auth_handler
@@ -43,6 +44,7 @@ async def consultar_aghu(
 
 @router.post("")
 async def criar_solicitacao(
+    request: Request,
     payload: dict,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -79,7 +81,8 @@ async def criar_solicitacao(
         tipo="nova_solicitacao",
         acao="Nova solicitação de vaga",
         detalhes=f"Solicitação #{sol_id} - Prontuário {prontuario} — {especialidade} ({tipo_sol}) - Data: {data_br}",
-        prontuario=str(prontuario)
+        prontuario=str(prontuario),
+        ip_origem=get_client_ip(request)
     )
     return result
 
@@ -87,6 +90,7 @@ async def criar_solicitacao(
 async def atualizar_status(
     sol_id: int,
     payload: dict,
+    request: Request,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(check_role([Role.ADMIN, Role.UTI, Role.UTI_ADMIN])),
@@ -108,7 +112,8 @@ async def atualizar_status(
         tipo="destino" if destino else "status",
         acao=f"Atualizou status para {novo_status}" if novo_status else "Definiu destino",
         detalhes=detalhe,
-        prontuario=str(prontuario) if prontuario else None
+        prontuario=str(prontuario) if prontuario else None,
+        ip_origem=get_client_ip(request)
     )
     return result
 
@@ -116,6 +121,7 @@ async def atualizar_status(
 async def editar_solicitacao(
     sol_id: int,
     payload: dict,
+    request: Request,
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
     current_user: dict = Depends(auth_handler.decode_token),
@@ -159,13 +165,15 @@ async def editar_solicitacao(
         tipo=tipo_hist,
         acao="Editou solicitação de vaga",
         detalhes=f"Solicitação #{sol_id} (Prontuário {prontuario}) - Data: {data_br}",
-        prontuario=str(prontuario)
+        prontuario=str(prontuario),
+        ip_origem=get_client_ip(request)
     )
     return {"message": "Solicitação editada com sucesso"}
 
 @router.delete("/{sol_id}")
 async def cancelar_solicitacao(
     sol_id: int,
+    request: Request,
     motivo: str = Query(None, description="Motivo do cancelamento"),
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     historico: HistoricoProvider = Depends(get_historico_provider),
@@ -205,7 +213,8 @@ async def cancelar_solicitacao(
         tipo="exclusao_solicitacao",
         acao="Cancelou solicitação de vaga",
         detalhes=detalhes_historico,
-        prontuario=str(solicitacao.prontuario)
+        prontuario=str(solicitacao.prontuario),
+        ip_origem=get_client_ip(request)
     )
     return {"message": "Solicitação cancelada com sucesso"}
 

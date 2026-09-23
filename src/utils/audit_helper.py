@@ -36,3 +36,16 @@ async def registrar_auditoria(
         await session.commit()
     except Exception as e:
         logger.error(f"Erro ao gravar log de auditoria: {e}")
+
+def get_client_ip(request: Optional[Any]) -> Optional[str]:
+    """Extrai o endereço IP real do cliente a partir da requisição FastAPI/Starlette."""
+    if not request:
+        return None
+    try:
+        ip = request.headers.get("x-forwarded-for") or (request.client.host if getattr(request, "client", None) else None)
+        if ip and "," in ip:
+            ip = ip.split(",")[0].strip()
+        return ip
+    except Exception:
+        return None
+

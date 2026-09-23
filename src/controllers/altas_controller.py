@@ -87,7 +87,7 @@ class AltasController:
         await self.alta_provider.criar(nova_alta)
         return {"message": "Solicitação de alta registrada com sucesso."}
 
-    async def atualizar_destino(self, alta_id: int, payload: dict, operador: str = "Sistema") -> dict:
+    async def atualizar_destino(self, alta_id: int, payload: dict, operador: str = "Sistema", ip_origem: Optional[str] = None) -> dict:
         """Permite definir ou alterar o leito de destino e necessidades especiais."""
         alvo = await self.alta_provider.get_por_id(alta_id)
         if not alvo:
@@ -111,7 +111,8 @@ class AltasController:
                         tipo="alteracao_destino",
                         acao=acao_hist,
                         detalhes=f"Leito {alvo.lto_id}: Destino {payload['leitoDestino']}",
-                        prontuario=str(alvo.prontuario)
+                        prontuario=str(alvo.prontuario),
+                        ip_origem=ip_origem
                     )
 
         if "necessidadesEspeciais" in payload:
@@ -121,7 +122,7 @@ class AltasController:
             await self.alta_provider.atualizar(alta_id, dados)
         return {"message": "Solicitação atualizada."}
 
-    async def atualizar_destino_disponivel(self, alta_id: int, disponivel: bool, operador: str = "Sistema") -> dict:
+    async def atualizar_destino_disponivel(self, alta_id: int, disponivel: bool, operador: str = "Sistema", ip_origem: Optional[str] = None) -> dict:
         """Marca se o destino já está fisicamente disponível para o paciente."""
         alvo = await self.alta_provider.get_por_id(alta_id)
         if not alvo:
@@ -141,7 +142,8 @@ class AltasController:
                 tipo="destino_disponivel",
                 acao="Destino Disponível",
                 detalhes=f"Leito {alvo.lto_id}: Destino {alvo.leito_destino} está liberado.",
-                prontuario=str(alvo.prontuario)
+                prontuario=str(alvo.prontuario),
+                ip_origem=ip_origem
             )
         elif not disponivel and self.historico_provider:
              await self.historico_provider.registrar(
@@ -149,7 +151,8 @@ class AltasController:
                 tipo="destino_pendente",
                 acao="Destino Indisponível",
                 detalhes=f"Leito {alvo.lto_id}: Liberação do destino {alvo.leito_destino} foi CANCELADA.",
-                prontuario=str(alvo.prontuario)
+                prontuario=str(alvo.prontuario),
+                ip_origem=ip_origem
             )
 
         return {"message": "Status do destino atualizado."}
