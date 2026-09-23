@@ -37,9 +37,10 @@
         <StatusBadge :status="bloqueadoClinico ? 'reservado' : status" />
         <span 
           v-if="(bloqueadoClinico || proximoPaciente) && (status === 'higienizacao' || (statusAghuOriginal && ['higienizacao', 'limpeza'].includes(statusAghuOriginal)))" 
-          class="text-[11px] font-medium text-slate-500 mt-0.5"
+          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold leading-none border shadow-sm bg-amber-50 text-amber-700 border-amber-200/80 mt-0.5"
         >
-          Higienização
+          <ArrowPathIcon class="h-3.5 w-3.5 shrink-0 text-amber-700" />
+          <span>Higienização</span>
         </span>
       </div>
     </div>
@@ -349,7 +350,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import { ExclamationTriangleIcon, ClockIcon, MapPinIcon } from '@heroicons/vue/24/outline';
+import { ExclamationTriangleIcon, ClockIcon, MapPinIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 import StatusBadge from './StatusBadge.vue';
 import UiBadge from './ui/Badge.vue';
 import Modal from './Modal.vue';
