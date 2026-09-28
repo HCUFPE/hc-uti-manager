@@ -15,6 +15,9 @@ def main():
         
         # Sequência de comandos de deploy e limpeza
         commands = [
+            # 0. Backup de segurança do banco de dados SQLite em Produção antes de alterar qualquer código/banco
+            "mkdir -p /var/app/hc-uti-manager/data/backups && cp /var/app/hc-uti-manager/data/app.db /var/app/hc-uti-manager/data/backups/app_backup_v1.7.2_$(date +%Y%m%d_%H%M%S).db || true",
+            
             # 1. Descartar alterações locais na VM, buscar as tags/branches e fazer checkout do master
             "cd /var/app/hc-uti-manager && git restore . && git fetch origin && git checkout master && git pull origin master",
             

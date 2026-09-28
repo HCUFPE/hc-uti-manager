@@ -195,15 +195,15 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
             logger.info(f"SECURITY: AD Authentication SUCCESSFUL for user: {username}")
             return user_info
 
-        except LDAPBindError:
-            logger.warning(f"SECURITY: AD Authentication FAILED (Invalid Credentials) for: {username}")
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário ou senha incorretos")
+        except LDAPBindError as e:
+            logger.warning(f"SECURITY: AD Authentication FAILED (Invalid Credentials or Bind Error) for: {username} - Details: {e}")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Erro de autenticação/bind no AD: {str(e)}")
         except (LDAPSocketOpenError, LDAPException) as e:
-            logger.error(f"AD System Error for user {username}: {e}")
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication server error")
+            logger.error(f"AD System/Network Error for user {username}: {type(e).__name__} - {e}")
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Erro de conexão com servidor LDAP ({type(e).__name__}): {str(e)}")
         except Exception as e:
-            logger.exception(f"Unexpected error in authentication flow for user {username}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal error: {str(e)}")
+            logger.exception(f"Unexpected error in authentication flow for user {username}: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro interno no AD: {str(e)}")
         finally:
             if search_conn and search_conn is not user_conn:
                 search_conn.unbind()
