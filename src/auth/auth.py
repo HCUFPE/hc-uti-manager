@@ -89,6 +89,9 @@ class ActiveDirectoryAuthProvider(AuthProviderInterface):
         self.ad_url = os.getenv("AD_URL")
         self.ad_basedn = os.getenv("AD_BASEDN")
         self.ad_bind_user = os.getenv("AD_BIND_USER")
+        if self.ad_bind_user:
+            # Substitui eventuais duplas contrabarras do .env (ex: EBSERHNET\\user -> EBSERHNET\user)
+            self.ad_bind_user = self.ad_bind_user.replace("\\\\", "\\")
         self.ad_bind_password = os.getenv("AD_BIND_PASSWORD")
         if not self.ad_url or not self.ad_basedn:
             logger.critical("AD_URL or AD_BASEDN not found in environment!")
