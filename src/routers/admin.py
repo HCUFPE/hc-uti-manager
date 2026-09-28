@@ -78,8 +78,8 @@ async def buscar_usuario_ad(
         raise e
     except Exception as e:
         raise HTTPException(
-            status_code=404, 
-            detail=f"Usuário '{username}' não localizado no Active Directory. (Erro: {str(e)})"
+            status_code=400, 
+            detail=f"Usuário '{username}' não localizado ou erro no AD: {str(e)}"
         )
 
 from models.usuario_perfil import UsuarioPerfil
