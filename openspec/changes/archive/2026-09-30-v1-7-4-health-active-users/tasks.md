@@ -10,4 +10,4 @@
 ## 3. Recompilação e Validação
 
 - [x] 3.1 Recompilar o frontend (`npm run build`).
-- [ ] 3.2 Testar a rota `GET /api/health` e verificar se retorna `"active_users"` e a versão `1.7.4`.
+- [x] 3.2 Testar a rota `GET /api/health` e verificar se retorna `"active_users"` e a versão `1.7.4`.

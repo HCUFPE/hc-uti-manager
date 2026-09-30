@@ -11,4 +11,4 @@
 ## 3. Implantação e Validação
 
 - [x] 3.1 Fazer o restart do serviço no ambiente de Produção.
-- [ ] 3.2 Testar a busca e adição de um novo usuário do AD pela interface web de Produção.
+- [x] 3.2 Testar a busca e adição de um novo usuário do AD pela interface web de Produção.
