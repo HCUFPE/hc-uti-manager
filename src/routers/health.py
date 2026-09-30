@@ -52,6 +52,18 @@ async def health_check(request: Request):
     else:
         db_status["aghu_postgres"] = "disabled_or_not_configured"
 
+    # 3. Contar usuários ativos / sessões válidas no sistema
+    active_users = 0
+    try:
+        if hasattr(request.app.state, "app_db") and request.app.state.app_db:
+            async with request.app.state.app_db.async_session_maker() as session:
+                result = await session.execute(
+                    text("SELECT COUNT(DISTINCT user_id) FROM refresh_tokens WHERE expires_at > datetime('now')")
+                )
+                active_users = result.scalar() or 0
+    except Exception:
+        active_users = 0
+
     response_payload = {
         "status": "healthy" if is_healthy else "unhealthy",
         "app_name": APP_NAME,
@@ -60,6 +72,7 @@ async def health_check(request: Request):
         "last_update": LAST_UPDATE,
         "organization": ORGANIZATION,
         "department": DEPARTMENT,
+        "active_users": active_users,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "databases": db_status,
     }

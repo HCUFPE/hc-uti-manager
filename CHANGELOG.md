@@ -12,6 +12,12 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 ### A Fazer / Em Planejamento
 - Propostas de melhorias contínuas registradas via OpenSpec (`openspec/changes/`).
 
+## [1.7.4] - 2026-09-30 16:30
+
+### Adicionado (Added) & Monitoramento
+- **Métrica de Usuários Ativos no Health Check (`/api/health`)**: Adicionada consulta assíncrona resiliente ao banco SQLite local para contar o total de usuários distintos com sessões/tokens válidos (`SELECT COUNT(DISTINCT user_id) FROM refresh_tokens WHERE expires_at > datetime('now')`).
+- **Exposição para Grafana / Zabbix**: O payload JSON de `/api/health` agora retorna a propriedade `"active_users"` permitindo dashboards de monitoramento de acessos concorrentes em tempo real.
+
 ---
 
 ## [1.7.3] - 2026-09-23 14:33
