@@ -1,6 +1,6 @@
-# Especificação de Requisitos — HC-UTI Manager
+# Especificação de Requisitos — Reserva UTI (HC-UTI Manager)
 
-Este documento detalha os requisitos funcionais (RF) e requisitos não funcionais (RNF) do sistema **HC-UTI Manager**, garantindo o mapeamento de sua entrega técnica.
+Este documento detalha os requisitos funcionais (RF) e requisitos não funcionais (RNF) do sistema **Reserva UTI** (originalmente HC-UTI Manager), garantindo o mapeamento de sua entrega técnica.
 
 ---
 

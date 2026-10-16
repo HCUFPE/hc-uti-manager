@@ -1,6 +1,6 @@
-# Glossário e Referências — HC-UTI Manager
+# Glossário e Referências — Reserva UTI (HC-UTI Manager)
 
-Este documento define os principais termos técnicos e conceitos de negócio utilizados no sistema **HC-UTI Manager**, além de listar as fontes normativas e técnicas de referência.
+Este documento define os principais termos técnicos e conceitos de negócio utilizados no sistema **Reserva UTI** (originalmente HC-UTI Manager), além de listar as fontes normativas e técnicas de referência.
 
 ---
 

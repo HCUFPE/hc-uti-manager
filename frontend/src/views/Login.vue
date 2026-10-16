@@ -11,9 +11,9 @@
               class="w-full max-w-xl mx-auto"
             />
             <div class="text-center space-y-2">
-              <h2 class="text-3xl font-bold text-slate-900">UTI Manager</h2>
+              <h2 class="text-3xl font-bold text-slate-900">Reserva UTI</h2>
               <p class="text-base text-slate-700">
-                Sistema de Gestão de Leitos de Terapia Intensiva <br/>
+                Sistema de Gestão e Reserva de Leitos de UTI <br/>
                 do Hospital das Clínicas da UFPE
               </p>
             </div>
@@ -27,7 +27,7 @@
         <!-- Lado direito: formulario -->
         <div class="p-8 md:p-12 bg-white lg:col-span-2 flex flex-col justify-center">
           <div class="flex flex-col items-center mb-8 space-y-3">
-            <img src="/logo2.png" alt="UTI Manager" class="h-32 w-auto object-contain" />
+            <img src="/logo2.png" alt="Reserva UTI" class="h-32 w-auto object-contain" />
             <p class="text-center text-slate-600">
               Acesse o sistema
             </p>

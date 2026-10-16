@@ -327,7 +327,7 @@ async function salvar() {
 }
 
 async function removerPerfil(username: string) {
-  if (!confirm(`Deseja remover o usuário ${username} do sistema? Ele perderá o acesso ao HC-UTI Manager.`)) return;
+  if (!confirm(`Deseja remover o usuário ${username} do sistema? Ele perderá o acesso ao Reserva UTI.`)) return;
   
   try {
     await api.delete(`/api/admin/perfis/${username}`);

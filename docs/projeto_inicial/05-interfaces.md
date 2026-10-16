@@ -1,4 +1,4 @@
-# Interfaces e Integrações — HC-UTI Manager
+# Interfaces e Integrações — Reserva UTI (HC-UTI Manager)
 
 Este documento especifica as interfaces com o usuário (telas/fluxos), a interação com periféricos de hardware e os contratos de integração de software (APIs e Provedores) do sistema.
 
@@ -108,8 +108,8 @@ class LeitoEstadoProvider:
     ```json
     {
       "status": "healthy",
-      "app_name": "string (ex: HC-UTI Manager)",
-      "system_title": "string (ex: Gestão de Leitos UTI)",
+      "app_name": "string (ex: Reserva UTI)",
+      "system_title": "string (ex: Gestão e Reserva de Leitos UTI)",
       "version": "string (versão semântica dinâmica lida de src/version.py)",
       "last_update": "string (timestamp/data legível da última atualização)",
       "organization": "Hospital das Clínicas da UFPE (HC-UFPE / EBSERH)",

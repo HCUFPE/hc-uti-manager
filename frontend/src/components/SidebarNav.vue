@@ -8,10 +8,10 @@
       @click="$emit('toggle')"
     >
       <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white">
-        <img src="/logo.png" alt="UTI Manager" class="h-11 w-11 object-contain" />
+        <img src="/logo.png" alt="Reserva UTI" class="h-11 w-11 object-contain" />
       </div>
       <div v-if="!collapsed" class="leading-tight">
-        <p class="text-lg font-bold text-slate-600">UTI Manager</p>
+        <p class="text-lg font-bold text-slate-600">Reserva UTI</p>
       </div>
     </div>
 

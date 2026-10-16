@@ -1,4 +1,4 @@
-# HC UTI Manager
+# Reserva UTI
 
 Sistema de gerenciamento de leitos, controle de fluxo de pacientes do Bloco Cirúrgico para a UTI, monitoramento de tempos de transferência e alocação de vagas para a Unidade de Terapia Intensiva (UTI) do Hospital das Clínicas da UFPE.
 
@@ -6,7 +6,7 @@ Sistema de gerenciamento de leitos, controle de fluxo de pacientes do Bloco Cir�
 
 ## 🚀 Visão Geral
 
-O **HC UTI Manager** é uma aplicação web full-stack projetada para otimizar o fluxo de encaminhamento de pacientes do Bloco Cirúrgico para a UTI. O sistema centraliza a visualização do censo de leitos, automatiza o fluxo de solicitações de UTI vindas do Bloco Cirúrgico, monitora o tempo de transferência após a finalização da cirurgia por meio de um cronômetro de tempo de liberação e auxilia a UTI na alocação rápida das vagas disponíveis.
+O **Reserva UTI** (originalmente desenvolvido sob o projeto HC UTI Manager) é uma aplicação web full-stack projetada para otimizar o fluxo de encaminhamento de pacientes do Bloco Cirúrgico para a UTI. O sistema centraliza a visualização do censo de leitos, automatiza o fluxo de solicitações de UTI vindas do Bloco Cirúrgico, monitora o tempo de transferência após a finalização da cirurgia por meio de um cronômetro de tempo de liberação e auxilia a UTI na alocação rápida das vagas disponíveis.
 
 ---
 

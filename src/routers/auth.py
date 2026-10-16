@@ -55,7 +55,7 @@ async def login(
             # ⛔ BLOQUEIO: Se não estiver cadastrado no banco local, NÃO ENTRA!
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"O usuário '{user['username']}' é válido, mas não possui autorização de acesso neste sistema. Solicite o cadastro ao Administrador do UTI Manager."
+                detail=f"O usuário '{user['username']}' é válido, mas não possui autorização de acesso neste sistema. Solicite o cadastro ao Administrador do Reserva UTI."
             )
 
         # Sincronizar dados do AD para a tabela local se o perfil existir

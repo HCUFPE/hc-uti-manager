@@ -1,6 +1,6 @@
 # Documentação de Concepção e Requisitos do Projeto
 
-As especificações de requisitos, modelagens e o contrato de desenvolvimento do **HC-UTI Manager** estão integrados e listados no arquivo mestre:
+As especificações de requisitos, modelagens e o contrato de desenvolvimento do **Reserva UTI** (HC-UTI Manager) estão integrados e listados no arquivo mestre:
 
 *   **[README.md Principal (Raiz do Repositório)](../../README.md)**
 

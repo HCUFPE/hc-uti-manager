@@ -2,7 +2,7 @@
 
 ## 1. Visão Geral e Resultados Esperados
 
-Este documento atua como o contrato de desenvolvimento e especificação técnica de entrega do **HC-UTI Manager**. O sistema fornece uma plataforma centralizada e de alta disponibilidade para gestão de vagas e leitos de UTI, operando de forma híbrida integrada com o AGHU.
+Este documento atua como o contrato de desenvolvimento e especificação técnica de entrega do **Reserva UTI** (originalmente HC-UTI Manager). O sistema fornece uma plataforma centralizada e de alta disponibilidade para gestão de vagas e leitos de UTI, operando de forma híbrida integrada com o AGHU.
 
 ### Objetivos de Alto Nível
 - [x] Implementar autenticação via LDAP/AD Ebserh com fallback seguro.

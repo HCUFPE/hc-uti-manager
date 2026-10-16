@@ -1,4 +1,4 @@
-# Modelo de Dados e Dicionário — HC-UTI Manager
+# Modelo de Dados e Dicionário — Reserva UTI (HC-UTI Manager)
 
 Este documento descreve o modelo físico e lógico dos dados armazenados no banco de dados SQLite local (`app.db`) e o dicionário de campos utilizados na integração com o AGHU.
 

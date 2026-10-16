@@ -7,10 +7,10 @@ import { ref } from 'vue';
 import api from '../services/api';
 
 // Valores padrão enquanto a API responde
-export const APP_VERSION = ref('1.7.4');
-export const LAST_UPDATE = ref('30/09/2026 às 16:30h');
-export const APP_NAME = ref('HC-UTI Manager');
-export const SYSTEM_TITLE = ref('Gestão de Leitos UTI');
+export const APP_VERSION = ref('1.8.0');
+export const LAST_UPDATE = ref('16/10/2026 às 10:00h');
+export const APP_NAME = ref('Reserva UTI');
+export const SYSTEM_TITLE = ref('Gestão e Reserva de Leitos UTI');
 
 export async function fetchSystemConfig() {
   try {

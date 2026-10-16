@@ -1,6 +1,6 @@
-# Modelagem de Casos de Uso — HC-UTI Manager
+# Modelagem de Casos de Uso — Reserva UTI (HC-UTI Manager)
 
-Este documento descreve os fluxos operacionais e os limites de ação de cada ator no sistema **HC-UTI Manager**.
+Este documento descreve os fluxos operacionais e os limites de ação de cada ator no sistema **Reserva UTI** (originalmente HC-UTI Manager).
 
 ---
 
@@ -14,7 +14,7 @@ flowchart LR
     NIR((Regulação NIR))
     ADM((Gestor / Admin))
     
-    subgraph "Painel HC-UTI Manager"
+    subgraph "Painel Reserva UTI"
         UC1([UC001 - Criar Solicitação de Vaga])
         UC2([UC002 - Reservar Leito na UTI])
         UC3([UC003 - Realizar Troca de Paciente / Swap])

@@ -12,6 +12,24 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 ### A Fazer / Em Planejamento
 - Propostas de melhorias contínuas registradas via OpenSpec (`openspec/changes/`).
 
+## [1.8.0] - 2026-10-16 10:00
+
+### Alterado (Changed) & Identidade Visual
+- **Reposicionamento de Marca para "Reserva UTI"**: Atualização formal do nome institucional da aplicação de **HC-UTI Manager** para **Reserva UTI**, refletindo a proposta central de agendamento e reserva de leitos intensivos entre o Bloco Cirúrgico e a UTI.
+- **Frontend e Telas**:
+  - Aba do navegador (`<title>`) atualizada para `Reserva UTI (HC-UFPE)`.
+  - Título e subtítulo da tela de Login (`Login.vue`) atualizados para `Reserva UTI` e *Sistema de Gestão e Reserva de Leitos de UTI do Hospital das Clínicas da UFPE*.
+  - Topo do menu lateral (`SidebarNav.vue`) atualizado para exibir `Reserva UTI`.
+  - Store reativa de versão (`version.ts`) atualizada com fallback `APP_NAME = ref('Reserva UTI')`.
+  - Mensagens de diálogo em `AdminConfig.vue` atualizadas.
+- **Backend & APIs**:
+  - `src/version.py`: `APP_NAME = "Reserva UTI"` e `SYSTEM_TITLE = "Gestão e Reserva de Leitos UTI"`.
+  - Swagger UI (`/docs`) e endpoint de monitoramento (`/api/health`) passam a responder oficialmente com o nome `Reserva UTI`.
+  - Mensagens de retorno de bloqueio de acesso não cadastrado em `src/routers/auth.py` padronizadas.
+- **Documentação viva (SDD)**: Cadernos de especificação em `docs/projeto_inicial/` e `README.md` sincronizados.
+
+---
+
 ## [1.7.4] - 2026-09-30 16:30
 
 ### Adicionado (Added) & Monitoramento

@@ -1,11 +1,11 @@
-# Documento de Visão — HC-UTI Manager
+# Documento de Visão — Reserva UTI (HC-UTI Manager)
 
-Este documento define a visão, o escopo e as diretrizes principais do projeto **HC-UTI Manager**, servindo como fonte de verdade para o propósito do produto e as necessidades que ele atende.
+Este documento define a visão, o escopo e as diretrizes principais do projeto **Reserva UTI** (originalmente HC-UTI Manager), servindo como fonte de verdade para o propósito do produto e as necessidades que ele atende.
 
 ---
 
 ## 1. Introdução e Objetivo do Produto
-O **HC-UTI Manager** é uma solução de software desenvolvida para o Hospital das Clínicas da UFPE (HC-UFPE/Ebserh) com o objetivo de centralizar, otimizar e monitorar em tempo real o censo de leitos, o fluxo de internações, as reservas e as solicitações de vagas para a Unidade de Terapia Intensiva (UTI). 
+O **Reserva UTI** é uma solução de software desenvolvida para o Hospital das Clínicas da UFPE (HC-UFPE/Ebserh) com o objetivo de centralizar, otimizar e monitorar em tempo real o censo de leitos, o fluxo de internações, as reservas e as solicitações de vagas para a Unidade de Terapia Intensiva (UTI). 
 
 O sistema integra-se de forma inteligente ao sistema de gestão hospitalar oficial (AGHU) e serve como ponte operacional rápida entre três grandes setores: a **UTI**, o **Bloco Cirúrgico (BC)** e o **Núcleo Interno de Regulação (NIR)**.
 

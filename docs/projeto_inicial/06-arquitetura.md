@@ -1,6 +1,6 @@
-# Arquitetura e Segurança — HC-UTI Manager
+# Arquitetura e Segurança — Reserva UTI (HC-UTI Manager)
 
-Este documento define a infraestrutura tecnológica do **HC-UTI Manager**, descrevendo a stack técnica, o modelo de segurança e as diretrizes de desenvolvimento (guardrails).
+Este documento define a infraestrutura tecnológica do **Reserva UTI** (originalmente HC-UTI Manager), descrevendo a stack técnica, o modelo de segurança e as diretrizes de desenvolvimento (guardrails).
 
 ---
 
