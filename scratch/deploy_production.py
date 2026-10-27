@@ -16,22 +16,29 @@ def main():
         # Sequência de comandos de deploy e limpeza
         commands = [
             # 0. Backup de segurança do banco de dados SQLite em Produção antes de alterar qualquer código/banco
-            "mkdir -p /var/app/hc-uti-manager/data/backups && cp /var/app/hc-uti-manager/data/app.db /var/app/hc-uti-manager/data/backups/app_backup_v1.7.2_$(date +%Y%m%d_%H%M%S).db || true",
+            "mkdir -p /var/app/hc-uti-manager/data/backups && cp /var/app/hc-uti-manager/data/app.db /var/app/hc-uti-manager/data/backups/app_backup_pre_v1.8.0_$(date +%Y%m%d_%H%M%S).db || true",
             
             # 1. Descartar alterações locais na VM, buscar as tags/branches e fazer checkout do master
             "cd /var/app/hc-uti-manager && git restore . && git fetch origin && git checkout master && git pull origin master",
             
-            # 2. Atualizar MOCK_BEDS para false
+            # 2. Garantir que MOCK_BEDS esteja desativado em produção
             "sed -i 's/MOCK_BEDS=true/MOCK_BEDS=false/g' /var/app/hc-uti-manager/.env",
             
-            # 3. Remover containers antigos se existirem e reiniciar o serviço systemd
+            # 3. Rebuild explícito dos containers para garantir atualização de assets e código
+            "cd /var/app/hc-uti-manager && podman-compose build",
+            
+            # 4. Reiniciar o serviço systemd
             "podman rm -f hc-uti-backend hc-uti-nginx 2>/dev/null || true",
             "systemctl restart hc-uti.service",
-            # Aguarda a inicialização completa do container
+            
+            # 5. Aguarda a inicialização completa do container backend
             "until [ \"$(podman inspect -f '{{.State.Running}}' hc-uti-backend 2>/dev/null)\" = \"true\" ]; do echo 'Aguardando inicializacao do container...'; sleep 3; done",
             
-            # 4. Executar migrações do Alembic no banco de dados de produção
-            "podman exec -i hc-uti-backend alembic upgrade head"
+            # 6. Executar migrações do Alembic no banco de dados de produção
+            "podman exec -i hc-uti-backend alembic upgrade head",
+            
+            # 7. Teste de saúde da API local na VM
+            "curl -s http://127.0.0.1:8000/api/health"
         ]
         
         for cmd in commands:
