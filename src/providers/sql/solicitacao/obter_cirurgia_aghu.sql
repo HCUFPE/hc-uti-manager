@@ -27,8 +27,10 @@ FROM agh.mbc_cirurgias cir
 WHERE 
   pac.prontuario = :prontuario
   AND cir.situacao <> 'CANC'
+  AND cir.unf_seq = ANY(:unf_seqs)
 
 ORDER BY 
+  CASE WHEN cir.situacao = 'AGND' THEN 0 ELSE 1 END,
   CASE WHEN cir.dthr_inicio_cirg >= CURRENT_DATE THEN 0 ELSE 1 END,
   CASE WHEN cir.dthr_inicio_cirg >= CURRENT_DATE 
        THEN (cir.dthr_inicio_cirg - CURRENT_DATE) 

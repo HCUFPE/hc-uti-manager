@@ -426,6 +426,7 @@
               v-model="formNova.tipo" 
               class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-50 disabled:text-slate-500"
               :disabled="!authStore.isAdmin && !authStore.isUTI && tiposDisponiveis.length === 1"
+              @change="formNova.prontuario && buscarPacienteAghu()"
             >
               <option value="" disabled selected>Selecione o Tipo</option>
               <option v-for="t in tiposDisponiveis" :key="t" :value="t">{{ t }}</option>
@@ -1542,7 +1543,12 @@ async function buscarPacienteAghu() {
   buscandoAghu.value = true;
   erroAghu.value = '';
   try {
-    const { data } = await api.get(`/api/solicitacoes/consultar-aghu/${pront}`);
+    const params = new URLSearchParams();
+    if (formNova.value.tipo) {
+      params.append('tipo', formNova.value.tipo);
+    }
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    const { data } = await api.get(`/api/solicitacoes/consultar-aghu/${pront}${queryStr}`);
     dadosAghu.value = data;
     // Preenche no formNova para que a validação/envio ocorra corretamente
     formNova.value.idade = data.idade;

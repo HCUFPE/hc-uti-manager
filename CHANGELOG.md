@@ -12,6 +12,21 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 ### A Fazer / Em Planejamento
 - Propostas de melhorias contínuas registradas via OpenSpec (`openspec/changes/`).
 
+## [1.8.1] - 2026-10-27 14:35
+
+### Corrigido (Fixed) & Integração AGHU
+- **Filtragem de Cirurgias por Unidade Funcional Cirúrgica (`unf_seq`)**:
+  - Restrição da consulta de cirurgias no AGHU (`agh.mbc_cirurgias`) para unidades funcionais estritamente cirúrgicas e intervencionistas autorizadas (`unf_seq = ANY(:unf_seqs)`), eliminando a importação indevida de procedimentos diagnósticos e ambulatoriais (ex.: Endoscopia, `unf_seq = 155`).
+  - Mapeamento dinâmico por setor solicitante e tipo de solicitação:
+    - **Bloco Cirúrgico (BC / Cirúrgico)**: Unidade funcional `28` (`BLOCO CIRURGICO`).
+    - **Centro Obstétrico (COB / Obstétrico)**: Unidade funcional `20` (`CENTRO OBSTETRICO`).
+    - **Hemodinâmica (HEM / Hemodinâmica)**: Unidades funcionais `47` (`HEMODINAMICA - PDT`) e `233` (`HEMODINAMICA AMBULATORIO`).
+    - **Administração / UTI / Padrão Amplo**: Unidades cirúrgicas válidas `[28, 20, 47, 233]`.
+  - Priorização de procedimentos cirúrgicos com status `AGND` (Agendado) sobre `RZDA` (Realizada) na ordenação SQL (`ORDER BY CASE WHEN cir.situacao = 'AGND' THEN 0 ELSE 1 END`), corrigindo a divergência onde pacientes com exames diagnósticos realizados no mesmo dia (ex: prontuário 22433189) sobrepunham sua cirurgia agendada oficial.
+  - Atualização do endpoint `GET /api/solicitacoes/consultar-aghu/{prontuario}` para receber o parâmetro opcional `tipo` e sincronização do formulário no frontend (`Solicitacoes.vue`).
+
+---
+
 ## [1.8.0] - 2026-10-27 10:05
 
 ### Adicionado (Added) & Fluxo Operacional

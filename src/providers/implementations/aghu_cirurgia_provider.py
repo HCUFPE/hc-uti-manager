@@ -32,19 +32,29 @@ class AghuCirurgiaProvider:
         """
         self.session = session
 
-    async def obter_cirurgia_por_prontuario(self, prontuario: str) -> Optional[Dict[str, Any]]:
+    async def obter_cirurgia_por_prontuario(
+        self, prontuario: str, unf_seqs: Optional[list] = None
+    ) -> Optional[Dict[str, Any]]:
         """Busca no AGHU a cirurgia programada ativa mais recente de um prontuário.
 
         Args:
             prontuario (str): Prontuário do paciente.
+            unf_seqs (Optional[list]): Lista de IDs de unidades funcionais permitidas.
+                Padrão para [28, 20, 47, 233] (Bloco Cirúrgico, COB e Hemodinâmica).
 
         Returns:
             Optional[Dict[str, Any]]: Dados da cirurgia mapeados em dicionário, ou None.
         """
+        if not unf_seqs:
+            unf_seqs = [28, 20, 47, 233]
+
         query_text = get_sql_query('obter_cirurgia_aghu.sql')
         # Converter prontuário para int se for numérico, pois a coluna no AGHU é do tipo INTEGER
         prontuario_param = int(prontuario.strip()) if prontuario.strip().isdigit() else prontuario
-        result = await self.session.execute(text(query_text), {"prontuario": prontuario_param})
+        result = await self.session.execute(
+            text(query_text),
+            {"prontuario": prontuario_param, "unf_seqs": unf_seqs}
+        )
         row = result.mappings().first()
         if not row:
             return None

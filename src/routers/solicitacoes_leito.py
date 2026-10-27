@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from auth.roles import Role
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import ValidationError
 from models.passagem_caso import PassagemCasoSchema
 from controllers.solicitacao_leito_controller import SolicitacaoLeitoController
@@ -36,11 +36,13 @@ async def listar_solicitacoes(
 @router.get("/consultar-aghu/{prontuario}", response_model=Dict[str, Any])
 async def consultar_aghu(
     prontuario: str,
+    tipo: Optional[str] = Query(None, description="Tipo de leito solicitado (ex: Cirúrgico, Obstétrico, Hemodinâmica)"),
     controller: SolicitacaoLeitoController = Depends(get_solicitacao_leito_controller),
     current_user: dict = Depends(auth_handler.decode_token),
 ):
     """Consulta dados de cirurgia agendada no AGHU para o prontuário informado."""
-    return await controller.consultar_dados_aghu(prontuario)
+    perfil = current_user.get("perfil", "")
+    return await controller.consultar_dados_aghu(prontuario, tipo=tipo, perfil=perfil)
 
 @router.post("")
 async def criar_solicitacao(

@@ -176,7 +176,11 @@ class SolicitacaoLeitoController:
                 print(f"Erro ao verificar censo físico de leitos: {e}")
 
         # 1. Consultar dados do paciente/cirurgia no AGHU
-        dados_aghu = await self.consultar_dados_aghu(str(prontuario))
+        dados_aghu = await self.consultar_dados_aghu(
+            str(prontuario),
+            tipo=payload.get("tipo"),
+            perfil=payload.get("perfil_solicitante")
+        )
 
         dt = dados_aghu["data_cirurgia"]
         if dt:
@@ -411,7 +415,11 @@ class SolicitacaoLeitoController:
             
             # Se não houver solicitação ativa para o novo prontuário, prossegue com a criação normal
             # 1. Consultar dados do novo prontuário no AGHU
-            dados_aghu = await self.consultar_dados_aghu(novo_prontuario)
+            dados_aghu = await self.consultar_dados_aghu(
+                novo_prontuario,
+                tipo=payload.get("tipo") or alvo.tipo,
+                perfil=payload.get("perfil_solicitante") or alvo.perfil_solicitante
+            )
             
             # Valida se a cirurgia tem data no passado
             dt_nova = dados_aghu.get("data_cirurgia")
@@ -887,24 +895,56 @@ class SolicitacaoLeitoController:
                 "swap_ocorreu": False
             }
 
-    async def consultar_dados_aghu(self, prontuario: str) -> dict:
+    @staticmethod
+    def _obter_unidades_por_tipo_ou_perfil(tipo: Optional[str] = None, perfil: Optional[str] = None) -> list[int]:
+        """Determina as unidades funcionais cirúrgicas do AGHU com base no tipo solicitado ou perfil do usuário.
+
+        Mapeamento de unf_seq:
+        - 28: Bloco Cirúrgico (BC)
+        - 20: Centro Obstétrico (COB)
+        - 47, 233: Hemodinâmica (HEM / PDT e Ambulatório)
+        """
+        tipo_str = (tipo or "").upper().strip()
+        perfil_str = (perfil or "").upper().strip()
+
+        if "OBST" in tipo_str or "COB" in perfil_str:
+            return [20]
+        if "HEMO" in tipo_str or "HEM" in perfil_str:
+            return [47, 233]
+        if "CIR" in tipo_str or "BC" in perfil_str:
+            return [28]
+
+        # Padrão amplo: todas as unidades cirúrgicas/intervencionistas válidas
+        return [28, 20, 47, 233]
+
+    async def consultar_dados_aghu(
+        self,
+        prontuario: str,
+        tipo: Optional[str] = None,
+        perfil: Optional[str] = None
+    ) -> dict:
         """Consulta as informações do paciente e da cirurgia no AGHU.
 
         Args:
             prontuario (str): Prontuário do paciente.
+            tipo (Optional[str]): Tipo de leito solicitado (ex: Cirúrgico, Obstétrico, Hemodinâmica).
+            perfil (Optional[str]): Perfil ou setor do usuário solicitante (ex: BC, COB, HEM).
 
         Returns:
             dict: Informações mapeadas e formatadas do paciente/cirurgia.
         """
         import os
-        from datetime import datetime
+        from datetime import datetime, timedelta
 
         data_cirurgia_aghu = None
+        unf_seqs = self._obter_unidades_por_tipo_ou_perfil(tipo, perfil)
         
         # Tenta buscar do AGHU
         if self.aghu_cirurgia_provider and os.getenv("MOCK_BEDS") != "true":
             try:
-                data_cirurgia_aghu = await self.aghu_cirurgia_provider.obter_cirurgia_por_prontuario(prontuario)
+                data_cirurgia_aghu = await self.aghu_cirurgia_provider.obter_cirurgia_por_prontuario(
+                    prontuario, unf_seqs=unf_seqs
+                )
             except Exception as e:
                 # Log e continua para fallback se estiver em desenvolvimento
                 print(f"Erro ao acessar AGHU DB: {e}")
