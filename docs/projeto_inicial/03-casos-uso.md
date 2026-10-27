@@ -218,3 +218,9 @@ flowchart LR
 *   **Action:** O frontend renderiza o modal com as informações clínicas deserializadas do evento.
 *   **Result:** Auditoria completa e rastreabilidade histórica.
 *   **Evaluation:** Validação de renderização do modal no histórico.
+
+### [CARE-UC015] Cancelamento de Solicitação de Vaga com Motivo Falta de Vaga de UTI
+*   **Context:** O Bloco Cirúrgico, COB ou HEM constata que o procedimento foi cancelado ou suspenso em decorrência da indisponibilidade de leito na UTI.
+*   **Action:** O usuário solicitante abre o modal de cancelamento na tela de Solicitações e seleciona a opção "Falta de vaga de UTI".
+*   **Result:** A solicitação é excluída/cancelada no sistema, desobstruindo a fila e registrando o motivo específico com autoria do solicitante no histórico.
+*   **Evaluation:** Verificação de cancelamento com o motivo registrado e refletido nos gráficos do BI.

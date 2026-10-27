@@ -12,7 +12,10 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 ### A Fazer / Em Planejamento
 - Propostas de melhorias contínuas registradas via OpenSpec (`openspec/changes/`).
 
-## [1.8.0] - 2026-10-16 10:00
+## [1.8.0] - 2026-10-27 10:05
+
+### Adicionado (Added) & Fluxo Operacional
+- **Permissão do Motivo "Falta de vaga de UTI" para Solicitantes**: Disponibilização do motivo "Falta de vaga de UTI" na seleção geral de cancelamento de solicitações de leito para os setores solicitantes (Bloco Cirúrgico - BC, Centro Obstétrico - COB e Hemodinâmica - HEM), permitindo que os próprios solicitantes justifiquem a suspensão cirúrgica por indisponibilidade prévia de vaga sem depender da equipe da UTI e garantindo indicadores estatísticos mais fiéis no BI.
 
 ### Alterado (Changed) & Identidade Visual
 - **Reposicionamento de Marca para "Reserva UTI"**: Atualização formal do nome institucional da aplicação de **HC-UTI Manager** para **Reserva UTI**, refletindo a proposta central de agendamento e reserva de leitos intensivos entre o Bloco Cirúrgico e a UTI.

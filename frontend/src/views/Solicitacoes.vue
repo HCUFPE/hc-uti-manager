@@ -1038,6 +1038,7 @@ const MOTIVOS_CANCELAMENTO = [
   'Cirurgia suspensa por outros motivos',
   'Paciente encaminhado para enfermaria de origem após a cirurgia',
   'Alteração do mapa cirúrgico',
+  'Falta de vaga de UTI',
   'Paciente já ocupa um leito na UTI'
 ];
 const MOTIVOS_CANCELAMENTO_RESERVA = [
@@ -1057,10 +1058,7 @@ const motivosAtuais = computed(() => {
   if (authStore.isUTI && !authStore.isAdmin) {
     return ['Falta de vaga de UTI', 'Paciente já ocupa um leito na UTI'];
   }
-  // Se for Administrador, pode escolher tanto os normais quanto o de UTI
-  if (authStore.isAdmin) {
-    return [...MOTIVOS_CANCELAMENTO, 'Falta de vaga de UTI'];
-  }
+  // Para Administradores e Solicitantes (BC, COB, HEM), retorna a lista completa
   return MOTIVOS_CANCELAMENTO;
 });
 

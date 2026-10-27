@@ -8,7 +8,7 @@ import api from '../services/api';
 
 // Valores padrão enquanto a API responde
 export const APP_VERSION = ref('1.8.0');
-export const LAST_UPDATE = ref('16/10/2026 às 10:00h');
+export const LAST_UPDATE = ref('27/10/2026 às 10:05h');
 export const APP_NAME = ref('Reserva UTI');
 export const SYSTEM_TITLE = ref('Gestão e Reserva de Leitos UTI');
 
