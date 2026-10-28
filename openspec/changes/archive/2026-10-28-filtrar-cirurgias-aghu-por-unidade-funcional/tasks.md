@@ -14,5 +14,5 @@
 
 ## 3. Validação e Documentação
 
-- [ ] 3.1 Testar a consulta do prontuário `22433189` no AGHU confirmando que retorna a cirurgia agendada de 06/11/2026 (Unidade 28) e ignora a endoscopia de 27/10/2026 (Unidade 155).
+- [x] 3.1 Testar a consulta do prontuário `22433189` no AGHU confirmando que retorna a cirurgia agendada de 06/11/2026 (Unidade 28) e ignora a endoscopia de 27/10/2026 (Unidade 155).
 - [x] 3.2 Atualizar `CHANGELOG.md` e `docs/projeto_inicial/02-requisitos.md`.

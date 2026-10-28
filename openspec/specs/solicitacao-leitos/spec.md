@@ -77,6 +77,14 @@ O sistema MUST permitir que a equipe da UTI e administradores alterem diretament
 ### Requirement: Integração com AGHU no Cadastro de Solicitação
 Ao cadastrar uma nova solicitação de vaga/leito, o sistema MUST integrar com o banco de dados do AGHU para recuperar automaticamente os dados demográficos e cirúrgicos do paciente com base no prontuário informado, simplificando o processo de entrada para o usuário. Os campos que MUST ser importados são: Nome do Paciente, Data de Nascimento, Especialidade, Procedimento Principal, Data da Cirurgia e Hora de Início.
 
+**Filtro por Unidade Funcional Cirúrgica**: O sistema MUST filtrar as cirurgias recuperadas do AGHU considerando exclusivamente as unidades funcionais cirúrgicas e intervencionistas autorizadas, de acordo com o setor solicitante ou o tipo da solicitação:
+- **Bloco Cirúrgico (BC)**: Unidade Funcional `28` (`BLOCO CIRURGICO`).
+- **Centro Obstétrico (COB)**: Unidade Funcional `20` (`CENTRO OBSTETRICO`).
+- **Hemodinâmica (HEM)**: Unidades Funcionais `47` (`HEMODINAMICA - PDT`) e `233` (`HEMODINAMICA (AMBULATORIO)`).
+- **Consulta Geral (Admin / UTI)**: Conjunto restrito de unidades cirúrgicas válidas (`28`, `20`, `47`, `233`). Procedimentos realizados em outras unidades não autorizadas (como Endoscopia na Unidade `155`) MUST ser sumariamente desconsiderados na busca de cirurgias.
+
+**Priorização de Situação de Agendamento**: A consulta SQL no AGHU MUST priorizar cirurgias que estejam com situação `AGND` (Agendada) em detrimento de procedimentos já finalizados (`RZDA`), ordenando a seguir pela proximidade temporal em relação à data corrente (`CURRENT_DATE`).
+
 O sistema MUST mapear o turno automaticamente a partir da hora de início da cirurgia nos seguintes intervalos:
 - **Manhã**: das 07:00 às 12:59
 - **Tarde**: das 13:00 às 18:59
@@ -112,6 +120,14 @@ No ambiente de desenvolvimento local (Mock), o sistema MUST retornar dados simul
 #### Scenario: Cadastro de solicitação com prioridade informada manualmente
 - **WHEN** o usuário solicitante fornece um prontuário válido e preenche a prioridade manual como "P3"
 - **THEN** o sistema cria a solicitação com prioridade "P3" e reordena os demais pacientes do mesmo dia de forma correspondente
+
+#### Scenario: Importação de cirurgia agendada no Bloco Cirúrgico ignorando procedimento de outra unidade
+- **WHEN** um usuário do Bloco Cirúrgico (BC) consulta no AGHU um paciente que possui um procedimento diagnóstico realizado em outra unidade (ex: Endoscopia na Unidade 155) e uma cirurgia geral programada no Bloco Cirúrgico (Unidade 28)
+- **THEN** o sistema SHALL ignorar o procedimento da Unidade 155 e preencher o formulário exclusivamente com os dados da cirurgia agendada no Bloco Cirúrgico (Unidade 28)
+
+#### Scenario: Importação de cirurgia específica do Centro Obstétrico ou Hemodinâmica
+- **WHEN** um usuário do Centro Obstétrico (COB) ou Hemodinâmica (HEM) consulta um prontuário no AGHU
+- **THEN** o sistema SHALL filtrar e recuperar exclusivamente as cirurgias e procedimentos vinculados às suas respectivas unidades funcionais autorizadas (20 para COB, 47 ou 233 para HEM)
 
 ### Requirement: Troca de Paciente na Edição de Solicitação
 Quando o usuário edita uma solicitação e altera o prontuário do paciente (caracterizando uma troca de paciente), o sistema MUST tratar essa ação internamente verificando se o novo prontuário já possui uma solicitação ativa ("Pendente" ou "Reservado").
