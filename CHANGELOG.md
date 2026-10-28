@@ -22,7 +22,7 @@ Este documento mantém o histórico público, auditável e imutável de todas as
     - **Centro Obstétrico (COB / Obstétrico)**: Unidade funcional `20` (`CENTRO OBSTETRICO`).
     - **Hemodinâmica (HEM / Hemodinâmica)**: Unidades funcionais `47` (`HEMODINAMICA - PDT`) e `233` (`HEMODINAMICA AMBULATORIO`).
     - **Administração / UTI / Padrão Amplo**: Unidades cirúrgicas válidas `[28, 20, 47, 233]`.
-  - Priorização de procedimentos cirúrgicos com status `AGND` (Agendado) sobre `RZDA` (Realizada) na ordenação SQL (`ORDER BY CASE WHEN cir.situacao = 'AGND' THEN 0 ELSE 1 END`), corrigindo a divergência onde pacientes com exames diagnósticos realizados no mesmo dia (ex: prontuário 22433189) sobrepunham sua cirurgia agendada oficial.
+  - Preservação da proximidade cronológica natural de procedimentos cirúrgicos (`AGND` ou `RZDA`), garantindo que cirurgias recém-concluídas no Bloco que demandem transferência imediata para a UTI continuem sendo localizadas normalmente, com exclusão estrita baseada nas unidades funcionais autorizadas.
   - Atualização do endpoint `GET /api/solicitacoes/consultar-aghu/{prontuario}` para receber o parâmetro opcional `tipo` e sincronização do formulário no frontend (`Solicitacoes.vue`).
 
 ---

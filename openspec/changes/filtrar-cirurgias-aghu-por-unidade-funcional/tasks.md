@@ -2,7 +2,7 @@
 
 ## 1. Backend e Consulta SQL
 
-- [x] 1.1 Em `src/providers/sql/solicitacao/obter_cirurgia_aghu.sql`, incluir a restrição `AND cir.unf_seq = ANY(:unf_seqs)` e priorizar `CASE WHEN cir.situacao = 'AGND' THEN 0 ELSE 1 END` no `ORDER BY`.
+- [x] 1.1 Em `src/providers/sql/solicitacao/obter_cirurgia_aghu.sql`, incluir a restrição `AND cir.unf_seq = ANY(:unf_seqs)` preservando a ordenação cronológica padrão.
 - [x] 1.2 Em `src/providers/implementations/aghu_cirurgia_provider.py`, atualizar o método `obter_cirurgia_por_prontuario` para aceitar `unf_seqs: List[int]` e repassar o parâmetro à execução SQL.
 - [x] 1.3 Em `src/controllers/solicitacao_leito_controller.py`, mapear o tipo de solicitação e perfil do usuário logado para as listas de unidades autorizadas (`BC`: `[28]`, `COB`: `[20]`, `HEM`: `[47, 233]`, default: `[28, 20, 47, 233]`).
 - [x] 1.4 Em `src/routers/solicitacoes_leito.py`, atualizar o endpoint `GET /consultar-aghu/{prontuario}` para aceitar o parâmetro opcional `tipo: Optional[str] = Query(None)`.

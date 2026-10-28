@@ -33,7 +33,7 @@ Este documento detalha os requisitos funcionais (RF) e requisitos não funcionai
 | **RF023** | Tabela Unificada de Auditoria Imutável (AuditLog) | Registro estruturado imutável de todas as ações (`SEGURANCA`, `NEGOCIO_CLINICO`, `CONFIGURACAO`) armazenando IP de origem (`ip_origem`), operador, detalhes e estado anterior e novo em JSON na tabela `audit_logs`. | Essencial |
 | **RF024** | Central de Configurações e Boot Seguro | Validação rigorosa de variáveis de ambiente e rejeição de boot com segredos fracos em ambiente de produção via `src/config.py`. | Essencial |
 | **RF025** | Motivo Falta de Vaga pelos Solicitantes | Permitir que os setores solicitantes (Bloco Cirúrgico, COB e Hemodinâmica) e Administradores selecionem o motivo "Falta de vaga de UTI" ao cancelar suas solicitações de leito. | Essencial |
-| **RF026** | Filtragem de Cirurgias por Unidade Funcional | Restringir a busca de cirurgias no AGHU exclusivamente a unidades funcionais cirúrgicas e intervencionistas válidas (BC: 28, COB: 20, HEM: 47/233), priorizando procedimentos agendados (AGND) e ignorando procedimentos diagnósticos ambulatoriais como Endoscopia (155). | Essencial |
+| **RF026** | Filtragem de Cirurgias por Unidade Funcional | Restringir a busca de cirurgias no AGHU exclusivamente a unidades funcionais cirúrgicas e intervencionistas válidas (BC: 28, COB: 20, HEM: 47/233), preservando a proximidade cronológica natural e eliminando procedimentos diagnósticos ambulatoriais como Endoscopia (155). | Essencial |
 
 ---
 
@@ -137,6 +137,6 @@ Abaixo está o detalhamento estruturado de requisitos operacionais críticos do 
 
 ### [CARE-RF026] Filtragem Estrita de Cirurgias por Unidade Funcional no AGHU
 *   **Context (Contexto):** Pacientes realizam exames diagnósticos/ambulatoriais (ex.: Endoscopia, unidade funcional 155) no mesmo dia ou dias antes de procedimentos cirúrgicos reais (ex.: Bloco Cirúrgico, unidade 28). Ao inserir uma nova solicitação de leito, a consulta ao AGHU trazia o exame diagnóstico em vez da cirurgia programada.
-*   **Action (Ação):** A consulta SQL em `agh.mbc_cirurgias` filtra obrigatoriamente `cir.unf_seq = ANY(:unf_seqs)` mapeando dinamicamente a unidade com base no tipo solicitado ou perfil (BC: `[28]`, COB: `[20]`, HEM: `[47, 233]`, default: `[28, 20, 47, 233]`), além de ordenar prioritariamente cirurgias agendadas (`AGND`) sobre realizadas (`RZDA`).
-*   **Result (Resultado):** A solicitação importa com precisão cirúrgica a data, hora, especialidade e procedimento principal corretos para a reserva de leito de UTI.
+*   **Action (Ação):** A consulta SQL em `agh.mbc_cirurgias` filtra obrigatoriamente `cir.unf_seq = ANY(:unf_seqs)` mapeando dinamicamente a unidade com base no tipo solicitado ou perfil (BC: `[28]`, COB: `[20]`, HEM: `[47, 233]`, default: `[28, 20, 47, 233]`), preservando a proximidade cronológica natural para cirurgias agendadas (`AGND`) e recém-realizadas (`RZDA`).
+*   **Result (Resultado):** A solicitação importa com precisão cirúrgica a data, hora, especialidade e procedimento principal corretos para a reserva de leito de UTI, permitindo que cirurgias recém-concluídas que necessitem de leito de UTI sejam localizadas sem interferência de exames diagnósticos.
 *   **Evaluation (Avaliação):** Teste de consulta com o prontuário `22433189` retornando a cirurgia agendada de Bloco Cirúrgico (06/11/2026) e ignorando a endoscopia realizada (27/10/2026).
