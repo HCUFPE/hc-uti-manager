@@ -12,7 +12,7 @@ Este documento mantém o histórico público, auditável e imutável de todas as
 ### A Fazer / Em Planejamento
 - Propostas de melhorias contínuas registradas via OpenSpec (`openspec/changes/`).
 
-## [1.8.1] - 2026-10-27 14:35
+## [1.8.1] - 2026-11-04 15:35
 
 ### Corrigido (Fixed) & Integração AGHU
 - **Filtragem de Cirurgias por Unidade Funcional Cirúrgica (`unf_seq`)**:
